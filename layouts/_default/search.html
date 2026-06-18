@@ -1,0 +1,36 @@
+{{ define "main" }}
+  <header class="page-header search-header">
+    <p class="eyebrow">Search</p>
+    <h1>{{ .Title }}</h1>
+    <p>在文章标题、正文、标签和分类中查找。</p>
+  </header>
+
+  <section class="search" aria-labelledby="search-label">
+    <form class="search-form" role="search" action="{{ .RelPermalink }}" method="get">
+      <label id="search-label" class="sr-only" for="search-input">搜索文章</label>
+      <input id="search-input" name="q" type="search" placeholder="输入关键词……" autocomplete="off" autofocus>
+      <button type="submit">搜索</button>
+    </form>
+    <p id="search-status" class="search-status" aria-live="polite">输入关键词开始搜索。</p>
+    <div id="search-results" class="search-results"></div>
+  </section>
+
+  {{ $pages := slice }}
+  {{ range where site.RegularPages "Section" "posts" }}
+    {{ $tags := slice }}
+    {{ range .GetTerms "tags" }}{{ $tags = $tags | append .LinkTitle }}{{ end }}
+    {{ $categories := slice }}
+    {{ range .GetTerms "categories" }}{{ $categories = $categories | append .LinkTitle }}{{ end }}
+    {{ $pages = $pages | append (dict
+      "title" .LinkTitle
+      "url" .RelPermalink
+      "date" (.Date.Format "2006-01-02")
+      "summary" (.Summary | plainify)
+      "content" (.Plain | plainify)
+      "tags" $tags
+      "categories" $categories
+    ) }}
+  {{ end }}
+  <script id="search-index" type="application/json">{{ $pages | jsonify | safeJS }}</script>
+  <script src="{{ "js/search.js" | relURL }}" defer></script>
+{{ end }}

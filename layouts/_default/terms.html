@@ -1,0 +1,15 @@
+{{ define "main" }}
+  <header class="page-header">
+    <p class="eyebrow">Index</p>
+    <h1>{{ .Title }}</h1>
+    <p>循着关键词，找到散落在不同日子里的记录。</p>
+  </header>
+  <div class="term-cloud">
+    {{ range .Data.Terms.ByCount }}
+      <a href="{{ .Page.RelPermalink }}"><span>{{ .Page.LinkTitle }}</span><small>{{ .Count }}</small></a>
+    {{ else }}
+      <p class="empty">这里暂时还是空的。</p>
+    {{ end }}
+  </div>
+{{ end }}
+

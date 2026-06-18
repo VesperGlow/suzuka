@@ -1,0 +1,17 @@
+{{ define "main" }}
+  <header class="page-header">
+    <p class="eyebrow">Collection</p>
+    <h1>{{ .Title }}</h1>
+    {{ with .Description }}<p>{{ . }}</p>{{ end }}
+  </header>
+
+  <div class="post-list">
+    {{ range .Paginator.Pages }}
+      {{ partial "post-card.html" . }}
+    {{ else }}
+      <p class="empty">这里暂时还是空的。</p>
+    {{ end }}
+  </div>
+  {{ partial "pagination.html" . }}
+{{ end }}
+

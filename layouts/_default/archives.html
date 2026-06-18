@@ -1,0 +1,25 @@
+{{ define "main" }}
+  <header class="page-header">
+    <p class="eyebrow">Timeline</p>
+    <h1>{{ .Title }}</h1>
+    {{ with .Description }}<p>{{ . }}</p>{{ end }}
+  </header>
+  <div class="archive">
+    {{ range (where site.RegularPages "Section" "posts").GroupByDate "2006" }}
+      <section class="archive-year">
+        <h2>{{ .Key }}</h2>
+        <div>
+          {{ range .Pages }}
+            <a class="archive-item" href="{{ .RelPermalink }}">
+              <time>{{ .Date.Format "01-02" }}</time>
+              <span>{{ .Title }}</span>
+            </a>
+          {{ end }}
+        </div>
+      </section>
+    {{ else }}
+      <p class="empty">还没有可以归档的文章。</p>
+    {{ end }}
+  </div>
+{{ end }}
+

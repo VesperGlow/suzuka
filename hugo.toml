@@ -1,0 +1,59 @@
+baseURL = 'https://suzuka-chan.moe/'
+locale = 'zh-CN'
+title = '小凉花厨的网站'
+defaultContentLanguage = 'zh-cn'
+hasCJKLanguage = true
+enableRobotsTXT = true
+summaryLength = 90
+
+[pagination]
+  pagerSize = 10
+
+[permalinks]
+  posts = '/posts/:year/:month/:slug/'
+
+[taxonomies]
+  tag = 'tags'
+  category = 'categories'
+
+[params]
+  description = 'Galgame 感想、VPS 折腾记录，以及偶尔落下的生活碎片。'
+  author = 'Suzuka'
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = false
+  [markup.highlight]
+    noClasses = false
+    lineNos = false
+
+[menu]
+  [[menu.main]]
+    name = '首页'
+    pageRef = '/'
+    weight = 10
+  [[menu.main]]
+    name = '文章'
+    pageRef = '/posts'
+    weight = 20
+  [[menu.main]]
+    name = '标签'
+    pageRef = '/tags'
+    weight = 30
+  [[menu.main]]
+    name = '分类'
+    pageRef = '/categories'
+    weight = 40
+  [[menu.main]]
+    name = '归档'
+    pageRef = '/archives'
+    weight = 50
+  [[menu.main]]
+    name = '搜索'
+    pageRef = '/search'
+    weight = 60
+  [[menu.main]]
+    name = 'About'
+    pageRef = '/about'
+    weight = 70
