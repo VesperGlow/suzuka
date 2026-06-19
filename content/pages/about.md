@@ -2,6 +2,7 @@
 title: "About"
 date: 2026-06-18
 draft: false
+url: "/about/"
 ---
 
 你好，这里是 Suzuka 的数字庭院。

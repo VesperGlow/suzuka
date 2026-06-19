@@ -38,9 +38,9 @@ summaryLength = 90
     weight = 20
   [[menu.main]]
     name = '搜索'
-    pageRef = '/search'
+    pageRef = '/pages/search'
     weight = 60
   [[menu.main]]
     name = 'About'
-    pageRef = '/about'
+    pageRef = '/pages/about'
     weight = 70
