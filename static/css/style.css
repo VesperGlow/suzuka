@@ -107,14 +107,17 @@ a:hover { color: var(--accent); }
 .search-form:focus-within { border-color: var(--accent); outline: 2px solid var(--accent-soft); }
 .search-form input { min-width: 0; flex: 1; padding: 10px 13px; color: var(--ink); background: transparent; border: 0; outline: 0; font: inherit; }
 .search-form input::placeholder { color: #98a4b0; }
-.search-form button { padding: 9px 20px; color: #fff; background: var(--accent); border: 0; border-radius: 7px; cursor: pointer; font: 13px/1.5 var(--sans); }
-.search-form button:hover { background: var(--accent-dark); }
+.search-form button { border: 0; cursor: pointer; font: 13px/1.5 var(--sans); }
+.search-submit { padding: 9px 20px; color: #fff; background: var(--accent); border-radius: 7px; }
+.search-submit:hover { background: var(--accent-dark); }
+.search-clear { padding: 9px 12px; color: var(--muted); background: transparent; }
+.search-clear:hover { color: var(--accent-dark); }
 .search-status { margin: 20px 0 8px; color: var(--muted); font-size: 13px; }
 .search-results { border-top: 0; }
 .search-result { padding: 26px 8px; border-bottom: 1px solid var(--line); }
 .search-result h2 { margin: 0 0 5px; font: 500 22px/1.45 var(--serif); }
 .search-result p { max-width: 720px; margin: 7px 0 0; color: var(--muted); }
-.search-result .search-result-meta { color: var(--green); font-size: 12px; }
+.search-result mark { color: inherit; background: var(--accent-soft); }
 
 .short-page-character { position: relative; isolation: isolate; }
 .short-page-character::after { position: absolute; z-index: -1; right: 0; bottom: 0; width: clamp(180px, 18vw, 250px); aspect-ratio: 1264 / 2034; content: ""; background: url("../characters/suzuka_pc.webp") right bottom / contain no-repeat; opacity: .035; pointer-events: none; }
@@ -123,6 +126,7 @@ a:hover { color: var(--accent); }
 .article { max-width: 740px; margin: 0 auto; padding: 78px 0; }
 .article-header { padding-bottom: 34px; border-bottom: 1px solid var(--line); }
 .article-header h1 { margin: 0 0 18px; font: 500 clamp(32px, 6vw, 48px)/1.4 var(--serif); }
+.article-summary { max-width: 680px; margin: -4px 0 18px; color: var(--muted); }
 .article-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: 13px; }
 .article-toc { margin-top: 28px; padding: 12px 16px; color: var(--muted); background: rgba(242, 248, 253, .58); border: 1px solid var(--line); border-radius: 8px; font-size: 14px; }
 .article-toc summary { width: fit-content; color: var(--accent-dark); cursor: pointer; font-weight: 600; }
@@ -206,7 +210,7 @@ a:hover { color: var(--accent); }
   .post-card-summary .read-more { display: inline-block; margin-top: 2px; }
   .collection-section { padding-bottom: 28px; }
   .collection-tags { padding-top: 28px; }
-  .search-form button { padding-inline: 16px; }
+  .search-submit { padding-inline: 16px; }
   .search-result { padding-inline: 0; }
   .archive-year { grid-template-columns: 1fr; gap: 4px; }
   .post-navigation { grid-template-columns: 1fr; gap: 18px; }

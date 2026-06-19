@@ -9,25 +9,12 @@
     <form class="search-form" role="search" action="{{ .RelPermalink }}" method="get">
       <label id="search-label" class="sr-only" for="search-input">搜索文章</label>
       <input id="search-input" name="q" type="search" placeholder="输入关键词……" autocomplete="off" autofocus>
-      <button type="submit">搜索</button>
+      <button id="search-clear" class="search-clear" type="button" hidden>清空</button>
+      <button class="search-submit" type="submit">搜索</button>
     </form>
     <p id="search-status" class="search-status" aria-live="polite">输入关键词开始搜索。</p>
     <div id="search-results" class="search-results"></div>
   </section>
 
-  {{ $pages := slice }}
-  {{ range where site.RegularPages "Section" "posts" }}
-    {{ $tags := slice }}
-    {{ range .GetTerms "tags" }}{{ $tags = $tags | append .LinkTitle }}{{ end }}
-    {{ $pages = $pages | append (dict
-      "title" .LinkTitle
-      "url" .RelPermalink
-      "date" (.Date.Format "2006-01-02")
-      "summary" (.Summary | plainify)
-      "content" (.Plain | plainify)
-      "tags" $tags
-    ) }}
-  {{ end }}
-  <script id="search-index" type="application/json">{{ $pages | jsonify | safeJS }}</script>
-  <script src="{{ "js/search.js" | relURL }}" defer></script>
+  <script type="module" src="{{ "js/search.js" | relURL }}"></script>
 {{ end }}

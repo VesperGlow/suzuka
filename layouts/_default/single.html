@@ -1,9 +1,11 @@
 {{ define "main" }}
   <article class="article">
+    <div{{ if eq .Section "posts" }} data-pagefind-body{{ end }}>
     <header class="article-header">
       <p class="eyebrow">{{ if eq .Section "posts" }}Journal entry{{ else }}Page{{ end }}</p>
       <h1>{{ .Title }}</h1>
       {{ if eq .Section "posts" }}
+        <p class="article-summary">{{ with .Description }}{{ . }}{{ else }}{{ .Summary | plainify }}{{ end }}</p>
         <div class="article-meta">
           <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006 年 01 月 02 日" }}</time>
           <span>约 {{ .ReadingTime }} 分钟阅读</span>
@@ -24,6 +26,7 @@
     {{ with .GetTerms "tags" }}
       <footer class="article-tags"><span>Tags</span>{{ range . }}<a href="{{ .RelPermalink }}">#{{ .LinkTitle }}</a>{{ end }}</footer>
     {{ end }}
+    </div>
 
     {{ if eq .Section "posts" }}
       {{ $previous := .PrevInSection }}

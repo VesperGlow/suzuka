@@ -1,66 +1,96 @@
-(() => {
-  const input = document.querySelector("#search-input");
-  const form = document.querySelector(".search-form");
-  const status = document.querySelector("#search-status");
-  const results = document.querySelector("#search-results");
-  const indexElement = document.querySelector("#search-index");
+import * as pagefind from "/pagefind/pagefind.js";
 
-  if (!input || !form || !status || !results || !indexElement) return;
+const input = document.querySelector("#search-input");
+const form = document.querySelector(".search-form");
+const clearButton = document.querySelector("#search-clear");
+const status = document.querySelector("#search-status");
+const results = document.querySelector("#search-results");
 
-  const pages = JSON.parse(indexElement.textContent).map((page) => ({
-    ...page,
-    searchText: [page.title, page.content, ...page.tags]
-      .join(" ")
-      .toLocaleLowerCase(),
-  }));
+if (input && form && clearButton && status && results) {
+  let requestId = 0;
 
-  function resultCard(page) {
+  function setQueryInUrl(query) {
+    const url = new URL(window.location.href);
+    query ? url.searchParams.set("q", query) : url.searchParams.delete("q");
+    window.history.replaceState(null, "", url);
+  }
+
+  function resetSearch() {
+    requestId += 1;
+    results.replaceChildren();
+    status.textContent = "输入关键词开始搜索。";
+    clearButton.hidden = true;
+  }
+
+  function resultCard(data) {
     const article = document.createElement("article");
     const title = document.createElement("h2");
     const link = document.createElement("a");
-    const meta = document.createElement("p");
-    const summary = document.createElement("p");
+    const excerpt = document.createElement("p");
 
     article.className = "search-result";
-    link.href = page.url;
-    link.textContent = page.title;
+    link.href = data.url;
+    link.textContent = data.meta.title;
     title.append(link);
-    meta.className = "search-result-meta";
-    meta.textContent = [page.date, ...page.tags.map((tag) => `#${tag}`)].join(" · ");
-    summary.textContent = page.summary;
-    article.append(title, meta, summary);
+    excerpt.innerHTML = data.excerpt;
+    article.append(title, excerpt);
     return article;
   }
 
-  function search(query) {
-    const normalized = query.trim().toLocaleLowerCase();
-    results.replaceChildren();
+  async function runSearch(query, immediate = false) {
+    const normalized = query.trim();
+    clearButton.hidden = !input.value;
 
     if (!normalized) {
-      status.textContent = "输入关键词开始搜索。";
+      resetSearch();
       return;
     }
 
-    const terms = normalized.split(/\s+/);
-    const matches = pages.filter((page) => terms.every((term) => page.searchText.includes(term)));
-    status.textContent = matches.length ? `找到 ${matches.length} 篇文章` : `没有找到与“${query.trim()}”相关的文章。`;
-    results.append(...matches.map(resultCard));
+    const currentRequest = ++requestId;
+    status.textContent = "正在搜索……";
+
+    try {
+      const response = immediate
+        ? await pagefind.search(normalized)
+        : await pagefind.debouncedSearch(normalized);
+      if (currentRequest !== requestId || response === null) return;
+
+      const matches = await Promise.all(response.results.map((result) => result.data()));
+      if (currentRequest !== requestId) return;
+
+      results.replaceChildren(...matches.map(resultCard));
+      status.textContent = matches.length
+        ? `找到 ${matches.length} 篇相关文字`
+        : "没有找到相关文字。也许它还没有落进这座微蓝的庭院里。";
+    } catch (error) {
+      if (currentRequest !== requestId) return;
+      console.error("Pagefind search failed:", error);
+      results.replaceChildren();
+      status.textContent = "搜索暂时不可用，请稍后再试。";
+    }
   }
+
+  input.addEventListener("input", () => runSearch(input.value));
+
+  input.addEventListener("search", () => {
+    if (!input.value) setQueryInUrl("");
+  });
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    const url = new URL(window.location.href);
     const query = input.value.trim();
-    query ? url.searchParams.set("q", query) : url.searchParams.delete("q");
-    window.history.replaceState(null, "", url);
-    search(query);
+    setQueryInUrl(query);
+    runSearch(query, true);
   });
 
-  input.addEventListener("search", () => {
-    if (!input.value) search("");
+  clearButton.addEventListener("click", () => {
+    input.value = "";
+    setQueryInUrl("");
+    resetSearch();
+    input.focus();
   });
 
   const initialQuery = new URLSearchParams(window.location.search).get("q") || "";
   input.value = initialQuery;
-  search(initialQuery);
-})();
+  if (initialQuery) runSearch(initialQuery, true);
+}
