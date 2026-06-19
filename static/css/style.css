@@ -116,6 +116,7 @@ a:hover { color: var(--accent); }
 .search-results { border-top: 0; }
 .search-result { padding: 26px 8px; border-bottom: 1px solid var(--line); }
 .search-result h2 { margin: 0 0 5px; font: 500 22px/1.45 var(--serif); }
+.search-result-date { display: block; margin-top: 6px; color: var(--muted); font-size: 12px; }
 .search-result p { max-width: 720px; margin: 7px 0 0; color: var(--muted); }
 .search-result mark { color: inherit; background: var(--accent-soft); }
 

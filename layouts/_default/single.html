@@ -7,7 +7,7 @@
       {{ if eq .Section "posts" }}
         <p class="article-summary">{{ with .Description }}{{ . }}{{ else }}{{ .Summary | plainify }}{{ end }}</p>
         <div class="article-meta">
-          <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006 年 01 月 02 日" }}</time>
+          <time datetime="{{ .Date.Format "2006-01-02" }}" data-pagefind-meta="date">{{ .Date.Format "2006 年 01 月 02 日" }}</time>
           <span>约 {{ .ReadingTime }} 分钟阅读</span>
         </div>
       {{ end }}
