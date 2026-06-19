@@ -3,8 +3,6 @@ title: "把夏天调成蓝色"
 slug: "把夏天调成蓝色"
 date: 2026-06-18T20:30:00+08:00
 draft: false
-categories:
-  - 生活碎片
 tags:
   - 随笔
   - 插画

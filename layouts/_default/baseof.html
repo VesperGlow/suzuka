@@ -21,7 +21,7 @@
         <img class="brand-mark" src="{{ "favicon-orb.png" | relURL }}" alt="" width="34" height="34">
         <span class="brand-text">{{ site.Title }}</span>
       </a>
-      <nav aria-label="主导航">
+      <nav class="main-nav" aria-label="主导航">
         {{ range site.Menus.main }}
           <a href="{{ .URL }}"{{ if $.IsMenuCurrent "main" . }} class="active" aria-current="page"{{ end }}>{{ .Name }}</a>
         {{ end }}

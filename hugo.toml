@@ -14,7 +14,6 @@ summaryLength = 90
 
 [taxonomies]
   tag = 'tags'
-  category = 'categories'
 
 [params]
   description = 'Galgame 感想、VPS 折腾记录，以及偶尔落下的生活碎片。'
@@ -37,18 +36,6 @@ summaryLength = 90
     name = '文章'
     pageRef = '/posts'
     weight = 20
-  [[menu.main]]
-    name = '标签'
-    pageRef = '/tags'
-    weight = 30
-  [[menu.main]]
-    name = '分类'
-    pageRef = '/categories'
-    weight = 40
-  [[menu.main]]
-    name = '归档'
-    pageRef = '/archives'
-    weight = 50
   [[menu.main]]
     name = '搜索'
     pageRef = '/search'

@@ -1,6 +1,5 @@
 ---
-title: "归档"
-description: "沿着时间，找回曾经写下的片段。"
+title: "全部文章"
+description: "按时间浏览写下的每一篇记录。"
 layout: "archives"
 ---
-

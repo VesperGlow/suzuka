@@ -9,7 +9,7 @@
 
   const pages = JSON.parse(indexElement.textContent).map((page) => ({
     ...page,
-    searchText: [page.title, page.content, ...page.tags, ...page.categories]
+    searchText: [page.title, page.content, ...page.tags]
       .join(" ")
       .toLocaleLowerCase(),
   }));
@@ -26,7 +26,7 @@
     link.textContent = page.title;
     title.append(link);
     meta.className = "search-result-meta";
-    meta.textContent = [page.date, ...page.categories, ...page.tags.map((tag) => `#${tag}`)].join(" · ");
+    meta.textContent = [page.date, ...page.tags.map((tag) => `#${tag}`)].join(" · ");
     summary.textContent = page.summary;
     article.append(title, meta, summary);
     return article;
