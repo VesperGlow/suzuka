@@ -16,7 +16,7 @@ summaryLength = 90
   tag = 'tags'
 
 [params]
-  description = 'Galgame 感想、VPS 折腾记录，以及偶尔落下的生活碎片。'
+  description = 'Galgame 感想、偶尔浮现的思考，以及落下的生活碎片。'
   author = 'Suzuka'
   defaultShareImage = 'favicon/favicon-orb.png'
 
