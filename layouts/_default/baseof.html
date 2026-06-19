@@ -7,10 +7,10 @@
   <meta name="theme-color" content="#fbf9f6">
   <title>{{ if .IsHome }}{{ site.Title }}{{ else }}{{ .Title }} · {{ site.Title }}{{ end }}</title>
   <link rel="canonical" href="{{ .Permalink }}">
-  <link rel="icon" href="{{ "favicon.ico" | relURL }}" sizes="16x16 32x32 48x48">
-  <link rel="icon" type="image/png" href="{{ "favicon-orb.png" | relURL }}">
-  <link rel="apple-touch-icon" href="{{ "favicon-orb.png" | relURL }}">
-  <link rel="stylesheet" href="{{ "css/style.css" | relURL }}">
+  <link rel="icon" href="{{ "favicon/favicon.ico" | relURL }}" sizes="16x16 32x32 48x48">
+  <link rel="icon" type="image/png" href="{{ "favicon/favicon-orb.png" | relURL }}">
+  <link rel="apple-touch-icon" href="{{ "favicon/favicon-orb.png" | relURL }}">
+  <link rel="stylesheet" href="{{ "css/style.css?v=20260619-9" | relURL }}">
   {{ with .OutputFormats.Get "rss" }}<link rel="alternate" type="application/rss+xml" href="{{ .RelPermalink }}" title="{{ site.Title }}">{{ end }}
 </head>
 <body>
@@ -18,9 +18,10 @@
   <header class="site-header">
     <div class="shell header-inner">
       <a class="site-brand" href="{{ site.Home.RelPermalink }}" aria-label="{{ site.Title }}，返回首页">
-        <img class="brand-mark" src="{{ "favicon-orb.png" | relURL }}" alt="" width="34" height="34">
+        <img class="brand-mark" src="{{ "favicon/favicon-orb.png" | relURL }}" alt="" width="34" height="34">
         <span class="brand-text">{{ site.Title }}</span>
       </a>
+      <img class="mobile-header-character" src="{{ "characters/suzuka_sp.webp" | relURL }}" alt="" width="1290" height="2076" aria-hidden="true">
       <nav class="main-nav" aria-label="主导航">
         {{ range site.Menus.main }}
           <a href="{{ .URL }}"{{ if $.IsMenuCurrent "main" . }} class="active" aria-current="page"{{ end }}>{{ .Name }}</a>
