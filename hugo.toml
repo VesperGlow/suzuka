@@ -18,14 +18,21 @@ summaryLength = 90
 [params]
   description = 'Galgame 感想、VPS 折腾记录，以及偶尔落下的生活碎片。'
   author = 'Suzuka'
+  defaultShareImage = 'favicon/favicon-orb.png'
 
 [markup]
   [markup.goldmark]
+    [markup.goldmark.parser]
+      wrapStandAloneImageWithinParagraph = false
     [markup.goldmark.renderer]
       unsafe = false
   [markup.highlight]
     noClasses = false
     lineNos = false
+  [markup.tableOfContents]
+    startLevel = 2
+    endLevel = 3
+    ordered = false
 
 [menu]
   [[menu.main]]
