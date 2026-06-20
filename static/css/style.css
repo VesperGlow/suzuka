@@ -163,6 +163,8 @@ a:hover { color: var(--accent); }
 .article-meta-tag:hover { color: var(--accent-dark); }
 .article-spoiler { margin: 28px 0 0; padding: 4px 20px; color: var(--muted); border-left: 3px solid var(--accent-soft); font: 16px/1.8 var(--serif); }
 .article-spoiler strong { color: var(--ink); }
+.post-article .article-header { padding-bottom: 0; border-bottom: 0; }
+.post-article .article-spoiler { margin-top: 1rem; }
 .article-toc { margin-top: 28px; padding: 12px 16px; color: var(--muted); background: rgba(242, 248, 253, .58); border: 1px solid var(--line); border-radius: var(--radius-medium); font-size: 14px; }
 .article-toc summary { width: fit-content; color: var(--accent-dark); cursor: pointer; font-weight: 600; }
 .article-toc nav { padding-top: 8px; }
@@ -260,6 +262,7 @@ a:hover { color: var(--accent); }
   .post-article { max-width: var(--article-content-width); }
   .post-article.has-toc { max-width: 1060px; display: grid; grid-template-columns: minmax(0, var(--article-content-width)) 210px; gap: 52px; justify-content: center; }
   .post-article .article-header h1 { font-size: clamp(33px, 3.8vw, 40px); }
+  .post-article .prose > p:first-child { margin-top: 0; }
   .article-main { min-width: 0; }
   .article-toc-mobile { display: none; }
   .article-sidebar { display: block; min-width: 0; }
@@ -352,11 +355,10 @@ a:hover { color: var(--accent); }
 
 @media (max-width: 640px) {
   .post-article { padding-top: 20px; }
-  .post-article .article-header { padding-bottom: 12px; }
   .post-article .article-category { margin-bottom: 7px; }
   .post-article .article-header h1 { margin-bottom: 10px; font-size: clamp(2.1rem, 8.8vw, 2.35rem); line-height: 1.18; }
   .post-article .article-summary { margin: -1px 0 10px; }
-  .post-article .article-spoiler { margin-top: 10px; padding: 6px 10px; font: 13px/1.55 var(--serif); }
+  .post-article .article-spoiler { padding: 6px 10px; font: 13px/1.55 var(--serif); }
   .post-article .article-toc-mobile { margin-top: 9px; padding: 7px 12px; }
   .post-article .article-toc-mobile nav { padding-top: 6px; }
   .post-article .prose { padding-top: 14px; }
