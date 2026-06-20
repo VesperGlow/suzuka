@@ -14,6 +14,7 @@ summaryLength = 90
 
 [taxonomies]
   tag = 'tags'
+  category = 'categories'
 
 [params]
   description = 'Galgame 感想、偶尔浮现的思考，以及落下的生活碎片。'

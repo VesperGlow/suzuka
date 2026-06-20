@@ -11,8 +11,8 @@
         <div>
           {{ range .Pages }}
             <a class="archive-item" href="{{ .RelPermalink }}">
-              <time>{{ .Date.Format "01-02" }}</time>
-              <span>{{ .Title }}</span>
+              <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "01.02" }}</time>
+              <span class="archive-title">{{ .Title }}</span>
             </a>
           {{ end }}
         </div>

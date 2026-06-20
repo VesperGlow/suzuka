@@ -1,0 +1,11 @@
+{{- $current := . -}}
+{{- $posts := where site.RegularPages "Section" "posts" -}}
+<nav class="category-filter" aria-label="按分类筛选">
+  <div class="category-filter-track">
+    <a href="{{ relURL "posts/" }}"{{ if ne .Data.Singular "category" }} class="active" aria-current="page"{{ end }}>全部 <span>· {{ len $posts }}</span></a>
+    {{ range site.Taxonomies.categories.ByCount }}
+      {{- $isActive := and (eq $current.Data.Singular "category") (eq $current.RelPermalink .Page.RelPermalink) -}}
+      <a href="{{ .Page.RelPermalink }}"{{ if $isActive }} class="active" aria-current="page"{{ end }}>{{ .Page.LinkTitle }} <span>· {{ .Count }}</span></a>
+    {{ end }}
+  </div>
+</nav>

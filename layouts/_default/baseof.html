@@ -15,7 +15,7 @@
   <link rel="icon" href="{{ "favicon/favicon.ico" | relURL }}" sizes="16x16 32x32 48x48">
   <link rel="icon" type="image/png" href="{{ "favicon/favicon-orb.png" | relURL }}">
   <link rel="apple-touch-icon" href="{{ "favicon/favicon-orb.png" | relURL }}">
-  <link rel="stylesheet" href="{{ "css/style.css?v=20260619-17" | relURL }}">
+  <link rel="stylesheet" href="{{ "css/style.css?v=20260620-36" | relURL }}">
   {{ with .OutputFormats.Get "rss" }}<link rel="alternate" type="application/rss+xml" href="{{ .RelPermalink }}" title="{{ site.Title }}">{{ end }}
 </head>
 <body>
@@ -29,13 +29,17 @@
       <img class="mobile-header-character" src="{{ "characters/suzuka_sp.webp" | relURL }}" alt="" width="1290" height="2076" aria-hidden="true">
       <nav class="main-nav" aria-label="主导航">
         {{ range site.Menus.main }}
-          <a href="{{ .URL }}"{{ if $.IsMenuCurrent "main" . }} class="active" aria-current="page"{{ end }}>{{ .Name }}</a>
+          {{- $isActive := $.IsMenuCurrent "main" . -}}
+          {{- if and (eq .PageRef "/posts") (or (hasPrefix $.RelPermalink "/posts/") (hasPrefix $.RelPermalink "/archives/") (hasPrefix $.RelPermalink "/categories/") (hasPrefix $.RelPermalink "/tags/")) -}}
+            {{- $isActive = true -}}
+          {{- end -}}
+          <a href="{{ .URL }}"{{ if $isActive }} class="active" aria-current="page"{{ end }}>{{ .Name }}</a>
         {{ end }}
       </nav>
     </div>
   </header>
 
-  <main id="main-content" class="shell{{ if .Params.characterDecoration }} short-page-character{{ end }}">
+  <main id="main-content" class="shell{{ if and .IsPage (eq .Section "posts") }} article-shell{{ end }}{{ if .Params.characterDecoration }} short-page-character{{ end }}">
     {{ block "main" . }}{{ end }}
   </main>
 
@@ -50,5 +54,28 @@
       </span>
     </div>
   </footer>
+  <button class="back-to-top" type="button" aria-label="回到顶部" hidden>
+    <span class="back-to-top-hint" aria-hidden="true">↑</span>
+    <picture>
+      <source media="(max-width: 760px)" srcset="{{ "characters/suzuka_sp.webp" | relURL }}">
+      <img src="{{ "characters/suzuka_pc.webp" | relURL }}" alt="" width="1264" height="2034">
+    </picture>
+  </button>
+  <script>
+    const backToTop = document.querySelector(".back-to-top");
+
+    if (backToTop) {
+      const updateBackToTop = () => {
+        backToTop.hidden = window.scrollY <= 600;
+      };
+
+      window.addEventListener("scroll", updateBackToTop, { passive: true });
+      backToTop.addEventListener("click", () => {
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+      });
+      updateBackToTop();
+    }
+  </script>
 </body>
 </html>
