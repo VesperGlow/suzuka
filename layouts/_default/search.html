@@ -1,10 +1,6 @@
 {{ define "main" }}
   {{ $pagefindVersion := now.Unix }}
-  <header class="page-header search-header">
-    <p class="eyebrow">Search</p>
-    <h1>{{ .Title }}</h1>
-    <p>在文章标题、正文和标签中查找。</p>
-  </header>
+  {{ partial "page-hero.html" (dict "page" . "eyebrow" "Search" "description" "在文章标题、正文和标签中查找。" "class" "search-header") }}
 
   <section class="search" aria-labelledby="search-label">
     <form id="search-form" class="search-form" role="search" action="{{ .RelPermalink }}" method="get">

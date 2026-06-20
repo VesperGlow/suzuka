@@ -1,9 +1,5 @@
 {{ define "main" }}
-  <header class="page-header">
-    <p class="eyebrow">All posts</p>
-    <h1>{{ .Title }}</h1>
-    {{ with .Description }}<p>{{ . }}</p>{{ end }}
-  </header>
+  {{ partial "page-hero.html" (dict "page" . "eyebrow" "All posts" "description" .Description) }}
   <div class="archive">
     {{ range (where site.RegularPages "Section" "posts").GroupByDate "2006" }}
       <section class="archive-year">

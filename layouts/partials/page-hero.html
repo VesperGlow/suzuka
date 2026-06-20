@@ -1,0 +1,5 @@
+<header class="page-header{{ with .class }} {{ . }}{{ end }}">
+  <p class="eyebrow">{{ .eyebrow }}</p>
+  <h1>{{ .page.Title }}</h1>
+  {{ with .description }}<p>{{ . }}</p>{{ end }}
+</header>

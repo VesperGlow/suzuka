@@ -1,0 +1,23 @@
+<button class="back-to-top" type="button" aria-label="回到顶部" hidden>
+  <span class="back-to-top-hint" aria-hidden="true">↑</span>
+  <picture>
+    <source media="(max-width: 760px)" srcset="{{ "characters/suzuka_sp.webp" | relURL }}">
+    <img src="{{ "characters/suzuka_pc.webp" | relURL }}" alt="" width="1264" height="2034">
+  </picture>
+</button>
+<script>
+  const backToTop = document.querySelector(".back-to-top");
+
+  if (backToTop) {
+    const updateBackToTop = () => {
+      backToTop.hidden = window.scrollY <= 600;
+    };
+
+    window.addEventListener("scroll", updateBackToTop, { passive: true });
+    backToTop.addEventListener("click", () => {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    });
+    updateBackToTop();
+  }
+</script>

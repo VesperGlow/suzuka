@@ -1,9 +1,5 @@
 {{ define "main" }}
-  <header class="page-header posts-page-header">
-    <p class="eyebrow">Collection</p>
-    <h1>{{ .Title }}</h1>
-    {{ with .Description }}<p>{{ . }}</p>{{ end }}
-  </header>
+  {{ partial "page-hero.html" (dict "page" . "eyebrow" "Collection" "description" .Description "class" "posts-page-header") }}
 
   <section class="collection-section" aria-labelledby="latest-posts-heading">
     <div class="section-heading">

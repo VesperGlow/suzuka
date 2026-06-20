@@ -1,0 +1,37 @@
+<script>
+  const desktopToc = document.querySelector(".article-toc-desktop");
+  const articleHeadings = Array.from(document.querySelectorAll(".prose h2[id], .prose h3[id]"));
+
+  if (desktopToc && articleHeadings.length) {
+    const tocLinks = Array.from(desktopToc.querySelectorAll('a[href^="#"]'));
+    let ticking = false;
+
+    const updateActiveToc = () => {
+      let activeId = articleHeadings[0].id;
+      const threshold = window.innerHeight * 0.3;
+
+      for (const heading of articleHeadings) {
+        if (heading.getBoundingClientRect().top <= threshold) activeId = heading.id;
+        else break;
+      }
+
+      for (const link of tocLinks) {
+        let targetId = link.hash.slice(1);
+        try { targetId = decodeURIComponent(targetId); } catch {}
+        const isActive = targetId === activeId;
+        link.classList.toggle("active", isActive);
+        if (isActive) link.setAttribute("aria-current", "location");
+        else link.removeAttribute("aria-current");
+      }
+      ticking = false;
+    };
+
+    window.addEventListener("scroll", () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateActiveToc);
+        ticking = true;
+      }
+    }, { passive: true });
+    updateActiveToc();
+  }
+</script>

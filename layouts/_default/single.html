@@ -4,26 +4,7 @@
   {{- $hasToc := and $isPost (gt $h2Count 1) -}}
   <article class="article{{ if $isPost }} post-article{{ end }}{{ if $hasToc }} has-toc{{ end }}">
     {{ if $isPost }}
-      {{- $currentPage := . -}}
-      {{- $recentPosts := first 6 (where site.RegularPages "Section" "posts").ByDate.Reverse -}}
-      {{- $currentYear := "" -}}
-      <aside class="article-index" aria-label="最近文章">
-        <div class="article-index-inner">
-          <p class="article-index-heading">最近写下</p>
-          {{ range $recentPosts }}
-            {{- $year := .Date.Format "2006" -}}
-            {{- if ne $year $currentYear -}}
-              <p class="article-index-year">{{ $year }}</p>
-              {{- $currentYear = $year -}}
-            {{- end -}}
-            <a class="article-index-item{{ if eq .RelPermalink $currentPage.RelPermalink }} active{{ end }}" href="{{ .RelPermalink }}"{{ if eq .RelPermalink $currentPage.RelPermalink }} aria-current="page"{{ end }}>
-              <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "01.02" }}</time>
-              <span>{{ .Title }}</span>
-            </a>
-          {{ end }}
-          <a class="article-index-all" href="{{ relURL "archives/" }}">查看全部 <span aria-hidden="true">→</span></a>
-        </div>
-      </aside>
+      {{ partial "article-sidebar-recent.html" . }}
     {{ end }}
 
     <div class="article-main"{{ if $isPost }} data-pagefind-body{{ end }}>
@@ -47,10 +28,7 @@
       </header>
 
       {{ if $hasToc }}
-        <details class="article-toc article-toc-mobile">
-          <summary>文章目录</summary>
-          {{ .TableOfContents }}
-        </details>
+        {{ partial "article-toc.html" . }}
       {{ end }}
 
       <div class="prose">{{ .Content }}</div>
@@ -72,52 +50,11 @@
     </div>
 
     {{ if $hasToc }}
-      <aside class="article-sidebar" aria-label="文章目录">
-        <div class="article-toc-desktop">
-          <p>文章目录</p>
-          {{ .TableOfContents }}
-        </div>
-      </aside>
+      {{ partial "article-toc-sidebar.html" . }}
     {{ end }}
   </article>
 
   {{ if $hasToc }}
-    <script>
-      const desktopToc = document.querySelector(".article-toc-desktop");
-      const articleHeadings = Array.from(document.querySelectorAll(".prose h2[id], .prose h3[id]"));
-
-      if (desktopToc && articleHeadings.length) {
-        const tocLinks = Array.from(desktopToc.querySelectorAll('a[href^="#"]'));
-        let ticking = false;
-
-        const updateActiveToc = () => {
-          let activeId = articleHeadings[0].id;
-          const threshold = window.innerHeight * 0.3;
-
-          for (const heading of articleHeadings) {
-            if (heading.getBoundingClientRect().top <= threshold) activeId = heading.id;
-            else break;
-          }
-
-          for (const link of tocLinks) {
-            let targetId = link.hash.slice(1);
-            try { targetId = decodeURIComponent(targetId); } catch {}
-            const isActive = targetId === activeId;
-            link.classList.toggle("active", isActive);
-            if (isActive) link.setAttribute("aria-current", "location");
-            else link.removeAttribute("aria-current");
-          }
-          ticking = false;
-        };
-
-        window.addEventListener("scroll", () => {
-          if (!ticking) {
-            window.requestAnimationFrame(updateActiveToc);
-            ticking = true;
-          }
-        }, { passive: true });
-        updateActiveToc();
-      }
-    </script>
+    {{ partial "article-toc-script.html" . }}
   {{ end }}
 {{ end }}

@@ -1,21 +1,5 @@
 {{ define "main" }}
-  {{- $isTerm := or (eq .Data.Singular "tag") (eq .Data.Singular "category") -}}
-  <header class="page-header{{ if $isTerm }} term-page-header{{ end }}">
-    <p class="eyebrow">Collection</p>
-    <h1>{{ .Title }}</h1>
-    {{ if $isTerm }}
-      <div class="term-page-meta">
-        <span>共 {{ len .Pages }} 篇文章</span>
-        <a class="text-link" href="{{ relURL "posts/" }}">全部文章 <span aria-hidden="true">→</span></a>
-      </div>
-    {{ else }}
-      {{ with .Description }}<p>{{ . }}</p>{{ end }}
-    {{ end }}
-  </header>
-
-  {{ if eq .Data.Singular "category" }}
-    {{ partial "category-filter.html" . }}
-  {{ end }}
+  {{ partial "page-hero.html" (dict "page" . "eyebrow" "Collection" "description" .Description) }}
 
   <div class="post-list">
     {{ range .Paginator.Pages }}
@@ -25,9 +9,4 @@
     {{ end }}
   </div>
   {{ partial "pagination.html" . }}
-  {{ if eq .Data.Singular "category" }}
-    <div class="collection-footer category-footer">
-      <a class="text-link" href="{{ relURL "archives/" }}">查看全部文章 <span aria-hidden="true">→</span></a>
-    </div>
-  {{ end }}
 {{ end }}
