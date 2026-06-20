@@ -50,6 +50,6 @@ summaryLength = 90
     pageRef = '/pages/search'
     weight = 60
   [[menu.main]]
-    name = 'About'
+    name = '凉花'
     pageRef = '/pages/about'
     weight = 70

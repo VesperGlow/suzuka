@@ -1,0 +1,15 @@
+{{ define "main" }}
+  <article class="about-page">
+    <header class="about-header">
+      <p class="eyebrow">Page</p>
+      <h1>{{ .Title }}</h1>
+    </header>
+
+    <picture class="about-visual">
+      <source media="(max-width: 760px)" srcset="{{ "characters/suzuka_sp.webp" | relURL }}">
+      <img src="{{ "characters/suzuka_pc.webp" | relURL }}" alt="凉花" width="1264" height="2034">
+    </picture>
+
+    <div class="prose about-prose">{{ .Content }}</div>
+  </article>
+{{ end }}

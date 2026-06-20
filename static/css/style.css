@@ -151,6 +151,15 @@ a:hover { color: var(--accent); }
 .short-page-character .prose { padding-top: 24px; }
 .short-page-character .prose > p:first-child { margin-top: 0; }
 
+/* About page */
+.about-page { min-height: 620px; display: grid; grid-template: "header visual" auto "prose visual" 1fr / minmax(0, 56%) minmax(260px, 38%); column-gap: 6%; align-items: center; padding: 32px 0 48px; }
+.about-header { grid-area: header; align-self: end; padding-bottom: 24px; }
+.about-header h1 { margin: 0; font: 500 clamp(34px, 5vw, 48px)/1.3 var(--serif); }
+.about-prose { grid-area: prose; align-self: start; padding-top: 24px; border-top: 1px solid var(--line); }
+.about-prose > p:first-child { margin-top: 0; }
+.about-visual { grid-area: visual; display: flex; align-items: center; justify-content: center; min-width: 0; }
+.about-visual img { display: block; width: 100%; max-height: min(650px, calc(100vh - 180px)); object-fit: contain; object-position: center; }
+
 .article { max-width: var(--article-width); margin: 0 auto; padding: 40px 0 78px; }
 .article-header { padding-bottom: 34px; border-bottom: 1px solid var(--line); }
 .article-category { margin: 0 0 10px; color: var(--accent-dark); font-size: 12px; font-weight: 600; letter-spacing: .08em; }
@@ -324,6 +333,12 @@ a:hover { color: var(--accent); }
   .posts-page-header { padding-top: 28px; }
   .hero-character { display: none; }
   .short-page-character::after { display: none; }
+  .about-page { min-height: 0; display: grid; grid-template: "header" auto "visual" auto "prose" auto / 1fr; row-gap: .75rem; padding: 24px 0 40px; }
+  .about-header { padding-bottom: 0; }
+  .about-visual { padding-bottom: 0; }
+  .about-visual img { width: clamp(170px, 50vw, 230px); max-width: 100%; height: auto; max-height: 36vh; object-fit: contain; }
+  .about-prose { padding-top: 14px; border-top-color: rgba(111, 174, 232, .08); font-size: 16px; line-height: 1.75; }
+  .about-prose p { margin: .9em 0; }
   .not-found-character::after { display: none; }
   .hero h1 { font-size: clamp(34px, 10vw, 48px); }
   .home-section { padding: 58px 0 68px; }
