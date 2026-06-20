@@ -1,6 +1,6 @@
 ---
 title: '为什么我想在数字世界留下痕迹'
-slug: "为什么我想在数字世界留下痕迹"
+slug: "why-i-want-to-leave-traces-in-the-digital-world"
 date: 2026-06-18T20:00:00+08:00
 draft: false
 categories:
