@@ -6,7 +6,6 @@ draft: false
 categories:
   - 建站手记
 tags:
-  - Hugo
   - 博客
   - 个人站
 description: "关于搭建个人博客，以及为什么仍然愿意认真写下一些东西。"
