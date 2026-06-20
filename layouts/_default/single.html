@@ -1,6 +1,6 @@
-{{ define "main" }}
+  {{ define "main" }}
   {{- $isPost := eq .Section "posts" -}}
-  {{- $h2Count := strings.Count "<h2 id=" .Content -}}
+  {{- $h2Count := partial "heading-count.html" (dict "headings" .Fragments.Headings "level" 2) -}}
   {{- $hasToc := and $isPost (gt $h2Count 1) -}}
   <article class="article{{ if $isPost }} post-article{{ end }}{{ if $hasToc }} has-toc{{ end }}">
     {{ if $isPost }}

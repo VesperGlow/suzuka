@@ -1,6 +1,6 @@
 <aside class="article-sidebar" aria-label="文章目录">
   <div class="article-toc-desktop">
     <p>文章目录</p>
-    {{ .TableOfContents }}
+    {{ replace .TableOfContents `id="TableOfContents"` `id="article-toc-sidebar" aria-label="文章侧边目录"` | safeHTML }}
   </div>
 </aside>

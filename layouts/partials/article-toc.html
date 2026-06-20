@@ -1,4 +1,4 @@
 <details class="article-toc article-toc-mobile">
   <summary>文章目录</summary>
-  {{ .TableOfContents }}
+  {{ replace .TableOfContents `id="TableOfContents"` `id="article-toc-mobile" aria-label="文章目录"` | safeHTML }}
 </details>
