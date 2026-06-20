@@ -27,6 +27,10 @@
         {{ end }}
       </header>
 
+      {{ with .Params.spoiler }}
+        <aside class="article-spoiler" role="note"><strong>剧透警告：</strong>{{ . }}</aside>
+      {{ end }}
+
       {{ if $hasToc }}
         {{ partial "article-toc.html" . }}
       {{ end }}
