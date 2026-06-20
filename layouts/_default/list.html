@@ -6,11 +6,7 @@
     {{ if $isTerm }}
       <div class="term-page-meta">
         <span>共 {{ len .Pages }} 篇文章</span>
-        {{ if eq .Data.Singular "tag" }}
-          <a class="text-link" href="{{ relURL "tags/" }}">全部标签 <span aria-hidden="true">→</span></a>
-        {{ else }}
-          <a class="text-link" href="{{ relURL "posts/" }}">全部文章 <span aria-hidden="true">→</span></a>
-        {{ end }}
+        <a class="text-link" href="{{ relURL "posts/" }}">全部文章 <span aria-hidden="true">→</span></a>
       </div>
     {{ else }}
       {{ with .Description }}<p>{{ . }}</p>{{ end }}

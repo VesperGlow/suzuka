@@ -182,6 +182,16 @@ a:hover { color: var(--accent); }
 .category-filter a:hover { color: var(--accent-dark); background: rgba(228, 238, 248, .34); }
 .category-filter a.active { color: var(--accent-dark); background: rgba(228, 238, 248, .5); border-color: rgba(110, 155, 194, .24); }
 .category-filter a.active span { color: var(--accent); }
+.tag-filter { margin: -8px 0 18px; color: var(--muted); }
+.tag-filter summary { width: fit-content; padding: 3px 0; cursor: pointer; font-size: 12px; list-style: none; }
+.tag-filter summary::-webkit-details-marker { display: none; }
+.tag-filter summary::before { display: inline-block; width: 14px; content: "+"; color: #91a8bc; }
+.tag-filter[open] summary::before { content: "-"; }
+.tag-filter summary:hover { color: var(--accent-dark); }
+.tag-filter-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; padding: 8px 0 2px; }
+.tag-filter-list a { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 8px; color: #68798a; background: rgba(252, 254, 255, .36); border: 1px solid var(--line); border-radius: 6px; font-size: 11px; line-height: 1.5; }
+.tag-filter-list a:hover { color: var(--accent-dark); background: rgba(228, 238, 248, .38); border-color: rgba(110, 155, 194, .23); }
+.tag-filter-list a span { color: #9aa7b3; font-size: 9px; }
 .collection-footer { padding-top: 18px; text-align: right; }
 .category-footer { padding-bottom: 70px; }
 
@@ -281,6 +291,7 @@ a:hover { color: var(--accent); }
   .mobile-header-character + .main-nav { width: calc(100% - 68px); }
   .main-nav > a { flex: 0 0 auto; padding: 7px 9px; }
   .hero { min-height: auto; grid-template-columns: 1fr; gap: 18px; padding: 28px 0 42px; }
+  .posts-page-header { padding-top: 28px; }
   .hero-character { display: none; }
   .short-page-character::after { display: none; }
   .not-found-character::after { display: none; }
@@ -293,6 +304,7 @@ a:hover { color: var(--accent); }
   .post-card-summary { display: block; }
   .post-card-summary .read-more { display: inline-block; margin-top: 2px; }
   .collection-section { padding-bottom: 28px; }
+  .tag-filter-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .category-filter { margin-right: -16px; }
   .category-filter-track { padding-right: 16px; }
   .search-submit { padding-inline: 16px; }

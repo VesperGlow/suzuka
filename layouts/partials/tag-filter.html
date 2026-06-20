@@ -1,0 +1,8 @@
+<details class="tag-filter">
+  <summary>按标签浏览</summary>
+  <nav class="tag-filter-list" aria-label="按标签筛选">
+    {{ range site.Taxonomies.tags.ByCount }}
+      <a href="{{ .Page.RelPermalink }}">{{ .Page.LinkTitle }} <span>· {{ .Count }}</span></a>
+    {{ end }}
+  </nav>
+</details>

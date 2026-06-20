@@ -4,6 +4,7 @@ title = '小凉花厨的网站'
 defaultContentLanguage = 'zh-cn'
 hasCJKLanguage = true
 enableRobotsTXT = true
+disableKinds = ['taxonomy']
 summaryLength = 90
 
 [pagination]

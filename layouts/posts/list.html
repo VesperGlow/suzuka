@@ -1,5 +1,5 @@
 {{ define "main" }}
-  <header class="page-header">
+  <header class="page-header posts-page-header">
     <p class="eyebrow">Collection</p>
     <h1>{{ .Title }}</h1>
     {{ with .Description }}<p>{{ . }}</p>{{ end }}
@@ -13,6 +13,7 @@
       </div>
     </div>
     {{ partial "category-filter.html" . }}
+    {{ partial "tag-filter.html" . }}
     <div class="post-list">
       {{ range first 5 .RegularPages.ByDate.Reverse }}
         {{ partial "post-card.html" . }}
