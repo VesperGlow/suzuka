@@ -11,5 +11,7 @@
     </picture>
 
     <div class="prose about-prose">{{ .Content }}</div>
+    {{ partial "about-uptime.html" . }}
   </article>
+  <script type="module" src="{{ "js/about-uptime.js?v=20260621-1" | relURL }}"></script>
 {{ end }}

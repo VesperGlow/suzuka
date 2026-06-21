@@ -62,4 +62,8 @@
   {{ if $hasToc }}
     {{ partial "article-toc-script.html" . }}
   {{ end }}
+  {{ if $isPost }}
+    {{ partial "article-lightbox.html" . }}
+    <script src="{{ "js/article-lightbox.js?v=20260621-2" | relURL }}" defer></script>
+  {{ end }}
 {{ end }}

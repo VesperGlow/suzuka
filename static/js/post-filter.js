@@ -1,8 +1,18 @@
 document.querySelectorAll("[data-post-filter-scope]").forEach((scope) => {
+  const tagToggle = scope.querySelector(".archive-tag-toggle");
+  const tagPanel = scope.querySelector(".archive-tag-panel");
   const buttons = [...scope.querySelectorAll("[data-filter-type]")];
   const items = [...scope.querySelectorAll("[data-filter-item]")];
   const groups = [...scope.querySelectorAll("[data-filter-group]")];
   const empty = scope.querySelector("[data-filter-empty]");
+
+  if (tagToggle && tagPanel) {
+    tagToggle.addEventListener("click", () => {
+      const expanded = tagToggle.getAttribute("aria-expanded") === "true";
+      tagToggle.setAttribute("aria-expanded", String(!expanded));
+      tagPanel.classList.toggle("is-expanded", !expanded);
+    });
+  }
 
   if (!buttons.length || !items.length) return;
 
