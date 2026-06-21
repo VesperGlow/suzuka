@@ -1,5 +1,5 @@
 {{ define "main" }}
-  {{ $pagefindVersion := now.Unix }}
+  <pagefind-config preload></pagefind-config>
   {{ partial "page-hero.html" (dict "page" . "eyebrow" "Search" "description" "在文章标题、正文和标签中查找。" "class" "search-header") }}
 
   <section class="search" aria-labelledby="search-label">
@@ -23,22 +23,6 @@
     if (input && form && clearButton && status && results) {
       let requestId = 0;
       let debounceTimer;
-      let pagefindPromise;
-
-      function loadPagefind() {
-        if (!pagefindPromise) {
-          pagefindPromise = import("/pagefind/pagefind.js?v={{ $pagefindVersion }}")
-            .then(async (pagefind) => {
-              await pagefind.init();
-              return pagefind;
-            })
-            .catch((error) => {
-              pagefindPromise = undefined;
-              throw error;
-            });
-        }
-        return pagefindPromise;
-      }
 
       function setQueryInUrl(query) {
         const url = new URL(window.location.href);
@@ -86,7 +70,7 @@
         status.textContent = "正在搜索……";
 
         try {
-          const pagefind = await loadPagefind();
+          const pagefind = await window.suzukaLoadPagefind();
           const response = await pagefind.search(normalized);
           if (currentRequest !== requestId) return;
 
@@ -106,7 +90,7 @@
       }
 
       input.addEventListener("focus", () => {
-        loadPagefind().catch((error) => console.error("Search failed:", error));
+        window.suzukaLoadPagefind().catch((error) => console.warn("Pagefind warmup failed:", error));
       });
 
       input.addEventListener("input", () => {
@@ -120,10 +104,10 @@
           return;
         }
 
-        loadPagefind()
+        window.suzukaLoadPagefind()
           .then((pagefind) => pagefind.preload(query))
-          .catch((error) => console.error("Search failed:", error));
-        debounceTimer = window.setTimeout(() => runSearch(query), 200);
+          .catch((error) => console.warn("Pagefind warmup failed:", error));
+        debounceTimer = window.setTimeout(() => runSearch(query), 160);
       });
 
       form.addEventListener("submit", (event) => {
