@@ -1,6 +1,6 @@
 {{ define "main" }}
   {{ $posts := (where site.RegularPages "Section" "posts").ByDate.Reverse }}
-  <div class="home-layout">
+  <div class="home-layout mobile-home-layout">
     <section class="hero home-hero">
       <div class="hero-content">
         <p class="eyebrow">Welcome</p>
@@ -28,5 +28,39 @@
         "class" "home-post-list"
       ) }}
     </div>
+  </div>
+
+  <div class="desktop-home-layout">
+    <section class="hero">
+      <div class="hero-content">
+        <p class="eyebrow">Welcome</p>
+        <h1>把喜欢的故事，<br><em>留在微蓝的庭院里。</em></h1>
+        <p class="hero-copy">{{ site.Params.description }}</p>
+        <div class="hero-actions">
+          <a class="soft-button" href="{{ relURL "posts/" }}">阅读最近的文章 <span aria-hidden="true">→</span></a>
+          <a class="text-link" href="{{ relURL "about/" }}">关于这个庭院</a>
+        </div>
+      </div>
+      <div class="hero-character" aria-hidden="true">
+        <img src="{{ "characters/suzuka_pc.webp" | relURL }}" alt="" width="1264" height="2034">
+      </div>
+    </section>
+
+    <section class="home-section" aria-labelledby="desktop-latest-heading">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Latest notes</p>
+          <h2 id="desktop-latest-heading">最近写下的</h2>
+        </div>
+        <a class="text-link" href="{{ relURL "posts/" }}">查看全部 <span aria-hidden="true">→</span></a>
+      </div>
+      <div class="post-list">
+        {{ range first 6 $posts }}
+          {{ partial "post-card.html" . }}
+        {{ else }}
+          <p class="empty">还没有文章，第一片叶子正在生长。</p>
+        {{ end }}
+      </div>
+    </section>
   </div>
 {{ end }}
