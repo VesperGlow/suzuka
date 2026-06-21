@@ -2,7 +2,6 @@ baseURL = 'https://suzuka-chan.moe/'
 defaultContentLanguage = 'zh-cn'
 defaultContentLanguageInSubdir = false
 enableRobotsTXT = true
-disableKinds = ['taxonomy']
 summaryLength = 90
 
 [pagination]
