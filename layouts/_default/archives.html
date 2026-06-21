@@ -1,26 +1,36 @@
 {{ define "main" }}
-  {{ partial "page-hero.html" (dict "page" . "eyebrow" "All posts" "description" .Description) }}
-  <div class="archive-filtered" data-post-filter-scope>
-    {{ partial "post-filter.html" . }}
-    <div class="archive">
-      {{ range (where site.RegularPages "Section" "posts").GroupByDate "2006" }}
-        <section class="archive-year" data-filter-group>
-          <h2>{{ .Key }}</h2>
-          <div>
-            {{ range .Pages }}
-              {{- $categories := .Params.categories | default (slice) -}}
-              {{- $tags := .Params.tags | default (slice) -}}
-              <a class="archive-item" href="{{ .RelPermalink }}" data-filter-item data-categories="{{ $categories | jsonify }}" data-tags="{{ $tags | jsonify }}">
-                <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "01.02" }}</time>
-                <span class="archive-title">{{ .Title }}</span>
-              </a>
-            {{ end }}
-          </div>
-        </section>
+  {{- $posts := (where site.RegularPages "Section" "posts").ByDate.Reverse -}}
+  <div class="archive-layout" data-post-filter-scope>
+    <aside class="archive-sidebar">
+      <div class="archive-sidebar-inner">
+        <header class="archive-intro">
+          <p class="eyebrow">All posts</p>
+          <h1>{{ .Title }}</h1>
+          {{ with .Description }}<p>{{ . }}</p>{{ end }}
+        </header>
+
+        <div class="archive-filters" data-post-filter-controls>
+          {{ partial "category-filter.html" . }}
+          <section class="archive-tag-filter" aria-labelledby="archive-tag-heading">
+            <h2 id="archive-tag-heading">按标签浏览</h2>
+            <nav class="tag-filter-list" aria-label="按标签筛选">
+              {{ range site.Taxonomies.tags.ByCount }}
+                <button type="button" data-filter-type="tags" data-filter-value="{{ .Page.LinkTitle }}" aria-pressed="false">{{ .Page.LinkTitle }} <span>· {{ .Count }}</span></button>
+              {{ end }}
+            </nav>
+          </section>
+        </div>
+      </div>
+    </aside>
+
+    <section class="archive-card-list" aria-label="全部文章">
+      {{ range $posts }}
+        {{ partial "archive-card.html" . }}
       {{ else }}
         <p class="empty">还没有可以归档的文章。</p>
       {{ end }}
-    </div>
-    <p class="empty filter-empty" data-filter-empty aria-live="polite" hidden>这里暂时还没有文字。</p>
+      <p class="empty filter-empty" data-filter-empty aria-live="polite" hidden>这里暂时还没有文字。</p>
+    </section>
   </div>
+  <script type="module" src="{{ "js/post-filter.js?v=20260620-2" | relURL }}"></script>
 {{ end }}

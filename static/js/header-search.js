@@ -1,6 +1,8 @@
 const root = document.querySelector("[data-header-search]");
 
 if (root) {
+  const tools = root.closest("[data-header-tools]");
+  const toggle = tools?.querySelector("[data-header-search-toggle]");
   const form = root.querySelector(".header-search");
   const input = form.querySelector("input[type='search']");
   const clearButton = root.querySelector(".header-search-clear");
@@ -13,6 +15,17 @@ if (root) {
   let debounceTimer;
   let requestId = 0;
   let suppressFocusOpen = false;
+
+  function setSearchActive(active) {
+    tools?.classList.toggle("search-active", active);
+    toggle?.setAttribute("aria-expanded", String(active));
+  }
+
+  function tagsFor(data) {
+    const value = data.meta?.tags;
+    if (Array.isArray(value)) return value;
+    return typeof value === "string" ? value.split("||").filter(Boolean) : [];
+  }
 
   function openPopover() {
     popover.hidden = false;
@@ -44,6 +57,7 @@ if (root) {
     const title = document.createElement("strong");
     const excerpt = document.createElement("span");
     const meta = document.createElement("small");
+    const tags = document.createElement("small");
 
     article.className = "header-search-result";
     article.setAttribute("role", "listitem");
@@ -52,7 +66,10 @@ if (root) {
     excerpt.className = "header-search-excerpt";
     excerpt.innerHTML = data.excerpt || data.content || "";
     meta.textContent = data.meta?.date || new URL(data.url, window.location.origin).pathname;
-    link.append(title, excerpt, meta);
+    tags.className = "header-search-result-tags";
+    tags.textContent = tagsFor(data).map((tag) => `#${tag}`).join("  ");
+    tags.hidden = !tags.textContent;
+    link.append(title, meta, excerpt, tags);
     article.append(link);
     return article;
   }
@@ -102,6 +119,12 @@ if (root) {
     }
   });
 
+  toggle?.addEventListener("click", (event) => {
+    event.preventDefault();
+    setSearchActive(true);
+    input.focus();
+  });
+
   input.addEventListener("input", () => {
     const query = input.value.trim();
     clearButton.hidden = !input.value;
@@ -125,18 +148,24 @@ if (root) {
     input.value = "";
     clearButton.hidden = true;
     resetResults();
-    input.focus();
+    setSearchActive(false);
+    toggle?.focus();
   });
 
   document.addEventListener("pointerdown", (event) => {
-    if (!root.contains(event.target)) closePopover();
+    if (!root.contains(event.target) && !toggle?.contains(event.target)) {
+      closePopover();
+      setSearchActive(false);
+    }
   });
 
   root.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       closePopover();
+      setSearchActive(false);
       suppressFocusOpen = true;
-      input.focus();
+      if (toggle && !mobileQuery.matches) toggle.focus();
+      else input.blur();
       suppressFocusOpen = false;
     }
   });

@@ -8,6 +8,7 @@
     {{ end }}
 
     <div class="article-main"{{ if $isPost }} data-pagefind-body{{ end }}>
+      {{ if $isPost }}{{ with .Params.tags }}<span hidden data-pagefind-meta="tags">{{ delimit . "||" }}</span>{{ end }}{{ end }}
       <header class="article-header">
         {{ if $isPost }}
           <p class="article-category">

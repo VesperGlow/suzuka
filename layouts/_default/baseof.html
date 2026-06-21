@@ -19,7 +19,7 @@
   <link rel="icon" href="{{ "favicon/favicon.ico" | relURL }}" sizes="16x16 32x32 48x48">
   <link rel="icon" type="image/png" href="{{ "favicon/favicon-orb.png" | relURL }}">
   <link rel="apple-touch-icon" href="{{ "favicon/favicon-orb.png" | relURL }}">
-  <link rel="stylesheet" href="{{ "css/style.css?v=20260621-1" | relURL }}">
+  <link rel="stylesheet" href="{{ "css/style.css?v=20260621-9" | relURL }}">
   <script src="{{ "js/site.js?v=20260621-1" | relURL }}" defer></script>
   {{ with .OutputFormats.Get "rss" }}<link rel="alternate" type="application/rss+xml" href="{{ .RelPermalink }}" title="{{ site.Title }}">{{ end }}
   {{ with .Params.redirectTo }}
@@ -31,7 +31,7 @@
   <a class="skip-link" href="#main-content">跳到正文</a>
   {{ partial "site-header.html" . }}
 
-  <main id="main-content" class="shell{{ if .IsHome }} home-shell{{ end }}{{ if and .IsPage (eq .Section "posts") }} article-shell{{ end }}{{ if .Params.characterDecoration }} short-page-character{{ end }}">
+  <main id="main-content" class="shell{{ if .IsHome }} home-shell{{ end }}{{ if eq .Layout "archives" }} archive-shell{{ end }}{{ if and .IsPage (eq .Section "posts") }} article-shell{{ end }}{{ if .Params.characterDecoration }} short-page-character{{ end }}">
     {{ block "main" . }}{{ end }}
   </main>
 

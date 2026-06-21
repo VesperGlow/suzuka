@@ -1,0 +1,29 @@
+{{- $categories := .Params.categories | default (slice) -}}
+{{- $tags := .Params.tags | default (slice) -}}
+{{- $cover := partial "archive-cover-url.html" . -}}
+<article class="archive-card" data-filter-item data-categories="{{ $categories | jsonify }}" data-tags="{{ $tags | jsonify }}">
+  <a class="archive-card-cover" href="{{ .RelPermalink }}" aria-label="阅读《{{ .Title }}》">
+    {{ if $cover }}
+      <img src="{{ $cover | safeURL }}" alt="" loading="lazy" decoding="async">
+    {{ else }}
+      <span class="archive-card-placeholder" aria-hidden="true"></span>
+    {{ end }}
+  </a>
+  <div class="archive-card-body">
+    <div class="archive-card-meta">
+      <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006年01月02日" }}</time>
+      <span>共 {{ .WordCount }} 字</span>
+      <span>配图 {{ strings.Count "<img" .Content }} 张</span>
+    </div>
+    <h2><a href="{{ .RelPermalink }}">{{ .Title }}</a></h2>
+    <p class="archive-card-summary">{{ with .Description }}{{ . }}{{ else }}{{ .Summary | plainify }}{{ end }}</p>
+    <div class="archive-card-footer">
+      <div class="archive-card-tags" aria-label="文章标签">
+        {{ range $tags }}
+          <button type="button" data-filter-type="tags" data-filter-value="{{ . }}" aria-pressed="false">#{{ . }}</button>
+        {{ end }}
+      </div>
+      <a class="read-more" href="{{ .RelPermalink }}" aria-label="阅读《{{ .Title }}》">开始阅读 <span aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</article>
