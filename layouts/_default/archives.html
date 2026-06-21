@@ -1,5 +1,6 @@
 {{ define "main" }}
   {{- $posts := (where site.RegularPages "Section" "posts").ByDate.Reverse -}}
+  {{- $paginator := .Paginate $posts -}}
   <div class="archive-layout" data-post-filter-scope>
     <aside class="archive-sidebar">
       <div class="archive-sidebar-inner">
@@ -9,28 +10,12 @@
           {{ with .Description }}<p>{{ . }}</p>{{ end }}
         </header>
 
-        <div class="archive-filters" data-post-filter-controls>
-          {{ partial "category-filter.html" . }}
-          <section class="archive-tag-filter" aria-labelledby="archive-tag-heading">
-            <h2 id="archive-tag-heading">按标签浏览</h2>
-            <button class="archive-tag-toggle" type="button" aria-expanded="false" aria-controls="archive-tag-list">
-              <span>按标签浏览</span>
-              <span class="archive-tag-toggle-icon" aria-hidden="true"></span>
-            </button>
-            <div class="archive-tag-panel is-collapsible" id="archive-tag-list">
-              <nav class="tag-filter-list" aria-label="按标签筛选">
-                {{ range site.Taxonomies.tags.ByCount }}
-                  <button type="button" data-filter-type="tags" data-filter-value="{{ .Page.LinkTitle }}" aria-pressed="false">{{ .Page.LinkTitle }} <span>· {{ .Count }}</span></button>
-                {{ end }}
-              </nav>
-            </div>
-          </section>
-        </div>
+        {{ partial "archive-filters.html" . }}
       </div>
     </aside>
 
     <section class="archive-card-list" aria-label="全部文章">
-      {{ range $posts }}
+      {{ range $paginator.Pages }}
         {{ partial "archive-card.html" . }}
       {{ else }}
         <p class="empty">还没有可以归档的文章。</p>
@@ -38,5 +23,6 @@
       <p class="empty filter-empty" data-filter-empty aria-live="polite" hidden>这里暂时还没有文字。</p>
     </section>
   </div>
-  <script type="module" src="{{ "js/post-filter.js?v=20260621-3" | relURL }}"></script>
+  {{ partial "pagination.html" . }}
+  <script type="module" src="{{ partial "asset-url.html" "js/post-filter.js" }}"></script>
 {{ end }}

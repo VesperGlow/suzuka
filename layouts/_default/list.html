@@ -1,12 +1,6 @@
 {{ define "main" }}
   {{ partial "page-hero.html" (dict "page" . "eyebrow" "Collection" "description" .Description) }}
 
-  <div class="post-list">
-    {{ range .Paginator.Pages }}
-      {{ partial "post-card.html" . }}
-    {{ else }}
-      <p class="empty">这里暂时还是空的。</p>
-    {{ end }}
-  </div>
+  {{ partial "post-card-list.html" (dict "pages" .Paginator.Pages) }}
   {{ partial "pagination.html" . }}
 {{ end }}

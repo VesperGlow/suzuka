@@ -13,9 +13,9 @@
     </div>
 
     <picture class="about-visual">
-      <source media="(max-width: 760px)" srcset="{{ "characters/suzuka_sp.webp" | relURL }}">
+      <source media="(max-width: 768px)" srcset="{{ "characters/suzuka_sp.webp" | relURL }}">
       <img src="{{ "characters/suzuka_pc.webp" | relURL }}" alt="凉花" width="1264" height="2034">
     </picture>
   </article>
-  <script type="module" src="{{ "js/about-uptime.js?v=20260621-1" | relURL }}"></script>
+  <script type="module" src="{{ partial "asset-url.html" "js/about-uptime.js" }}"></script>
 {{ end }}

@@ -9,24 +9,7 @@
 
     <div class="article-main"{{ if $isPost }} data-pagefind-body{{ end }}>
       {{ if $isPost }}{{ with .Params.tags }}<span hidden data-pagefind-meta="tags">{{ delimit . "||" }}</span>{{ end }}{{ end }}
-      <header class="article-header">
-        {{ if $isPost }}
-          <p class="article-category">
-            {{ with .GetTerms "categories" }}{{ with index . 0 }}<a href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>{{ end }}{{ else }}文章{{ end }}
-          </p>
-        {{ else }}
-          <p class="eyebrow">Page</p>
-        {{ end }}
-        <h1>{{ .Title }}</h1>
-        {{ if $isPost }}
-          <p class="article-summary">{{ with .Description }}{{ . }}{{ else }}{{ .Summary | plainify }}{{ end }}</p>
-          <div class="article-meta">
-            <time datetime="{{ .Date.Format "2006-01-02" }}" data-pagefind-meta="date">{{ .Date.Format "2006年01月02日" }}</time>
-            <span>约 {{ .ReadingTime }} 分钟阅读</span>
-            {{ range .GetTerms "tags" }}<a class="article-meta-tag" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>{{ end }}
-          </div>
-        {{ end }}
-      </header>
+      {{ partial "article-header.html" (dict "page" . "isPost" $isPost) }}
 
       {{ with .Params.spoiler }}
         <aside class="article-spoiler" role="note"><strong>剧透警告：</strong>{{ . }}</aside>
@@ -38,20 +21,7 @@
 
       <div class="prose">{{ .Content }}</div>
 
-      {{ if $isPost }}
-        {{ $previous := .PrevInSection }}
-        {{ $next := .NextInSection }}
-        {{ if or $previous $next }}
-          <nav class="post-navigation" aria-label="相邻文章">
-            {{ with $previous }}
-              <a class="post-navigation-previous" href="{{ .RelPermalink }}"><span>← 上一篇</span><strong>{{ .Title }}</strong></a>
-            {{ else }}<span></span>{{ end }}
-            {{ with $next }}
-              <a class="post-navigation-next" href="{{ .RelPermalink }}"><span>下一篇 →</span><strong>{{ .Title }}</strong></a>
-            {{ else }}<span></span>{{ end }}
-          </nav>
-        {{ end }}
-      {{ end }}
+      {{ if $isPost }}{{ partial "article-navigation.html" . }}{{ end }}
     </div>
 
     {{ if $hasToc }}
@@ -59,12 +29,10 @@
     {{ end }}
   </article>
 
-  {{ if $hasToc }}
-    {{ partial "article-toc-script.html" . }}
-  {{ end }}
+  {{ if $hasToc }}<script type="module" src="{{ partial "asset-url.html" "js/article-toc.js" }}"></script>{{ end }}
   {{ if $isPost }}
     {{ partial "article-lightbox.html" . }}
-    <script src="{{ "js/article-lightbox.js?v=20260621-7" | relURL }}" defer></script>
-    <script src="{{ "js/article-header-scroll.js?v=20260621-2" | relURL }}" defer></script>
+    <script src="{{ partial "asset-url.html" "js/article-lightbox.js" }}" defer></script>
+    <script src="{{ partial "asset-url.html" "js/article-header-scroll.js" }}" defer></script>
   {{ end }}
 {{ end }}

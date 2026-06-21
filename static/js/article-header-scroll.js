@@ -16,6 +16,10 @@
   };
 
   const hideHeader = () => {
+    if (header.matches(":focus-within") || header.querySelector(".search-active")) {
+      showHeader();
+      return;
+    }
     header.classList.remove("is-header-visible");
     header.classList.add("is-header-hidden");
     document.body.classList.remove("is-header-visible");

@@ -1,40 +1,15 @@
 {{- $tracksReading := and .IsPage (eq .Section "posts") -}}
-<button class="back-to-top{{ if $tracksReading }} back-to-top-reading{{ end }}" type="button" aria-label="回到顶部"{{ if $tracksReading }} style="--reading-remainder: 100%"{{ end }} hidden>
+<button class="back-to-top{{ if $tracksReading }} back-to-top-reading{{ end }}" type="button" aria-label="回到顶部" data-back-to-top{{ if $tracksReading }} style="--reading-remainder: 100%"{{ end }} hidden>
   <span class="back-to-top-hint" aria-hidden="true">↑</span>
   {{ if $tracksReading }}
   <picture class="back-to-top-layer back-to-top-silhouette" aria-hidden="true">
-    <source media="(max-width: 760px)" srcset="{{ "characters/suzuka_sp.webp" | relURL }}">
+    <source media="(max-width: 768px)" srcset="{{ "characters/suzuka_sp.webp" | relURL }}">
     <img src="{{ "characters/suzuka_pc.webp" | relURL }}" alt="" width="1264" height="2034" loading="lazy" decoding="async">
   </picture>
   {{ end }}
   <picture class="back-to-top-layer back-to-top-color">
-    <source media="(max-width: 760px)" srcset="{{ "characters/suzuka_sp.webp" | relURL }}">
+    <source media="(max-width: 768px)" srcset="{{ "characters/suzuka_sp.webp" | relURL }}">
     <img src="{{ "characters/suzuka_pc.webp" | relURL }}" alt="" width="1264" height="2034" loading="lazy" decoding="async">
   </picture>
 </button>
-<script>
-  const backToTop = document.querySelector(".back-to-top");
-
-  if (backToTop) {
-    const updateBackToTop = () => {
-      backToTop.hidden = window.scrollY <= 600;
-
-      if (backToTop.classList.contains("back-to-top-reading")) {
-        const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-        const progress = scrollable > 0 ? Math.min(Math.max(window.scrollY / scrollable, 0), 1) : 1;
-        const visibleImageTop = 8.5;
-        const visibleImageBottom = 92.7;
-        const revealProgress = progress ** 2;
-        const remainder = visibleImageBottom - revealProgress * (visibleImageBottom - visibleImageTop);
-        backToTop.style.setProperty("--reading-remainder", `${remainder.toFixed(2)}%`);
-      }
-    };
-
-    window.addEventListener("scroll", updateBackToTop, { passive: true });
-    backToTop.addEventListener("click", () => {
-      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
-    });
-    updateBackToTop();
-  }
-</script>
+<script type="module" src="{{ partial "asset-url.html" "js/back-to-top.js" }}"></script>

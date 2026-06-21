@@ -5,14 +5,14 @@
       <span class="brand-text">{{ site.Title }}</span>
     </a>
     <div class="header-tools" data-header-tools>
+      {{ partial "header-search.html" . }}
       <nav class="main-nav desktop-header-nav" aria-label="主导航">
-        <a class="nav-search-toggle" href="{{ relURL "search/" }}" data-header-search-toggle aria-label="搜索" aria-controls="header-search-input" aria-expanded="false">
+        <a class="nav-search-toggle" href="{{ relURL "search/" }}" data-header-search-toggle aria-label="搜索" aria-controls="header-search" aria-expanded="false">
           <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
             <circle cx="11" cy="11" r="6.5"></circle>
             <path d="m16 16 4 4"></path>
           </svg>
         </a>
-        {{ partial "header-search.html" . }}
         {{ range site.Menus.main }}
           {{ if ne .PageRef "/pages/search" }}
             {{- $isActive := $.IsMenuCurrent "main" . -}}

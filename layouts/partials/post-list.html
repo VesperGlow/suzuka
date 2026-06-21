@@ -8,13 +8,7 @@
   {{ if .showFilters }}
     {{ partial "post-filter.html" .context }}
   {{ end }}
-  <div class="post-list">
-    {{ range .pages }}
-      {{ partial "post-card.html" . }}
-    {{ else }}
-      <p class="empty">这里暂时还是空的。</p>
-    {{ end }}
-  </div>
+  {{ partial "post-card-list.html" (dict "pages" .pages) }}
   <p class="empty filter-empty" data-filter-empty aria-live="polite" hidden>这里暂时还没有文字。</p>
   {{ with .footerURL }}
     <div class="collection-footer">

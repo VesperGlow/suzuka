@@ -1,0 +1,6 @@
+{{- $url := . | relURL -}}
+{{- with site.Params.assetVersion -}}
+  {{- printf "%s?v=%s" $url . | safeURL -}}
+{{- else -}}
+  {{- $url | safeURL -}}
+{{- end -}}

@@ -1,4 +1,4 @@
-<aside class="article-sidebar" aria-label="文章目录">
+<aside class="article-sidebar" aria-label="文章目录" data-article-toc-desktop>
   <div class="article-toc-desktop">
     <p>文章目录</p>
     {{ replace .TableOfContents `id="TableOfContents"` `id="article-toc-sidebar" aria-label="文章侧边目录"` | safeHTML }}

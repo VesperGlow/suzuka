@@ -14,6 +14,10 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
   const zoomOutButton = lightbox.querySelector("[data-article-lightbox-zoom-out]");
   const resetButton = lightbox.querySelector("[data-article-lightbox-reset]");
   const galleryImages = [...articleContent.querySelectorAll("img")];
+  const requiredElements = [viewer, previewImage, closeButton, previousButton, nextButton,
+    mobilePreviousButton, mobileNextButton, imageCount, zoomInButton, zoomOutButton, resetButton];
+
+  if (requiredElements.every(Boolean) && galleryImages.length) {
   const pointers = new Map();
   const minScale = 1;
   const maxScale = 5;
@@ -63,6 +67,7 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
     const isZoomed = scale > minScale;
     lightbox.classList.toggle("is-zoomed", isZoomed);
     resetButton.textContent = isZoomed ? `${scale.toFixed(1)}×` : "1:1";
+    resetButton.setAttribute("aria-label", isZoomed ? `重置图片缩放，当前 ${scale.toFixed(1)} 倍` : "重置图片缩放");
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => {
       previewImage.style.transform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${scale})`;
@@ -311,9 +316,19 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
   });
 
   lightbox.addEventListener("keydown", (event) => {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-    event.preventDefault();
-    changeImage(event.key === "ArrowLeft" ? -1 : 1);
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      event.preventDefault();
+      changeImage(event.key === "ArrowLeft" ? -1 : 1);
+    } else if (event.key === "+" || event.key === "=") {
+      event.preventDefault();
+      setScale(scale * 1.4, undefined, undefined, true);
+    } else if (event.key === "-") {
+      event.preventDefault();
+      setScale(scale / 1.4, undefined, undefined, true);
+    } else if (event.key === "0") {
+      event.preventDefault();
+      resetTransform(true);
+    }
   });
 
   lightbox.addEventListener("click", (event) => {
@@ -351,4 +366,5 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
     renderTransform();
     positionGalleryNavigation();
   });
+  }
 }

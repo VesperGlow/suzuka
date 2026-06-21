@@ -1,0 +1,7 @@
+<div class="post-list">
+  {{ range .pages }}
+    {{ partial "post-card.html" . }}
+  {{ else }}
+    <p class="empty">{{ .emptyMessage | default "这里暂时还是空的。" }}</p>
+  {{ end }}
+</div>

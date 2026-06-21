@@ -4,17 +4,25 @@ if (root) {
   const tools = root.closest("[data-header-tools]");
   const toggle = tools?.querySelector("[data-header-search-toggle]");
   const form = root.querySelector(".header-search");
-  const input = form.querySelector("input[type='search']");
+  const input = form?.querySelector("input[type='search']");
   const clearButton = root.querySelector(".header-search-clear");
   const popover = root.querySelector(".header-search-popover");
   const status = root.querySelector(".header-search-status");
   const results = root.querySelector(".header-search-results");
   const allResults = root.querySelector(".header-search-all");
+  if (form && input && clearButton && popover && status && results && allResults) {
   const mobileQuery = window.matchMedia("(max-width: 768px)");
   const minimumLength = 2;
   let debounceTimer;
   let requestId = 0;
   let suppressFocusOpen = false;
+
+  const loadPagefind = () => {
+    if (typeof window.suzukaLoadPagefind !== "function") {
+      return Promise.reject(new Error("Pagefind loader is unavailable"));
+    }
+    return window.suzukaLoadPagefind();
+  };
 
   function setSearchActive(active) {
     tools?.classList.toggle("search-active", active);
@@ -88,7 +96,7 @@ if (root) {
     openPopover();
 
     try {
-      const pagefind = await window.suzukaLoadPagefind();
+      const pagefind = await loadPagefind();
       const response = await pagefind.search(normalized);
       if (currentRequest !== requestId) return;
 
@@ -109,9 +117,7 @@ if (root) {
   }
 
   input.addEventListener("focus", () => {
-    window.suzukaLoadPagefind().catch((error) => {
-      console.warn("Pagefind warmup failed:", error);
-    });
+    loadPagefind().catch(() => {});
     if (suppressFocusOpen) return;
     const query = input.value.trim();
     if (query.length >= minimumLength && (results.children.length || status.textContent)) {
@@ -169,4 +175,5 @@ if (root) {
       suppressFocusOpen = false;
     }
   });
+  }
 }

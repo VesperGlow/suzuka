@@ -8,7 +8,7 @@ disableKinds = ['taxonomy']
 summaryLength = 90
 
 [pagination]
-  pagerSize = 10
+  pagerSize = 6
 
 [permalinks]
   posts = '/posts/:year/:month/:slug/'
@@ -18,6 +18,7 @@ summaryLength = 90
   category = 'categories'
 
 [params]
+  assetVersion = '4'
   description = 'Galgame 感想、偶尔浮现的思考，以及落下的生活碎片。'
   author = 'Suzuka'
   images = ['favicon/favicon-orb.webp']

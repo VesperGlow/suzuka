@@ -1,4 +1,5 @@
 <div
+  id="header-search"
   class="header-search-wrap"
   data-header-search
   data-search-url="{{ relURL "search/" }}"
@@ -25,4 +26,4 @@
     <a class="header-search-all" href="{{ relURL "search/" }}">查看全部结果 <span aria-hidden="true">→</span></a>
   </div>
 </div>
-<script type="module" src="{{ "js/header-search.js?v=20260621-3" | relURL }}"></script>
+<script type="module" src="{{ partial "asset-url.html" "js/header-search.js" }}"></script>

@@ -2,134 +2,15 @@
   <pagefind-config preload></pagefind-config>
   {{ partial "page-hero.html" (dict "page" . "eyebrow" "Search" "description" "在文章标题、正文和标签中查找。" "class" "search-header") }}
 
-  <section class="search" aria-labelledby="search-label">
-    <form id="search-form" class="search-form" role="search" action="{{ .RelPermalink }}" method="get">
+  <section class="search" aria-labelledby="search-label" data-search-page>
+    <form class="search-form" role="search" action="{{ .RelPermalink }}" method="get" data-search-form>
       <label id="search-label" class="sr-only" for="search-input">搜索文章</label>
-      <input id="search-input" name="q" type="search" placeholder="输入关键词……" autocomplete="off" autofocus>
-      <button id="search-clear" class="search-clear" type="button" hidden>清空</button>
+      <input id="search-input" name="q" type="search" placeholder="输入关键词……" autocomplete="off" data-search-input>
+      <button class="search-clear" type="button" data-search-clear hidden>清空</button>
       <button class="search-submit" type="submit">搜索</button>
     </form>
-    <p id="search-status" class="search-status" aria-live="polite">输入关键词开始搜索。</p>
-    <div id="search-results" class="search-results"></div>
+    <p class="search-status" aria-live="polite" data-search-status>输入关键词开始搜索。</p>
+    <div class="search-results" data-search-results></div>
   </section>
-
-  <script type="module">
-    const input = document.getElementById("search-input");
-    const form = document.getElementById("search-form");
-    const clearButton = document.getElementById("search-clear");
-    const status = document.getElementById("search-status");
-    const results = document.getElementById("search-results");
-
-    if (input && form && clearButton && status && results) {
-      let requestId = 0;
-      let debounceTimer;
-
-      function setQueryInUrl(query) {
-        const url = new URL(window.location.href);
-        query ? url.searchParams.set("q", query) : url.searchParams.delete("q");
-        window.history.replaceState(null, "", url);
-      }
-
-      function resetSearch() {
-        window.clearTimeout(debounceTimer);
-        requestId += 1;
-        results.replaceChildren();
-        status.textContent = "输入关键词开始搜索。";
-        clearButton.hidden = true;
-      }
-
-      function resultCard(data) {
-        const article = document.createElement("article");
-        const title = document.createElement("h2");
-        const link = document.createElement("a");
-        const date = document.createElement("time");
-        const excerpt = document.createElement("p");
-
-        article.className = "search-result";
-        link.href = data.url;
-        link.textContent = data.meta?.title || data.url;
-        title.append(link);
-        date.className = "search-result-date";
-        date.textContent = data.meta?.date || "";
-        date.hidden = !date.textContent;
-        excerpt.innerHTML = data.excerpt || data.content || "";
-        article.append(title, date, excerpt);
-        return article;
-      }
-
-      async function runSearch(query) {
-        const normalized = query.trim();
-        clearButton.hidden = !input.value;
-
-        if (!normalized) {
-          resetSearch();
-          return;
-        }
-
-        const currentRequest = ++requestId;
-        status.textContent = "正在搜索……";
-
-        try {
-          const pagefind = await window.suzukaLoadPagefind();
-          const response = await pagefind.search(normalized);
-          if (currentRequest !== requestId) return;
-
-          const matches = await Promise.all(response.results.map((result) => result.data()));
-          if (currentRequest !== requestId) return;
-
-          results.replaceChildren(...matches.map(resultCard));
-          status.textContent = matches.length
-            ? `找到 ${matches.length} 篇相关文字`
-            : "没有找到相关文字。也许它还没有落进这座微蓝的庭院里。";
-        } catch (error) {
-          console.error("Search failed:", error);
-          if (currentRequest !== requestId) return;
-          results.replaceChildren();
-          status.textContent = "搜索暂时不可用，请稍后再试。";
-        }
-      }
-
-      input.addEventListener("focus", () => {
-        window.suzukaLoadPagefind().catch((error) => console.warn("Pagefind warmup failed:", error));
-      });
-
-      input.addEventListener("input", () => {
-        const query = input.value.trim();
-        clearButton.hidden = !query;
-        setQueryInUrl(query);
-        window.clearTimeout(debounceTimer);
-
-        if (!query) {
-          resetSearch();
-          return;
-        }
-
-        window.suzukaLoadPagefind()
-          .then((pagefind) => pagefind.preload(query))
-          .catch((error) => console.warn("Pagefind warmup failed:", error));
-        debounceTimer = window.setTimeout(() => runSearch(query), 160);
-      });
-
-      form.addEventListener("submit", (event) => {
-        event.preventDefault();
-        window.clearTimeout(debounceTimer);
-        const query = input.value.trim();
-        setQueryInUrl(query);
-        runSearch(query);
-      });
-
-      clearButton.addEventListener("click", () => {
-        window.clearTimeout(debounceTimer);
-        input.value = "";
-        setQueryInUrl("");
-        resetSearch();
-        input.focus();
-      });
-
-      const initialQuery = new URLSearchParams(window.location.search).get("q") || "";
-      input.value = initialQuery;
-      clearButton.hidden = !initialQuery;
-      if (initialQuery) runSearch(initialQuery);
-    }
-  </script>
+  <script type="module" src="{{ partial "asset-url.html" "js/search-page.js" }}"></script>
 {{ end }}

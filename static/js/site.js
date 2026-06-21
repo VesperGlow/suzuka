@@ -6,6 +6,9 @@
       pagefindPromise = import("/pagefind/pagefind.js").then(async (pagefind) => {
         await pagefind.init();
         return pagefind;
+      }).catch((error) => {
+        pagefindPromise = undefined;
+        throw error;
       });
     }
 

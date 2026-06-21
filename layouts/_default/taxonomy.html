@@ -10,16 +10,11 @@
 
   <div data-post-filter-scope>
     {{ partial "post-filter.html" . }}
-    <div class="post-list">
-      {{ range .Paginator.Pages }}
-        {{ partial "post-card.html" . }}
-      {{ else }}
-        <p class="empty">这里暂时还是空的。</p>
-      {{ end }}
-    </div>
+    {{ partial "post-card-list.html" (dict "pages" .Paginator.Pages) }}
     <p class="empty filter-empty" data-filter-empty aria-live="polite" hidden>这里暂时还没有文字。</p>
   </div>
   {{ partial "pagination.html" . }}
+  <script type="module" src="{{ partial "asset-url.html" "js/post-filter.js" }}"></script>
   {{ if eq .Data.Singular "category" }}
     <div class="collection-footer category-footer">
       <a class="text-link" href="{{ relURL "archives/" }}">查看全部文章 <span aria-hidden="true">→</span></a>
