@@ -165,7 +165,7 @@ other = "Site uptime"
 [uptimeFallback]
 other = "Suzuka has been here for a while"
 [uptimeFormat]
-other = "Suzuka has been here for {days} days, {hours} hours, {minutes} minutes, and {seconds} seconds"
+other = "Suzuka has been here for {days}d {hours}h {minutes}m {seconds}s"
 [aboutImageAlt]
 other = "Suzuka"
 [termsDescription]
