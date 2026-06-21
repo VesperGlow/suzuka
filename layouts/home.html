@@ -16,7 +16,7 @@
     <div class="home-posts">
       {{ partial "post-list.html" (dict
         "context" .
-        "pages" (first 5 $posts)
+        "pages" (first 3 $posts)
         "headingID" "home-latest-heading"
         "eyebrow" "Latest posts"
         "heading" "最近写下的"
@@ -50,7 +50,7 @@
         <a class="text-link" href="{{ relURL "posts/" }}">查看全部 <span aria-hidden="true">→</span></a>
       </div>
       <div class="post-list">
-        {{ range first 6 $posts }}
+        {{ range first 3 $posts }}
           {{ partial "post-card.html" . }}
         {{ else }}
           <p class="empty">还没有文章，第一片叶子正在生长。</p>

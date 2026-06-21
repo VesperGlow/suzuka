@@ -430,10 +430,15 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
 /* Back to top */
 .back-to-top { --back-to-top-offset: 8px; position: fixed; z-index: 12; right: 20px; bottom: 24px; width: 96px; height: 136px; padding: 0; background: transparent; border: 0; cursor: pointer; }
 .back-to-top::before { position: absolute; inset: 34px 5px 3px; content: ""; background: radial-gradient(ellipse at center, rgba(248, 252, 255, .76), rgba(228, 238, 248, .22) 60%, transparent 74%); border-radius: 50%; }
-.back-to-top picture { position: relative; z-index: 1; display: block; width: 100%; height: 136px; overflow: hidden; }
+.back-to-top-layer { position: absolute; z-index: 1; inset: 0; display: block; width: 100%; height: 136px; overflow: hidden; }
+.back-to-top-silhouette { z-index: 1; }
+.back-to-top-color { z-index: 2; }
+.back-to-top-reading .back-to-top-color { clip-path: inset(var(--reading-remainder) 0 0); }
 .back-to-top img { display: block; width: 100%; height: auto; filter: drop-shadow(0 4px 5px rgba(67, 91, 119, .12)); transform: translateY(var(--back-to-top-offset)); }
-.back-to-top-hint { position: absolute; z-index: 2; top: 20px; left: -4px; display: grid; width: 25px; height: 22px; place-items: center; color: var(--muted); background: rgba(248, 252, 255, .74); border: 1px solid var(--frame-line); border-radius: var(--radius-pill); opacity: .58; backdrop-filter: blur(8px); font: var(--font-size-ui)/1 var(--sans); }
-.back-to-top:hover img, .back-to-top:focus-visible img { filter: brightness(1.04) drop-shadow(0 4px 5px rgba(67, 91, 119, .14)); transform: translateY(3px); }
+.back-to-top-silhouette img { filter: brightness(0) saturate(100%) invert(72%) sepia(27%) saturate(1035%) hue-rotate(177deg) brightness(101%) contrast(91%) drop-shadow(0 4px 5px rgba(67, 91, 119, .12)); }
+.back-to-top-hint { position: absolute; z-index: 3; top: 20px; left: -4px; display: grid; width: 25px; height: 22px; place-items: center; color: var(--muted); background: rgba(248, 252, 255, .74); border: 1px solid var(--frame-line); border-radius: var(--radius-pill); opacity: .58; backdrop-filter: blur(8px); font: var(--font-size-ui)/1 var(--sans); }
+.back-to-top:hover img, .back-to-top:focus-visible img { transform: translateY(3px); }
+.back-to-top:hover .back-to-top-color img, .back-to-top:focus-visible .back-to-top-color img { filter: brightness(1.04) drop-shadow(0 4px 5px rgba(67, 91, 119, .14)); }
 .back-to-top:hover .back-to-top-hint, .back-to-top:focus-visible .back-to-top-hint { color: var(--accent-dark); background: rgba(248, 252, 255, .94); border-color: var(--line); opacity: 1; }
 .back-to-top:focus-visible { outline: none; }
 
@@ -535,6 +540,7 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
   .header-tools { position: static; width: auto; flex: 0 0 auto; }
   .main-nav { width: auto; min-height: 34px; }
   .main-nav > a:not(.nav-search-toggle) { display: none; }
+  .main-nav > .nav-search-toggle { margin-right: 10px; }
   .nav-search-toggle::before { position: absolute; inset: -6px; content: ""; }
   .nav-search-toggle svg { width: 21px; height: 21px; }
   .header-tools.search-active .header-search-wrap { position: absolute; z-index: 32; top: calc(100% + 8px); right: 0; left: 0; width: auto; }
@@ -554,7 +560,7 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
   .about-copy { display: contents; }
   .about-header { grid-area: header; padding-bottom: 0; }
   .about-visual { padding-bottom: 0; }
-  .about-visual img { width: clamp(170px, 50vw, 230px); max-width: 100%; height: auto; max-height: 36vh; object-fit: contain; }
+  .about-visual img { width: clamp(170px, 50vw, 205px); max-width: 100%; height: auto; max-height: none; object-fit: contain; }
   .about-prose { grid-area: prose; padding-top: 14px; font-size: 16px; line-height: 1.75; }
   .about-prose p { margin: .9em 0; }
   .about-residency-row { grid-area: uptime; padding: 0 .5rem; }
@@ -582,7 +588,7 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
   .post-navigation-next { text-align: left; }
   .back-to-top { --back-to-top-offset: 5px; right: 10px; bottom: calc(20px + env(safe-area-inset-bottom)); width: 64px; height: 98px; }
   .back-to-top::before { inset: 24px 2px 2px; }
-  .back-to-top picture { height: 98px; }
+  .back-to-top-layer { height: 98px; }
   .back-to-top img { transform: translateY(5px); }
   .back-to-top-hint { top: 12px; left: -3px; width: 21px; height: 19px; font-size: var(--font-size-xs); }
   .back-to-top:hover img, .back-to-top:focus-visible img { transform: translateY(2px); }

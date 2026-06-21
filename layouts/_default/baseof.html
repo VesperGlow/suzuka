@@ -17,9 +17,9 @@
   {{ template "_internal/twitter_cards.html" . }}
   {{ template "_internal/schema.html" . }}
   <link rel="icon" href="{{ "favicon/favicon.ico" | relURL }}" sizes="16x16 32x32 48x48">
-  <link rel="icon" type="image/png" href="{{ "favicon/favicon-orb.png" | relURL }}">
-  <link rel="apple-touch-icon" href="{{ "favicon/favicon-orb.png" | relURL }}">
-  <link rel="stylesheet" href="{{ "css/style.css?v=20260621-34" | relURL }}">
+  <link rel="icon" type="image/webp" href="{{ "favicon/favicon-orb.webp" | relURL }}">
+  <link rel="apple-touch-icon" href="{{ "favicon/apple-touch-icon.png" | relURL }}">
+  <link rel="stylesheet" href="{{ "css/style.css?v=20260621-39" | relURL }}">
   <script src="{{ "js/site.js?v=20260621-1" | relURL }}" defer></script>
   {{ with .OutputFormats.Get "rss" }}<link rel="alternate" type="application/rss+xml" href="{{ .RelPermalink }}" title="{{ site.Title }}">{{ end }}
   {{ with .Params.redirectTo }}
