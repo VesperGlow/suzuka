@@ -4,17 +4,6 @@
       <img class="brand-mark" src="{{ "favicon/favicon-orb.png" | relURL }}" alt="" width="34" height="34">
       <span class="brand-text">{{ site.Title }}</span>
     </a>
-    {{ if ne .Layout "about" }}
-      <img class="mobile-header-character" src="{{ "characters/suzuka_sp.webp" | relURL }}" alt="" width="1290" height="2076" aria-hidden="true">
-    {{ end }}
-    <nav class="main-nav" aria-label="主导航">
-      {{ range site.Menus.main }}
-        {{- $isActive := $.IsMenuCurrent "main" . -}}
-        {{- if and (eq .PageRef "/posts") (or (hasPrefix $.RelPermalink "/posts/") (hasPrefix $.RelPermalink "/archives/") (hasPrefix $.RelPermalink "/categories/") (hasPrefix $.RelPermalink "/tags/")) -}}
-          {{- $isActive = true -}}
-        {{- end -}}
-        <a href="{{ .URL }}"{{ if $isActive }} class="active" aria-current="page"{{ end }}>{{ .Name }}</a>
-      {{ end }}
-    </nav>
+    {{ partial "header-search.html" . }}
   </div>
 </header>

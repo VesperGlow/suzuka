@@ -1,24 +1,8 @@
 {{ define "main" }}
-  {{ partial "page-hero.html" (dict "page" . "eyebrow" "Collection" "description" .Description "class" "posts-page-header") }}
-
-  <section class="collection-section" aria-labelledby="latest-posts-heading">
-    <div class="section-heading">
-      <div>
-        <p class="eyebrow">Latest posts</p>
-        <h2 id="latest-posts-heading">最近的文章</h2>
-      </div>
-    </div>
-    {{ partial "category-filter.html" . }}
-    {{ partial "tag-filter.html" . }}
-    <div class="post-list">
-      {{ range first 5 .RegularPages.ByDate.Reverse }}
-        {{ partial "post-card.html" . }}
-      {{ else }}
-        <p class="empty">这里暂时还是空的。</p>
-      {{ end }}
-    </div>
-    <div class="collection-footer">
-      <a class="text-link" href="{{ relURL "archives/" }}">查看全部文章 <span aria-hidden="true">→</span></a>
-    </div>
+  <section class="not-found" aria-labelledby="posts-redirect-heading">
+    <p class="eyebrow">All posts</p>
+    <h1 id="posts-redirect-heading">正在前往全部文章</h1>
+    <p>如果页面没有自动跳转，请直接打开归档页。</p>
+    <a class="soft-button" href="{{ relURL "archives/" }}">查看全部文章</a>
   </section>
 {{ end }}

@@ -1,11 +1,12 @@
 {{- $current := . -}}
 {{- $posts := where site.RegularPages "Section" "posts" -}}
+{{- $allActive := not (or (eq .Data.Singular "category") (eq .Data.Singular "tag")) -}}
 <nav class="category-filter" aria-label="按分类筛选">
   <div class="category-filter-track">
-    <a href="{{ relURL "posts/" }}"{{ if ne .Data.Singular "category" }} class="active" aria-current="page"{{ end }}>全部 <span>· {{ len $posts }}</span></a>
+    <button type="button" data-filter-type="all" data-filter-value=""{{ if $allActive }} class="active" aria-pressed="true"{{ else }} aria-pressed="false"{{ end }}>全部 <span>· {{ len $posts }}</span></button>
     {{ range site.Taxonomies.categories.ByCount }}
       {{- $isActive := and (eq $current.Data.Singular "category") (eq $current.RelPermalink .Page.RelPermalink) -}}
-      <a href="{{ .Page.RelPermalink }}"{{ if $isActive }} class="active" aria-current="page"{{ end }}>{{ .Page.LinkTitle }} <span>· {{ .Count }}</span></a>
+      <button type="button" data-filter-type="categories" data-filter-value="{{ .Page.LinkTitle }}"{{ if $isActive }} class="active" aria-pressed="true"{{ else }} aria-pressed="false"{{ end }}>{{ .Page.LinkTitle }} <span>· {{ .Count }}</span></button>
     {{ end }}
   </div>
 </nav>

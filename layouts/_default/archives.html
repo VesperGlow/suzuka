@@ -1,20 +1,26 @@
 {{ define "main" }}
   {{ partial "page-hero.html" (dict "page" . "eyebrow" "All posts" "description" .Description) }}
-  <div class="archive">
-    {{ range (where site.RegularPages "Section" "posts").GroupByDate "2006" }}
-      <section class="archive-year">
-        <h2>{{ .Key }}</h2>
-        <div>
-          {{ range .Pages }}
-            <a class="archive-item" href="{{ .RelPermalink }}">
-              <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "01.02" }}</time>
-              <span class="archive-title">{{ .Title }}</span>
-            </a>
-          {{ end }}
-        </div>
-      </section>
-    {{ else }}
-      <p class="empty">还没有可以归档的文章。</p>
-    {{ end }}
+  <div class="archive-filtered" data-post-filter-scope>
+    {{ partial "post-filter.html" . }}
+    <div class="archive">
+      {{ range (where site.RegularPages "Section" "posts").GroupByDate "2006" }}
+        <section class="archive-year" data-filter-group>
+          <h2>{{ .Key }}</h2>
+          <div>
+            {{ range .Pages }}
+              {{- $categories := .Params.categories | default (slice) -}}
+              {{- $tags := .Params.tags | default (slice) -}}
+              <a class="archive-item" href="{{ .RelPermalink }}" data-filter-item data-categories="{{ $categories | jsonify }}" data-tags="{{ $tags | jsonify }}">
+                <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "01.02" }}</time>
+                <span class="archive-title">{{ .Title }}</span>
+              </a>
+            {{ end }}
+          </div>
+        </section>
+      {{ else }}
+        <p class="empty">还没有可以归档的文章。</p>
+      {{ end }}
+    </div>
+    <p class="empty filter-empty" data-filter-empty aria-live="polite" hidden>这里暂时还没有文字。</p>
   </div>
 {{ end }}

@@ -1,0 +1,29 @@
+<div
+  class="header-search-wrap"
+  data-header-search
+  data-pagefind-url="{{ "pagefind/pagefind.js" | relURL }}"
+  data-search-url="{{ relURL "search/" }}"
+>
+  <form class="header-search" role="search" action="{{ relURL "search/" }}" method="get" novalidate>
+    <label class="sr-only" for="header-search-input">搜索文章</label>
+    <input
+      id="header-search-input"
+      name="q"
+      type="search"
+      placeholder="搜索庭院里的文字……"
+      autocomplete="off"
+      aria-label="搜索文章"
+      aria-controls="header-search-popover"
+      aria-expanded="false"
+    >
+    <button class="header-search-clear" type="button" aria-label="清除搜索" hidden>清除</button>
+    <button class="header-search-submit" type="submit">搜索</button>
+  </form>
+
+  <div id="header-search-popover" class="header-search-popover" hidden>
+    <p class="header-search-status" aria-live="polite"></p>
+    <div class="header-search-results" role="list" aria-label="搜索结果"></div>
+    <a class="header-search-all" href="{{ relURL "search/" }}">查看全部结果 <span aria-hidden="true">→</span></a>
+  </div>
+</div>
+<script type="module" src="{{ "js/header-search.js?v=20260620-1" | relURL }}"></script>

@@ -35,21 +35,3 @@ summaryLength = 90
     startLevel = 2
     endLevel = 3
     ordered = false
-
-[menu]
-  [[menu.main]]
-    name = '首页'
-    pageRef = '/'
-    weight = 10
-  [[menu.main]]
-    name = '文章'
-    pageRef = '/posts'
-    weight = 20
-  [[menu.main]]
-    name = '搜索'
-    pageRef = '/pages/search'
-    weight = 60
-  [[menu.main]]
-    name = '凉花'
-    pageRef = '/pages/about'
-    weight = 70

@@ -1,4 +1,6 @@
-<article class="post-card">
+{{- $categories := .Params.categories | default (slice) -}}
+{{- $tags := .Params.tags | default (slice) -}}
+<article class="post-card" data-filter-item data-categories="{{ $categories | jsonify }}" data-tags="{{ $tags | jsonify }}">
   <time class="post-date" datetime="{{ .Date.Format "2006-01-02" }}">
     <strong>{{ .Date.Format "01.02" }}</strong>
     <span>{{ .Date.Format "2006" }}</span>
