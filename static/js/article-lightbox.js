@@ -5,9 +5,15 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
   const viewer = lightbox.querySelector("[data-article-lightbox-viewer]");
   const previewImage = lightbox.querySelector("[data-article-lightbox-image]");
   const closeButton = lightbox.querySelector("[data-article-lightbox-close]");
+  const previousButton = lightbox.querySelector("[data-article-lightbox-prev]");
+  const nextButton = lightbox.querySelector("[data-article-lightbox-next]");
+  const mobilePreviousButton = lightbox.querySelector("[data-article-lightbox-mobile-prev]");
+  const mobileNextButton = lightbox.querySelector("[data-article-lightbox-mobile-next]");
+  const imageCount = lightbox.querySelector("[data-article-lightbox-count]");
   const zoomInButton = lightbox.querySelector("[data-article-lightbox-zoom-in]");
   const zoomOutButton = lightbox.querySelector("[data-article-lightbox-zoom-out]");
   const resetButton = lightbox.querySelector("[data-article-lightbox-reset]");
+  const galleryImages = [...articleContent.querySelectorAll("img")];
   const pointers = new Map();
   const minScale = 1;
   const maxScale = 5;
@@ -22,6 +28,7 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
   let moved = false;
   let suppressBackgroundClick = false;
   let lastTap = null;
+  let currentIndex = 0;
 
   function imageLinkFor(image) {
     const link = image.closest("a[href]");
@@ -53,11 +60,22 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
   }
 
   function renderTransform() {
+    const isZoomed = scale > minScale;
+    lightbox.classList.toggle("is-zoomed", isZoomed);
+    resetButton.textContent = isZoomed ? `${scale.toFixed(1)}×` : "1:1";
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => {
       previewImage.style.transform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${scale})`;
-      viewer.classList.toggle("is-zoomed", scale > minScale);
+      viewer.classList.toggle("is-zoomed", isZoomed);
     });
+  }
+
+  function positionGalleryNavigation() {
+    lightbox.style.setProperty("--lightbox-image-width", `${previewImage.offsetWidth}px`);
+    const sideGutter = Math.max(0, (viewer.clientWidth - previewImage.offsetWidth) / 2);
+    const buttonWidth = previousButton.offsetWidth || 52;
+    const navSide = Math.max(12, (sideGutter - buttonWidth) / 2);
+    lightbox.style.setProperty("--lightbox-nav-side", `${navSide}px`);
   }
 
   function animateTransform() {
@@ -96,6 +114,36 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
 
   function toggleZoom(clientX, clientY) {
     setScale(scale > minScale ? minScale : 2.5, clientX, clientY, true);
+  }
+
+  function updateGalleryControls() {
+    const hasMultipleImages = galleryImages.length > 1;
+    previousButton.hidden = !hasMultipleImages;
+    nextButton.hidden = !hasMultipleImages;
+    mobilePreviousButton.hidden = !hasMultipleImages;
+    mobileNextButton.hidden = !hasMultipleImages;
+    imageCount.hidden = !hasMultipleImages;
+    imageCount.textContent = hasMultipleImages ? `${currentIndex + 1} / ${galleryImages.length}` : "";
+  }
+
+  function showImage(index) {
+    currentIndex = (index + galleryImages.length) % galleryImages.length;
+    const image = galleryImages[currentIndex];
+    resetTransform();
+    previewImage.src = imageLinkFor(image) || image.currentSrc || image.src;
+    previewImage.alt = image.alt || "";
+    updateGalleryControls();
+
+    if (galleryImages.length > 1) {
+      const adjacent = galleryImages[(currentIndex + 1) % galleryImages.length];
+      const preload = new Image();
+      preload.src = imageLinkFor(adjacent) || adjacent.currentSrc || adjacent.src;
+    }
+  }
+
+  function changeImage(direction) {
+    if (galleryImages.length < 2) return;
+    showImage(currentIndex + direction);
   }
 
   function points() {
@@ -146,6 +194,7 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
 
   function handlePointerDown(event) {
     if (event.pointerType === "mouse" && event.button !== 0) return;
+    if (event.target instanceof Element && event.target.closest(".article-lightbox-nav")) return;
     event.preventDefault();
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY, startedOnImage: event.target === previewImage });
     viewer.setPointerCapture(event.pointerId);
@@ -195,8 +244,16 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
     event.preventDefault();
     const pointer = pointers.get(event.pointerId);
     const endedOnImage = pointer.startedOnImage;
+    const swipeX = gesture?.type === "drag" ? event.clientX - gesture.x : 0;
+    const swipeY = gesture?.type === "drag" ? event.clientY - gesture.y : 0;
     const tap = { time: performance.now(), x: event.clientX, y: event.clientY, pointerType: event.pointerType };
     pointers.delete(event.pointerId);
+
+    if (event.type === "pointerup" && scale === minScale && pointers.size === 0 && Math.abs(swipeX) > 60 && Math.abs(swipeX) > Math.abs(swipeY) * 1.25) {
+      moved = true;
+      lastTap = null;
+      changeImage(swipeX < 0 ? 1 : -1);
+    }
 
     if (event.type === "pointerup" && endedOnImage && !moved && pointers.size === 0) {
       if (lastTap && tap.pointerType === lastTap.pointerType && tap.time - lastTap.time < 380 && Math.hypot(tap.x - lastTap.x, tap.y - lastTap.y) < 32) {
@@ -230,6 +287,10 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
   zoomInButton.addEventListener("click", () => setScale(scale * 1.4, undefined, undefined, true));
   zoomOutButton.addEventListener("click", () => setScale(scale / 1.4, undefined, undefined, true));
   resetButton.addEventListener("click", () => resetTransform(true));
+  previousButton.addEventListener("click", () => changeImage(-1));
+  nextButton.addEventListener("click", () => changeImage(1));
+  mobilePreviousButton.addEventListener("click", () => changeImage(-1));
+  mobileNextButton.addEventListener("click", () => changeImage(1));
   closeButton.addEventListener("click", closeLightbox);
 
   articleContent.addEventListener("click", (event) => {
@@ -243,12 +304,16 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
 
     event.preventDefault();
     trigger = image.closest("a[href]") || image;
-    resetTransform();
-    previewImage.src = imageLinkFor(image) || image.currentSrc || image.src;
-    previewImage.alt = image.alt || "";
+    showImage(galleryImages.indexOf(image));
     document.documentElement.classList.add("lightbox-open");
     lightbox.showModal();
     closeButton.focus();
+  });
+
+  lightbox.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    changeImage(event.key === "ArrowLeft" ? -1 : 1);
   });
 
   lightbox.addEventListener("click", (event) => {
@@ -269,16 +334,21 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
     clearTimeout(transitionTimer);
     clearTimeout(suppressClickTimer);
     previewImage.classList.remove("is-transforming");
+    lightbox.classList.remove("is-zoomed");
     previewImage.removeAttribute("style");
     previewImage.removeAttribute("src");
     previewImage.alt = "";
     trigger?.focus({ preventScroll: true });
     trigger = null;
   });
-  previewImage.addEventListener("load", () => resetTransform());
+  previewImage.addEventListener("load", () => {
+    resetTransform();
+    positionGalleryNavigation();
+  });
   window.addEventListener("resize", () => {
     if (!lightbox.open) return;
     clampTranslation();
     renderTransform();
+    positionGalleryNavigation();
   });
 }

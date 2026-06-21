@@ -1,11 +1,26 @@
 <dialog class="article-lightbox" data-article-lightbox aria-label="图片预览">
   <div class="article-lightbox-viewer" data-article-lightbox-viewer>
     <img data-article-lightbox-image alt="" draggable="false">
+    <button class="article-lightbox-nav article-lightbox-prev" type="button" data-article-lightbox-prev aria-label="上一张图片" hidden>
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m14.5 6-6 6 6 6"/></svg>
+    </button>
+    <button class="article-lightbox-nav article-lightbox-next" type="button" data-article-lightbox-next aria-label="下一张图片" hidden>
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></svg>
+    </button>
   </div>
-  <div class="article-lightbox-controls" role="group" aria-label="图片缩放控制">
+  <div class="article-lightbox-count" data-article-lightbox-count aria-live="polite" hidden></div>
+  <button class="article-lightbox-close" type="button" data-article-lightbox-close aria-label="关闭图片预览">
+    <span aria-hidden="true">×</span>
+  </button>
+  <div class="article-lightbox-controls" role="group" aria-label="图片预览控制">
+    <button class="article-lightbox-control-nav" type="button" data-article-lightbox-mobile-prev aria-label="上一张图片" hidden>
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m14.5 6-6 6 6 6"/></svg>
+    </button>
     <button type="button" data-article-lightbox-zoom-out aria-label="缩小图片">−</button>
     <button type="button" data-article-lightbox-reset aria-label="重置图片缩放">1:1</button>
     <button type="button" data-article-lightbox-zoom-in aria-label="放大图片">+</button>
-    <button type="button" data-article-lightbox-close aria-label="关闭图片预览">×</button>
+    <button class="article-lightbox-control-nav" type="button" data-article-lightbox-mobile-next aria-label="下一张图片" hidden>
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></svg>
+    </button>
   </div>
 </dialog>
