@@ -641,7 +641,6 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
   .header-tools { width: auto; flex: 0 0 auto; }
   .header-actions { min-height: 2.5rem; }
   .main-nav { display: none; }
-  .nav-search-toggle::before { position: absolute; inset: -6px; content: ""; }
   .header-search-wrap { right: 0; left: 0; width: auto; }
   .header-search-popover { right: auto; left: 0; width: 100%; }
   .header-search-results { max-height: min(46dvh, 420px); overscroll-behavior: contain; }
