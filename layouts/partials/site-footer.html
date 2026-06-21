@@ -2,8 +2,6 @@
   <div class="shell footer-inner">
     <span class="footer-copyright">© {{ now.Year }} {{ site.Params.author }}</span>
     <span class="footer-note">
-      <span>文字在此安静生长</span>
-      <i aria-hidden="true"></i>
       {{ with site.Home.OutputFormats.Get "rss" }}<a href="{{ .RelPermalink }}">RSS</a>{{ end }}
       <i aria-hidden="true"></i>
       <a href="https://icp.gov.moe/?keyword=20266779" target="_blank" rel="noopener noreferrer">萌ICP备20266779号</a>

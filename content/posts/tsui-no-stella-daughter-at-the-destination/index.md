@@ -3,6 +3,8 @@ title: "当运送的货物成为女儿：《星之终途》通关感想"
 slug: "tsui-no-stella-daughter-at-the-destination"
 date: 2026-06-20T15:00:00+08:00
 draft: false
+aliases:
+  - "/posts/2026/06/tsui-no-stella-daughter-at-the-destination/"
 categories:
   - 游戏感想
 tags:

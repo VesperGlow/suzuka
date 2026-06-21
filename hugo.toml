@@ -10,15 +10,18 @@ summaryLength = 90
 [pagination]
   pagerSize = 6
 
+[outputs]
+  home = ['HTML', 'RSS', 'JSON']
+
 [permalinks]
-  posts = '/posts/:year/:month/:slug/'
+  posts = '/posts/:slugorcontentbasename/'
 
 [taxonomies]
   tag = 'tags'
   category = 'categories'
 
 [params]
-  assetVersion = '5'
+  assetVersion = '14'
   description = 'Galgame 感想、偶尔浮现的思考，以及落下的生活碎片。'
   author = 'Suzuka'
   images = ['favicon/favicon-orb.webp']

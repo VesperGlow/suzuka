@@ -3,6 +3,8 @@ title: "在沉入海中的夏天，记住与你相遇的四十五天"
 slug: "atri-my-dear-moments"
 date: 2026-06-19T20:00:00+08:00
 draft: false
+aliases:
+  - "/posts/2026/06/atri-my-dear-moments/"
 categories:
   - 游戏感想
 tags:

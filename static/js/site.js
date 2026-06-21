@@ -1,12 +1,87 @@
 (() => {
   let pagefindPromise;
 
+  const escapeHTML = (value) => {
+    const element = document.createElement("span");
+    element.textContent = value;
+    return element.innerHTML;
+  };
+
+  const excerptFor = (content, query) => {
+    const normalizedContent = content.toLocaleLowerCase();
+    const normalizedQuery = query.toLocaleLowerCase();
+    const matchIndex = normalizedContent.indexOf(normalizedQuery);
+    const start = Math.max(0, matchIndex < 0 ? 0 : matchIndex - 45);
+    const excerpt = content.slice(start, start + 130).trim();
+    return `${start > 0 ? "…" : ""}${escapeHTML(excerpt)}${start + 130 < content.length ? "…" : ""}`;
+  };
+
+  const loadFallbackSearch = async () => {
+    const response = await fetch("/index.json", {
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) throw new Error(`Search index request failed: ${response.status}`);
+
+    const { items = [] } = await response.json();
+    return {
+      preload: async () => {},
+      search: async (query) => {
+        const terms = query
+          .toLocaleLowerCase()
+          .split(/\s+/)
+          .filter(Boolean);
+
+        const matches = items
+          .map((item) => {
+            const title = item.title.toLocaleLowerCase();
+            const tags = item.tags.join(" ").toLocaleLowerCase();
+            const content = item.content.toLocaleLowerCase();
+            if (!terms.every((term) => title.includes(term) || tags.includes(term) || content.includes(term))) {
+              return null;
+            }
+
+            const score = terms.reduce(
+              (total, term) => total + (title.includes(term) ? 4 : 0) + (tags.includes(term) ? 2 : 0) + (content.includes(term) ? 1 : 0),
+              0
+            );
+            return { item, score };
+          })
+          .filter(Boolean)
+          .sort((a, b) => b.score - a.score);
+
+        return {
+          results: matches.map(({ item }) => ({
+            data: async () => ({
+              url: item.url,
+              meta: { title: item.title, date: item.date, tags: item.tags },
+              excerpt: excerptFor(item.content, query),
+            }),
+          })),
+        };
+      },
+    };
+  };
+
+  const loadSearch = async () => {
+    try {
+      const response = await fetch("/pagefind/pagefind.js", { method: "HEAD" });
+      const contentType = response.headers.get("content-type") || "";
+      if (!response.ok || !/javascript|ecmascript/.test(contentType)) {
+        throw new Error("Pagefind module is not deployed");
+      }
+
+      const pagefind = await import("/pagefind/pagefind.js");
+      await pagefind.init();
+      return pagefind;
+    } catch (error) {
+      console.info("Using the Hugo search index:", error.message);
+      return loadFallbackSearch();
+    }
+  };
+
   window.suzukaLoadPagefind = () => {
     if (!pagefindPromise) {
-      pagefindPromise = import("/pagefind/pagefind.js").then(async (pagefind) => {
-        await pagefind.init();
-        return pagefind;
-      }).catch((error) => {
+      pagefindPromise = loadSearch().catch((error) => {
         pagefindPromise = undefined;
         throw error;
       });

@@ -3,6 +3,8 @@ title: "向流星许下的愿望，是与你度过普通的每一天"
 slug: "nagaruboshi-a-wish-star-summer-wish"
 date: 2026-06-21T15:00:00+08:00
 draft: false
+aliases:
+  - "/posts/2026/06/nagaruboshi-a-wish-star-summer-wish/"
 categories:
   - 游戏感想
 tags:

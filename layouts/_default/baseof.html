@@ -10,7 +10,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="{{ $description }}">
-  <meta name="theme-color" content="#f5f9fc">
+  <meta id="theme-color" name="theme-color" content="#f5f9fc">
+  <script src="{{ partial "asset-url.html" "js/theme.js" }}"></script>
   <title>{{ if .IsHome }}{{ site.Title }}{{ else }}{{ .Title }} · {{ site.Title }}{{ end }}</title>
   <link rel="canonical" href="{{ $canonicalURL }}">
   {{ template "_internal/opengraph.html" . }}
