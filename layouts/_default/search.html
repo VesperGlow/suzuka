@@ -1,15 +1,15 @@
 {{ define "main" }}
   <pagefind-config preload></pagefind-config>
-  {{ partial "page-hero.html" (dict "page" . "eyebrow" "Search" "description" "在文章标题、正文和标签中查找。" "class" "search-header") }}
+  {{ partial "page-hero.html" (dict "page" . "eyebrow" (i18n "searchEyebrow") "description" (i18n "searchDescription") "class" "search-header") }}
 
-  <section class="search" aria-labelledby="search-label" data-search-page>
+  <section class="search" aria-labelledby="search-label" data-search-page data-i18n-prompt="{{ i18n "searchPrompt" }}" data-i18n-searching="{{ i18n "searching" }}" data-i18n-found="{{ i18n "searchFound" (dict "Count" "{count}") }}" data-i18n-empty="{{ i18n "searchEmpty" }}" data-i18n-unavailable="{{ i18n "searchUnavailable" }}">
     <form class="search-form" role="search" action="{{ .RelPermalink }}" method="get" data-search-form>
-      <label id="search-label" class="sr-only" for="search-input">搜索文章</label>
-      <input id="search-input" name="q" type="search" placeholder="输入关键词……" autocomplete="off" data-search-input>
-      <button class="search-clear" type="button" data-search-clear hidden>清空</button>
-      <button class="search-submit" type="submit">搜索</button>
+      <label id="search-label" class="sr-only" for="search-input">{{ i18n "searchArticles" }}</label>
+      <input id="search-input" name="q" type="search" placeholder="{{ i18n "searchPlaceholder" }}" autocomplete="off" data-search-input>
+      <button class="search-clear" type="button" data-search-clear hidden>{{ i18n "clear" }}</button>
+      <button class="search-submit" type="submit">{{ i18n "search" }}</button>
     </form>
-    <p class="search-status" aria-live="polite" data-search-status>输入关键词开始搜索。</p>
+    <p class="search-status" aria-live="polite" data-search-status>{{ i18n "searchPrompt" }}</p>
     <div class="search-results" data-search-results></div>
   </section>
   <script type="module" src="{{ partial "asset-url.html" "js/search-page.js" }}"></script>

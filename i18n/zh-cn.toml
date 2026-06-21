@@ -1,0 +1,186 @@
+[skipToContent]
+other = "跳到正文"
+[homeEyebrow]
+other = "Welcome"
+[homeHeading]
+other = "把喜欢的故事，<br><em>留在微蓝的庭院里。</em>"
+[aboutSuzuka]
+other = "关于凉花"
+[latestEyebrow]
+other = "Latest notes"
+[latestHeading]
+other = "最近写下的"
+[viewAllPosts]
+other = "查看全部文章"
+[collectionEyebrow]
+other = "Collection"
+[indexEyebrow]
+other = "Index"
+[pageEyebrow]
+other = "Page"
+[allPostsEyebrow]
+other = "All posts"
+[searchEyebrow]
+other = "Search"
+[searchDescription]
+other = "在文章标题、正文和标签中查找。"
+[searchArticles]
+other = "搜索文章"
+[searchPlaceholder]
+other = "输入关键词……"
+[headerSearchPlaceholder]
+other = "搜索庭院里的文字……"
+[clear]
+other = "清空"
+[clearSearch]
+other = "清除搜索"
+[search]
+other = "搜索"
+[searchPrompt]
+other = "输入关键词开始搜索。"
+[searching]
+other = "正在搜索……"
+[searchFound]
+other = "找到 {{ .Count }} 篇相关文字"
+[searchEmpty]
+other = "没有找到相关文字。也许它还没有落进这座微蓝的庭院里。"
+[headerSearchEmpty]
+other = "没有找到相关文字。"
+[searchUnavailable]
+other = "搜索索引暂时不可用，请稍后再试。"
+[headerSearchUnavailable]
+other = "搜索暂时不可用，请稍后再试。"
+[searchResults]
+other = "搜索结果"
+[viewAllResults]
+other = "查看全部结果"
+[empty]
+other = "这里暂时还是空的。"
+[filterEmpty]
+other = "这里暂时还没有文字。"
+[archiveEmpty]
+other = "还没有可以归档的文章。"
+[all]
+other = "全部"
+[filterByCategory]
+other = "按分类筛选"
+[browseByTag]
+other = "按标签浏览"
+[filterByTag]
+other = "按标签筛选"
+[allPosts]
+other = "全部文章"
+[postCount]
+other = "共 {{ .Count }} 篇文章"
+[wordCount]
+other = "共 {{ .Count }} 字"
+[imageCount]
+other = "配图 {{ .Count }} 张"
+[postTags]
+other = "文章标签"
+[readPost]
+other = "阅读《{{ .Title }}》"
+[readMore]
+other = "开始阅读"
+[postFallback]
+other = "文章"
+[readingTime]
+other = "约 {{ .Count }} 分钟阅读"
+[spoilerWarning]
+other = "剧透警告："
+[recentPosts]
+other = "最近文章"
+[recentHeading]
+other = "最近写下"
+[viewAll]
+other = "查看全部"
+[tableOfContents]
+other = "文章目录"
+[sidebarToc]
+other = "文章侧边目录"
+[adjacentPosts]
+other = "相邻文章"
+[previousPost]
+other = "← 上一篇"
+[nextPost]
+other = "下一篇 →"
+[pagination]
+other = "文章分页"
+[firstPage]
+other = "« 起始页"
+[firstPageLabel]
+other = "前往起始页"
+[previousPage]
+other = "‹ 上一页"
+[nextPage]
+other = "下一页 ›"
+[lastPage]
+other = "末尾页 »"
+[lastPageLabel]
+other = "前往末尾页"
+[pageNumbers]
+other = "页码"
+[currentPageLabel]
+other = "第 {{ .Number }} 页"
+[goToPageLabel]
+other = "前往第 {{ .Number }} 页"
+[mainNavigation]
+other = "主导航"
+[brandHomeLabel]
+other = "{{ .Title }}，返回首页"
+[searchLabel]
+other = "搜索"
+[themeToLight]
+other = "切换到白天模式"
+[themeToDark]
+other = "切换到黑夜模式"
+[backToTop]
+other = "回到顶部"
+[languageSwitcher]
+other = "切换到英文"
+[switchLanguage]
+other = "EN"
+[imagePreview]
+other = "图片预览"
+[previousImage]
+other = "上一张图片"
+[nextImage]
+other = "下一张图片"
+[closeImagePreview]
+other = "关闭图片预览"
+[imagePreviewControls]
+other = "图片预览控制"
+[zoomOut]
+other = "缩小图片"
+[resetZoom]
+other = "重置图片缩放"
+[resetZoomAt]
+other = "重置图片缩放，当前 {{ .Scale }} 倍"
+[zoomIn]
+other = "放大图片"
+[uptimeLabel]
+other = "小站存活时间"
+[uptimeFallback]
+other = "凉花已常驻许久"
+[uptimeFormat]
+other = "凉花已常驻 {days} 天 {hours} 小时 {minutes} 分钟 {seconds} 秒"
+[aboutImageAlt]
+other = "凉花"
+[termsDescription]
+other = "循着关键词，找到散落在不同日子里的记录。"
+[archiveListLabel]
+other = "全部文章"
+[postsRedirectTitle]
+other = "正在前往全部文章"
+[postsRedirectDescription]
+other = "如果页面没有自动跳转，请直接打开归档页。"
+[notFoundTitle]
+other = "迷路在微蓝庭院里"
+[notFoundDescription]
+other = "这条小径没有通向页面，沿着蓝色微光回去吧。"
+[backHome]
+other = "回到首页"
+[sourceCode]
+other = "网站源码"
+[dateFormat]
+other = "2006年01月02日"

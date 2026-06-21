@@ -9,7 +9,7 @@
     {{ partial "post-filter.html" .context }}
   {{ end }}
   {{ partial "post-card-list.html" (dict "pages" .pages) }}
-  <p class="empty filter-empty" data-filter-empty aria-live="polite" hidden>这里暂时还没有文字。</p>
+  <p class="empty filter-empty" data-filter-empty aria-live="polite" hidden>{{ i18n "filterEmpty" }}</p>
   {{ with .footerURL }}
     <div class="collection-footer">
       <a class="text-link" href="{{ . }}">{{ $.footerLabel }} <span aria-hidden="true">→</span></a>

@@ -1,0 +1,186 @@
+[skipToContent]
+other = "Skip to content"
+[homeEyebrow]
+other = "Welcome"
+[homeHeading]
+other = "Keeping beloved stories<br><em>in a pale blue garden.</em>"
+[aboutSuzuka]
+other = "About Suzuka"
+[latestEyebrow]
+other = "Latest notes"
+[latestHeading]
+other = "Recently written"
+[viewAllPosts]
+other = "View all posts"
+[collectionEyebrow]
+other = "Collection"
+[indexEyebrow]
+other = "Index"
+[pageEyebrow]
+other = "Page"
+[allPostsEyebrow]
+other = "All posts"
+[searchEyebrow]
+other = "Search"
+[searchDescription]
+other = "Search article titles, content, and tags."
+[searchArticles]
+other = "Search posts"
+[searchPlaceholder]
+other = "Enter keywords..."
+[headerSearchPlaceholder]
+other = "Search the garden..."
+[clear]
+other = "Clear"
+[clearSearch]
+other = "Clear search"
+[search]
+other = "Search"
+[searchPrompt]
+other = "Enter keywords to start searching."
+[searching]
+other = "Searching..."
+[searchFound]
+other = "Found {{ .Count }} matching posts"
+[searchEmpty]
+other = "No matching posts were found."
+[headerSearchEmpty]
+other = "No matching posts found."
+[searchUnavailable]
+other = "The search index is temporarily unavailable. Please try again later."
+[headerSearchUnavailable]
+other = "Search is temporarily unavailable. Please try again later."
+[searchResults]
+other = "Search results"
+[viewAllResults]
+other = "View all results"
+[empty]
+other = "Nothing here yet."
+[filterEmpty]
+other = "No posts match this filter."
+[archiveEmpty]
+other = "There are no posts to archive yet."
+[all]
+other = "All"
+[filterByCategory]
+other = "Filter by category"
+[browseByTag]
+other = "Browse by tag"
+[filterByTag]
+other = "Filter by tag"
+[allPosts]
+other = "All posts"
+[postCount]
+other = "{{ .Count }} posts"
+[wordCount]
+other = "{{ .Count }} words"
+[imageCount]
+other = "{{ .Count }} images"
+[postTags]
+other = "Post tags"
+[readPost]
+other = "Read {{ .Title }}"
+[readMore]
+other = "Read more"
+[postFallback]
+other = "Post"
+[readingTime]
+other = "{{ .Count }} min read"
+[spoilerWarning]
+other = "Spoiler warning:"
+[recentPosts]
+other = "Recent posts"
+[recentHeading]
+other = "Recently written"
+[viewAll]
+other = "View all"
+[tableOfContents]
+other = "Table of contents"
+[sidebarToc]
+other = "Article table of contents"
+[adjacentPosts]
+other = "Adjacent posts"
+[previousPost]
+other = "← Previous post"
+[nextPost]
+other = "Next post →"
+[pagination]
+other = "Post pagination"
+[firstPage]
+other = "« First"
+[firstPageLabel]
+other = "Go to first page"
+[previousPage]
+other = "‹ Previous"
+[nextPage]
+other = "Next ›"
+[lastPage]
+other = "Last »"
+[lastPageLabel]
+other = "Go to last page"
+[pageNumbers]
+other = "Page numbers"
+[currentPageLabel]
+other = "Page {{ .Number }}"
+[goToPageLabel]
+other = "Go to page {{ .Number }}"
+[mainNavigation]
+other = "Main navigation"
+[brandHomeLabel]
+other = "{{ .Title }}, return home"
+[searchLabel]
+other = "Search"
+[themeToLight]
+other = "Switch to light mode"
+[themeToDark]
+other = "Switch to dark mode"
+[backToTop]
+other = "Back to top"
+[languageSwitcher]
+other = "Switch to Chinese"
+[switchLanguage]
+other = "中"
+[imagePreview]
+other = "Image preview"
+[previousImage]
+other = "Previous image"
+[nextImage]
+other = "Next image"
+[closeImagePreview]
+other = "Close image preview"
+[imagePreviewControls]
+other = "Image preview controls"
+[zoomOut]
+other = "Zoom out"
+[resetZoom]
+other = "Reset image zoom"
+[resetZoomAt]
+other = "Reset image zoom, currently {{ .Scale }}x"
+[zoomIn]
+other = "Zoom in"
+[uptimeLabel]
+other = "Site uptime"
+[uptimeFallback]
+other = "Suzuka has been here for a while"
+[uptimeFormat]
+other = "Suzuka has been here for {days} days, {hours} hours, {minutes} minutes, and {seconds} seconds"
+[aboutImageAlt]
+other = "Suzuka"
+[termsDescription]
+other = "Follow the keywords to notes scattered across different days."
+[archiveListLabel]
+other = "All posts"
+[postsRedirectTitle]
+other = "Taking you to all posts"
+[postsRedirectDescription]
+other = "If the page does not redirect automatically, open the archive."
+[notFoundTitle]
+other = "Lost in the pale blue garden"
+[notFoundDescription]
+other = "This path does not lead to a page. Follow the blue light back."
+[backHome]
+other = "Back home"
+[sourceCode]
+other = "Source code"
+[dateFormat]
+other = "January 2, 2006"

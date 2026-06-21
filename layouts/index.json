@@ -3,7 +3,7 @@
   {{- $items = $items | append (dict
     "url" .RelPermalink
     "title" .Title
-    "date" (.Date.Format "2006年01月02日")
+    "date" (.Date | time.Format (i18n "dateFormat"))
     "tags" (.Params.tags | default (slice))
     "content" (.Plain | htmlUnescape | replaceRE `\s+` " " | strings.TrimSpace)
   ) -}}

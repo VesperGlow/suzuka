@@ -7,13 +7,13 @@
   </time>
   <div class="post-card-body">
     <div class="post-card-meta">
-      <span>共 {{ .WordCount }} 字</span>
-      <span>配图 {{ strings.Count "<img" .Content }} 张</span>
+      <span>{{ i18n "wordCount" (dict "Count" .WordCount) }}</span>
+      <span>{{ i18n "imageCount" (dict "Count" (strings.Count "<img" .Content)) }}</span>
     </div>
     <h2><a href="{{ .RelPermalink }}">{{ .Title }}</a></h2>
     <div class="post-card-summary">
       <p>{{ with .Description }}{{ . }}{{ else }}{{ .Summary | plainify }}{{ end }}</p>
-      <a class="read-more" href="{{ .RelPermalink }}" aria-label="阅读《{{ .Title }}》">开始阅读 <span aria-hidden="true">→</span></a>
+      <a class="read-more" href="{{ .RelPermalink }}" aria-label="{{ i18n "readPost" (dict "Title" .Title) }}">{{ i18n "readMore" }} <span aria-hidden="true">→</span></a>
     </div>
   </div>
 </article>

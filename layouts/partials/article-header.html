@@ -3,17 +3,17 @@
 <header class="article-header">
   {{ if $isPost }}
     <p class="article-category">
-      {{ with $page.GetTerms "categories" }}{{ with index . 0 }}<a href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>{{ end }}{{ else }}文章{{ end }}
+      {{ with $page.GetTerms "categories" }}{{ with index . 0 }}<a href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>{{ end }}{{ else }}{{ i18n "postFallback" }}{{ end }}
     </p>
   {{ else }}
-    <p class="eyebrow">Page</p>
+    <p class="eyebrow">{{ i18n "pageEyebrow" }}</p>
   {{ end }}
   <h1>{{ $page.Title }}</h1>
   {{ if $isPost }}
     <p class="article-summary">{{ with $page.Description }}{{ . }}{{ else }}{{ $page.Summary | plainify }}{{ end }}</p>
     <div class="article-meta">
-      <time datetime="{{ $page.Date.Format "2006-01-02" }}" data-pagefind-meta="date">{{ $page.Date.Format "2006年01月02日" }}</time>
-      <span>约 {{ $page.ReadingTime }} 分钟阅读</span>
+      <time datetime="{{ $page.Date.Format "2006-01-02" }}" data-pagefind-meta="date">{{ $page.Date | time.Format (i18n "dateFormat") }}</time>
+      <span>{{ i18n "readingTime" (dict "Count" $page.ReadingTime) }}</span>
       {{ range $page.GetTerms "tags" }}<a class="article-meta-tag" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>{{ end }}
     </div>
   {{ end }}

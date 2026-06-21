@@ -1,10 +1,10 @@
 {{- $currentPage := . -}}
 {{- $recentPosts := first 6 (where site.RegularPages "Section" "posts").ByDate.Reverse -}}
 {{- $currentYear := "" -}}
-<aside class="article-index" aria-label="最近文章">
+<aside class="article-index" aria-label="{{ i18n "recentPosts" }}">
   <div class="article-index-inner">
-    <p class="article-index-heading">最近写下</p>
-    <nav aria-label="最近文章">
+    <p class="article-index-heading">{{ i18n "recentHeading" }}</p>
+    <nav aria-label="{{ i18n "recentPosts" }}">
       {{ range $recentPosts }}
         {{- $year := .Date.Format "2006" -}}
         {{- if ne $year $currentYear -}}
@@ -16,7 +16,7 @@
           <span>{{ .Title }}</span>
         </a>
       {{ end }}
-      <a class="article-index-all" href="{{ relURL "archives/" }}">查看全部 <span aria-hidden="true">→</span></a>
+      <a class="article-index-all" href="{{ relLangURL "archives/" }}">{{ i18n "viewAll" }} <span aria-hidden="true">→</span></a>
     </nav>
   </div>
 </aside>

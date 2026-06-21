@@ -2,7 +2,7 @@
   <article class="about-page">
     <div class="about-copy">
       <header class="about-header">
-        <p class="eyebrow">Page</p>
+        <p class="eyebrow">{{ i18n "pageEyebrow" }}</p>
         <h1>{{ .Title }}</h1>
       </header>
 
@@ -14,7 +14,7 @@
 
     <picture class="about-visual">
       <source media="(max-width: 768px)" srcset="{{ "characters/suzuka_sp.webp" | relURL }}">
-      <img src="{{ "characters/suzuka_pc.webp" | relURL }}" alt="凉花" width="1264" height="2034">
+      <img src="{{ "characters/suzuka_pc.webp" | relURL }}" alt="{{ i18n "aboutImageAlt" }}" width="1264" height="2034">
     </picture>
   </article>
   <script type="module" src="{{ partial "asset-url.html" "js/about-uptime.js" }}"></script>

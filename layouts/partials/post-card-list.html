@@ -2,6 +2,6 @@
   {{ range .pages }}
     {{ partial "post-card.html" . }}
   {{ else }}
-    <p class="empty">{{ .emptyMessage | default "这里暂时还是空的。" }}</p>
+    <p class="empty">{{ .emptyMessage | default (i18n "empty") }}</p>
   {{ end }}
 </div>

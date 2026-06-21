@@ -1,13 +1,27 @@
 <header class="site-header is-header-visible">
   <div class="shell header-inner">
-    <a class="site-brand" href="{{ site.Home.RelPermalink }}" aria-label="{{ site.Title }}，返回首页">
+    <a class="site-brand" href="{{ site.Home.RelPermalink }}" aria-label="{{ i18n "brandHomeLabel" (dict "Title" site.Title) }}">
       <img class="brand-mark" src="{{ "favicon/favicon-orb.webp" | relURL }}" alt="" width="34" height="34">
       <span class="brand-text">{{ site.Title }}</span>
     </a>
     <div class="header-tools" data-header-tools>
       {{ partial "header-search.html" . }}
-      <nav class="main-nav desktop-header-nav" aria-label="主导航">
-        <button class="theme-toggle" type="button" data-theme-toggle aria-label="切换到黑夜模式" title="切换到黑夜模式">
+      {{- $languageURL := "" -}}
+      {{- $languageLocale := "" -}}
+      {{- range first 1 .Translations -}}
+        {{- $languageURL = .RelPermalink -}}
+        {{- $languageLocale = .Language.Locale -}}
+      {{- end -}}
+      {{- if not $languageURL -}}
+        {{- range hugo.Sites -}}
+          {{- if ne .Language.Lang site.Language.Lang -}}
+            {{- $languageURL = .Home.RelPermalink -}}
+            {{- $languageLocale = .Language.Locale -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+      <div class="header-actions">
+        <button class="header-action theme-toggle" type="button" data-theme-toggle data-label-light="{{ i18n "themeToLight" }}" data-label-dark="{{ i18n "themeToDark" }}" aria-label="{{ i18n "themeToDark" }}" title="{{ i18n "themeToDark" }}">
           <svg class="theme-toggle-moon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
             <path d="M20 15.2A8.4 8.4 0 0 1 8.8 4 8.4 8.4 0 1 0 20 15.2Z"></path>
           </svg>
@@ -16,16 +30,19 @@
             <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"></path>
           </svg>
         </button>
-        <a class="nav-search-toggle" href="{{ relURL "search/" }}" data-header-search-toggle aria-label="搜索" aria-controls="header-search" aria-expanded="false">
+        <a class="header-action nav-search-toggle" href="{{ relLangURL "search/" }}" data-header-search-toggle aria-label="{{ i18n "searchLabel" }}" aria-controls="header-search" aria-expanded="false">
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
             <circle cx="10.5" cy="10.5" r="7.25"></circle>
             <path d="m15.8 15.8 5.2 5.2"></path>
           </svg>
         </a>
+        <a class="header-action lang-toggle language-switcher" href="{{ $languageURL }}" lang="{{ $languageLocale }}" hreflang="{{ $languageLocale }}" aria-label="{{ i18n "languageSwitcher" }}">{{ i18n "switchLanguage" }}</a>
+      </div>
+      <nav class="main-nav desktop-header-nav" aria-label="{{ i18n "mainNavigation" }}">
         {{ range site.Menus.main }}
-          {{ if ne .PageRef "/pages/search" }}
+          {{ if ne .Identifier "search" }}
             {{- $isActive := $.IsMenuCurrent "main" . -}}
-            {{- if and (eq .PageRef "/posts") (or (hasPrefix $.RelPermalink "/posts/") (hasPrefix $.RelPermalink "/archives/") (hasPrefix $.RelPermalink "/categories/") (hasPrefix $.RelPermalink "/tags/")) -}}
+            {{- if and (eq .Identifier "posts") (in (slice "posts" "archives" "categories" "tags") $.Section) -}}
               {{- $isActive = true -}}
             {{- end -}}
             <a href="{{ .URL }}"{{ if $isActive }} class="active" aria-current="page"{{ end }}>{{ .Name }}</a>

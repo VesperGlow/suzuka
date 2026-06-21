@@ -12,7 +12,7 @@
       {{ partial "article-header.html" (dict "page" . "isPost" $isPost) }}
 
       {{ with .Params.spoiler }}
-        <aside class="article-spoiler" role="note"><strong>剧透警告：</strong>{{ . }}</aside>
+        <aside class="article-spoiler" role="note"><strong>{{ i18n "spoilerWarning" }}</strong>{{ . }}</aside>
       {{ end }}
 
       {{ if $hasToc }}

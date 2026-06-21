@@ -17,11 +17,11 @@
 
   const updateControls = () => {
     const isDark = getResolvedTheme() === "dark";
-    const label = isDark ? "切换到白天模式" : "切换到黑夜模式";
     const themeColor = document.querySelector("#theme-color");
 
     if (themeColor) themeColor.content = isDark ? "#0e1626" : "#f5f9fc";
     document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
+      const label = isDark ? button.dataset.labelLight : button.dataset.labelDark;
       button.setAttribute("aria-label", label);
       button.setAttribute("title", label);
       button.setAttribute("aria-pressed", String(isDark));

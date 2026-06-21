@@ -1,5 +1,5 @@
 {{- $tracksReading := and .IsPage (eq .Section "posts") -}}
-<button class="back-to-top{{ if $tracksReading }} back-to-top-reading{{ end }}" type="button" aria-label="回到顶部" data-back-to-top{{ if $tracksReading }} style="--reading-remainder: 100%"{{ end }} hidden>
+<button class="back-to-top{{ if $tracksReading }} back-to-top-reading{{ end }}" type="button" aria-label="{{ i18n "backToTop" }}" data-back-to-top{{ if $tracksReading }} style="--reading-remainder: 100%"{{ end }} hidden>
   <span class="back-to-top-hint" aria-hidden="true">↑</span>
   {{ if $tracksReading }}
   <picture class="back-to-top-layer back-to-top-silhouette" aria-hidden="true">

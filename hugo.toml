@@ -1,8 +1,6 @@
 baseURL = 'https://suzuka-chan.moe/'
-locale = 'zh-CN'
-title = '小凉花厨的网站'
 defaultContentLanguage = 'zh-cn'
-hasCJKLanguage = true
+defaultContentLanguageInSubdir = false
 enableRobotsTXT = true
 disableKinds = ['taxonomy']
 summaryLength = 90
@@ -21,8 +19,7 @@ summaryLength = 90
   category = 'categories'
 
 [params]
-  assetVersion = '14'
-  description = 'Galgame 感想、偶尔浮现的思考，以及落下的生活碎片。'
+  assetVersion = '18'
   author = 'Suzuka'
   images = ['favicon/favicon-orb.webp']
 
@@ -40,20 +37,60 @@ summaryLength = 90
     endLevel = 3
     ordered = false
 
-[menu]
-  [[menu.main]]
-    name = '首页'
-    pageRef = '/'
-    weight = 10
-  [[menu.main]]
-    name = '文章'
-    pageRef = '/posts'
-    weight = 20
-  [[menu.main]]
-    name = '搜索'
-    pageRef = '/pages/search'
-    weight = 60
-  [[menu.main]]
-    name = '凉花'
-    pageRef = '/pages/about'
-    weight = 70
+[languages]
+  [languages.zh-cn]
+    locale = 'zh-CN'
+    label = '中文'
+    title = '小凉花厨的网站'
+    weight = 1
+    hasCJKLanguage = true
+    [languages.zh-cn.params]
+      description = 'Galgame 感想、偶尔浮现的思考，以及落下的生活碎片。'
+    [[languages.zh-cn.menus.main]]
+      identifier = 'home'
+      name = '首页'
+      pageRef = '/'
+      weight = 10
+    [[languages.zh-cn.menus.main]]
+      identifier = 'posts'
+      name = '文章'
+      pageRef = '/posts'
+      weight = 20
+    [[languages.zh-cn.menus.main]]
+      identifier = 'search'
+      name = '搜索'
+      pageRef = '/pages/search'
+      weight = 60
+    [[languages.zh-cn.menus.main]]
+      identifier = 'about'
+      name = '凉花'
+      pageRef = '/pages/about'
+      weight = 70
+
+  [languages.en]
+    locale = 'en'
+    label = 'English'
+    title = "Suzuka's Garden"
+    weight = 2
+    [languages.en.params]
+      description = 'Thoughts on visual novels, passing reflections, and fragments of everyday life.'
+    [[languages.en.menus.main]]
+      identifier = 'home'
+      name = 'Home'
+      pageRef = '/'
+      weight = 10
+    [[languages.en.menus.main]]
+      identifier = 'posts'
+      name = 'Posts'
+      pageRef = '/posts'
+      weight = 20
+    [[languages.en.menus.main]]
+      identifier = 'search'
+      name = 'Search'
+      pageRef = '/pages/search'
+      weight = 60
+    [[languages.en.menus.main]]
+      identifier = 'about'
+      name = 'Suzuka'
+      pageRef = '/pages/about'
+      weight = 70

@@ -10,6 +10,7 @@ if (root) {
   const status = root.querySelector(".header-search-status");
   const results = root.querySelector(".header-search-results");
   const allResults = root.querySelector(".header-search-all");
+  const messages = root.dataset;
   if (form && input && clearButton && popover && status && results && allResults) {
   const mobileQuery = window.matchMedia("(max-width: 768px)");
   const minimumLength = 2;
@@ -91,13 +92,15 @@ if (root) {
 
     const currentRequest = ++requestId;
     results.replaceChildren();
-    status.textContent = "正在搜索……";
+    status.textContent = messages.i18nSearching;
     updateAllResultsLink(normalized);
     openPopover();
 
     try {
       const pagefind = await loadPagefind();
-      const response = await pagefind.search(normalized);
+      const response = await pagefind.search(normalized, {
+        filters: { language: document.documentElement.lang.toLowerCase().startsWith("en") ? "en" : "zh-cn" },
+      });
       if (currentRequest !== requestId) return;
 
       const limit = mobileQuery.matches ? 4 : 5;
@@ -107,12 +110,12 @@ if (root) {
       if (currentRequest !== requestId) return;
 
       results.replaceChildren(...matches.map(resultItem));
-      status.textContent = matches.length ? "" : "没有找到相关文字。";
+      status.textContent = matches.length ? "" : messages.i18nEmpty;
     } catch (error) {
       console.error("Header search failed:", error);
       if (currentRequest !== requestId) return;
       results.replaceChildren();
-      status.textContent = "搜索暂时不可用，请稍后再试。";
+      status.textContent = messages.i18nUnavailable;
     }
   }
 

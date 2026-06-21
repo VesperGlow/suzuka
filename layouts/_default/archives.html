@@ -5,7 +5,7 @@
     <aside class="archive-sidebar">
       <div class="archive-sidebar-inner">
         <header class="archive-intro">
-          <p class="eyebrow">All posts</p>
+          <p class="eyebrow">{{ i18n "allPostsEyebrow" }}</p>
           <h1>{{ .Title }}</h1>
           {{ with .Description }}<p>{{ . }}</p>{{ end }}
         </header>
@@ -14,13 +14,13 @@
       </div>
     </aside>
 
-    <section class="archive-card-list" aria-label="全部文章">
+    <section class="archive-card-list" aria-label="{{ i18n "archiveListLabel" }}">
       {{ range $paginator.Pages }}
         {{ partial "archive-card.html" . }}
       {{ else }}
-        <p class="empty">还没有可以归档的文章。</p>
+        <p class="empty">{{ i18n "archiveEmpty" }}</p>
       {{ end }}
-      <p class="empty filter-empty" data-filter-empty aria-live="polite" hidden>这里暂时还没有文字。</p>
+      <p class="empty filter-empty" data-filter-empty aria-live="polite" hidden>{{ i18n "filterEmpty" }}</p>
     </section>
   </div>
   {{ partial "pagination.html" . }}

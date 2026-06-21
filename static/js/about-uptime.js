@@ -16,7 +16,11 @@ if (uptime) {
     const minutes = Math.floor(elapsed / minute);
     const seconds = Math.floor((elapsed % minute) / second);
 
-    uptime.textContent = `凉花已常驻 ${days} 天 ${hours} 小时 ${minutes} 分钟 ${seconds} 秒`;
+    uptime.textContent = uptime.dataset.uptimeFormat
+      .replace("{days}", days)
+      .replace("{hours}", hours)
+      .replace("{minutes}", minutes)
+      .replace("{seconds}", seconds);
   }
 
   updateUptime();

@@ -6,6 +6,7 @@ if (root) {
   const clearButton = root.querySelector("[data-search-clear]");
   const status = root.querySelector("[data-search-status]");
   const results = root.querySelector("[data-search-results]");
+  const messages = root.dataset;
 
   if (input && form && clearButton && status && results) {
     let requestId = 0;
@@ -28,7 +29,7 @@ if (root) {
       window.clearTimeout(debounceTimer);
       requestId += 1;
       results.replaceChildren();
-      status.textContent = "输入关键词开始搜索。";
+      status.textContent = messages.i18nPrompt;
       clearButton.hidden = true;
     }
 
@@ -61,11 +62,13 @@ if (root) {
       }
 
       const currentRequest = ++requestId;
-      status.textContent = "正在搜索……";
+      status.textContent = messages.i18nSearching;
 
       try {
         const pagefind = await loadPagefind();
-        const response = await pagefind.search(normalized);
+        const response = await pagefind.search(normalized, {
+          filters: { language: document.documentElement.lang.toLowerCase().startsWith("en") ? "en" : "zh-cn" },
+        });
         if (currentRequest !== requestId) return;
 
         const matches = await Promise.all(response.results.map((result) => result.data()));
@@ -73,13 +76,13 @@ if (root) {
 
         results.replaceChildren(...matches.map(resultCard));
         status.textContent = matches.length
-          ? `找到 ${matches.length} 篇相关文字`
-          : "没有找到相关文字。也许它还没有落进这座微蓝的庭院里。";
+          ? messages.i18nFound.replace("{count}", matches.length)
+          : messages.i18nEmpty;
       } catch (error) {
         console.warn("Search is unavailable:", error);
         if (currentRequest !== requestId) return;
         results.replaceChildren();
-        status.textContent = "搜索索引暂时不可用，请稍后再试。";
+        status.textContent = messages.i18nUnavailable;
       }
     }
 

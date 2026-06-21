@@ -1,7 +1,7 @@
 {{- $current := . -}}
 <details class="tag-filter">
-  <summary>按标签浏览</summary>
-  <nav class="tag-filter-list" aria-label="按标签筛选">
+  <summary>{{ i18n "browseByTag" }}</summary>
+  <nav class="tag-filter-list" aria-label="{{ i18n "filterByTag" }}">
     {{ range site.Taxonomies.tags.ByCount }}
       {{- $isActive := and (eq $current.Data.Singular "tag") (eq $current.RelPermalink .Page.RelPermalink) -}}
       <button type="button" data-filter-type="tags" data-filter-value="{{ .Page.LinkTitle }}"{{ if $isActive }} class="active" aria-pressed="true"{{ else }} aria-pressed="false"{{ end }}>{{ .Page.LinkTitle }} <span>· {{ .Count }}</span></button>

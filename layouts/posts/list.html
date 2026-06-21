@@ -1,8 +1,8 @@
 {{ define "main" }}
   <section class="not-found" aria-labelledby="posts-redirect-heading">
-    <p class="eyebrow">All posts</p>
-    <h1 id="posts-redirect-heading">正在前往全部文章</h1>
-    <p>如果页面没有自动跳转，请直接打开归档页。</p>
-    <a class="soft-button" href="{{ relURL "archives/" }}">查看全部文章</a>
+    <p class="eyebrow">{{ i18n "allPostsEyebrow" }}</p>
+    <h1 id="posts-redirect-heading">{{ i18n "postsRedirectTitle" }}</h1>
+    <p>{{ i18n "postsRedirectDescription" }}</p>
+    <a class="soft-button" href="{{ relLangURL "archives/" }}">{{ i18n "viewAllPosts" }}</a>
   </section>
 {{ end }}

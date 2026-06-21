@@ -67,7 +67,9 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
     const isZoomed = scale > minScale;
     lightbox.classList.toggle("is-zoomed", isZoomed);
     resetButton.textContent = isZoomed ? `${scale.toFixed(1)}×` : "1:1";
-    resetButton.setAttribute("aria-label", isZoomed ? `重置图片缩放，当前 ${scale.toFixed(1)} 倍` : "重置图片缩放");
+    resetButton.setAttribute("aria-label", isZoomed
+      ? lightbox.dataset.resetZoomAt.replace("{scale}", scale.toFixed(1))
+      : lightbox.dataset.resetZoom);
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => {
       previewImage.style.transform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${scale})`;

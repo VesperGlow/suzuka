@@ -1,8 +1,8 @@
 {{ define "main" }}
   <section class="not-found not-found-character">
     <p class="eyebrow">404</p>
-    <h1>迷路在微蓝庭院里</h1>
-    <p>这条小径没有通向页面，沿着蓝色微光回去吧。</p>
-    <a class="soft-button" href="{{ site.Home.RelPermalink }}">回到首页</a>
+    <h1>{{ i18n "notFoundTitle" }}</h1>
+    <p>{{ i18n "notFoundDescription" }}</p>
+    <a class="soft-button" href="{{ site.Home.RelPermalink }}">{{ i18n "backHome" }}</a>
   </section>
 {{ end }}

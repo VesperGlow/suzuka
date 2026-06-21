@@ -17,7 +17,8 @@
   };
 
   const loadFallbackSearch = async () => {
-    const response = await fetch("/index.json", {
+    const languageRoot = document.documentElement.lang.toLowerCase().startsWith("en") ? "/en" : "";
+    const response = await fetch(`${languageRoot}/index.json`, {
       headers: { Accept: "application/json" },
     });
     if (!response.ok) throw new Error(`Search index request failed: ${response.status}`);
