@@ -1,12 +1,13 @@
 ---
 title: "关于凉花"
 date: 2026-06-18
+description: "关于 Suzuka、凉花，以及这个文字庭院的小小介绍。"
 draft: false
 url: "/about/"
 layout: "about"
 ---
 
-你好，这里是 Suzuka 的文字庭院。
+你好，这里是 Suzuka 的{{< source-link >}}文字庭院{{< /source-link >}}。
 
 这里是小凉花厨的网站，所以当然应该有[凉花](https://www.hook-net.jp/smee/lpp/character/)。
 

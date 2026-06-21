@@ -262,6 +262,29 @@ a:hover { color: var(--accent); }
 .prose h3 { font-size: 20px; }
 .prose p { margin: 1.15em 0; }
 .prose a { color: var(--accent); border-bottom: 1px dotted currentColor; }
+.source-link { position: relative; display: inline-block; }
+.source-link::after {
+  position: absolute;
+  z-index: 20;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  padding: 5px 12px;
+  content: attr(data-tooltip);
+  color: var(--accent-dark);
+  background: rgba(250, 253, 255, .94);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 8px 24px rgba(67, 91, 119, .13);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+  font: inherit;
+  pointer-events: none;
+}
+.source-link:hover::after,
+.source-link:focus-visible::after { opacity: 1; visibility: visible; }
 .prose blockquote { margin: 1.8em 0; }
 .prose code { padding: 2px 5px; background: var(--paper-deep); border-radius: var(--radius-small); font: .9em ui-monospace, monospace; }
 .prose pre { overflow-x: auto; padding: 18px; background: #35383d; color: #eee; border-radius: var(--radius-medium); }
