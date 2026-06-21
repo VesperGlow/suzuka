@@ -440,9 +440,13 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
 /* Responsive: tablet and desktop */
 @media (min-width: 769px) {
   .site-brand { flex: 0 0 auto; }
+  .brand-mark { width: 38px; height: 38px; }
+  .brand-text { font-size: 19px; }
   .header-tools { width: auto; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
   .header-tools .header-search-wrap { width: min(340px, 36vw); }
   .main-nav { display: flex; justify-content: flex-end; }
+  .main-nav > a { font-size: 15px; }
+  .nav-search-toggle svg { width: 20px; height: 20px; }
   .shell.home-shell { width: min(var(--shell-width), calc(100% - var(--shell-gutter))); }
   .mobile-home-layout { display: none; }
   .desktop-home-layout { display: block; margin-top: -.5rem; }
@@ -531,6 +535,8 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
   .header-tools { position: static; width: auto; flex: 0 0 auto; }
   .main-nav { width: auto; min-height: 34px; }
   .main-nav > a:not(.nav-search-toggle) { display: none; }
+  .nav-search-toggle::before { position: absolute; inset: -6px; content: ""; }
+  .nav-search-toggle svg { width: 21px; height: 21px; }
   .header-tools.search-active .header-search-wrap { position: absolute; z-index: 32; top: calc(100% + 8px); right: 0; left: 0; width: auto; }
   .header-search-popover { right: auto; left: 0; width: 100%; }
   .header-search-results { max-height: min(46dvh, 420px); overscroll-behavior: contain; }
