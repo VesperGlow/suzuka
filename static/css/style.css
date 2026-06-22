@@ -41,6 +41,10 @@
   --header-surface-strong: rgba(248, 252, 255, .9);
   --footer-surface: linear-gradient(to bottom, rgba(248, 252, 255, 0), rgba(248, 252, 255, .58) 24px, rgba(248, 252, 255, .66));
   --card-hover: rgba(237, 246, 253, .68);
+  --home-card-hover-surface: linear-gradient(115deg, rgba(255, 255, 255, .64), rgba(244, 249, 253, .38) 72%, rgba(226, 240, 250, .22));
+  --home-card-hover-border: rgba(126, 157, 184, .13);
+  --home-card-hover-shadow: 0 12px 30px rgba(67, 91, 119, .085), 0 2px 7px rgba(67, 91, 119, .045);
+  --home-card-focus-glow: rgba(110, 155, 194, .1);
   --soft-panel: rgba(242, 248, 253, .58);
   --control-active: rgba(228, 238, 248, .65);
   --control-surface: rgba(252, 254, 255, .36);
@@ -237,7 +241,26 @@ a:hover { color: var(--accent); }
 /* Home page */
 .home-page { min-width: 0; }
 .home-post-list { position: relative; padding: 8px 0 88px; }
-.home-post-list .post-card { padding-block: 15px; }
+.home-post-list .post-list { overflow: visible; background: transparent; border-radius: 0; box-shadow: none; backdrop-filter: none; }
+.home-post-list .post-card { position: relative; isolation: isolate; padding-block: 15px; }
+.home-post-list .post-card::before {
+  position: absolute;
+  z-index: -1;
+  inset: 3px -10px;
+  content: "";
+  background: var(--home-card-hover-surface);
+  border: 1px solid var(--home-card-hover-border);
+  border-radius: 10px;
+  box-shadow: var(--home-card-hover-shadow);
+  opacity: 0;
+  transform: scale(.995);
+  pointer-events: none;
+  transition: opacity 360ms var(--ease-standard), transform 420ms var(--ease-emphasized), box-shadow 360ms var(--ease-standard);
+}
+.home-post-list .post-card:has(a:focus-visible)::before { opacity: .82; box-shadow: 0 0 0 3px var(--home-card-focus-glow), var(--home-card-hover-shadow); transform: scale(1); }
+.home-post-list .post-card a:focus-visible { outline: none; }
+.home-post-list .post-card h2 a:focus-visible { color: var(--accent-dark); text-shadow: 0 0 14px var(--home-card-focus-glow); }
+.home-post-list .post-card .read-more:focus-visible { color: var(--accent-dark); }
 .home-post-list .post-card h2 { font-size: 20px; }
 .home-post-list .post-card p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .home-post-list .collection-footer { position: absolute; top: 8px; right: 0; padding: 0; }
@@ -764,6 +787,10 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
 /* Motion preferences */
 @media (hover: hover) {
   .post-card:hover { background: var(--card-hover); transform: translateY(-4px); }
+  .home-post-list .post-card:hover { background: transparent; transform: translateY(-3px); }
+  .home-post-list .post-card:hover::before { opacity: 1; transform: scale(1); }
+  .home-post-list .post-card:active { transform: translateY(-1px); }
+  .home-post-list .post-card:active::before { opacity: .72; box-shadow: 0 5px 16px rgba(67, 91, 119, .06); }
   .archive-card:hover { background: var(--glass-hover); border-color: var(--accent-border); box-shadow: var(--glass-shadow); transform: translateY(-5px); }
   .archive-card:hover .archive-card-cover img { transform: scale(1.03); }
 }
@@ -822,6 +849,7 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
 
 @media (prefers-reduced-motion: reduce) {
   :root.theme-transitioning body::after { transition: none !important; }
+  .home-post-list .post-card::before { transition: none; }
   .source-link::before, .source-link::after { transition: none; }
   .header-tools .header-search-wrap { transition: none; }
   .header-tools [data-header-search-toggle] { transition: none; }
@@ -865,6 +893,10 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
   --header-surface-strong: rgba(20, 31, 50, .88);
   --footer-surface: linear-gradient(to bottom, rgba(11, 18, 32, 0), rgba(14, 22, 38, .68) 24px, rgba(14, 22, 38, .82));
   --card-hover: rgba(35, 52, 80, .62);
+  --home-card-hover-surface: linear-gradient(115deg, rgba(24, 37, 59, .46), rgba(18, 29, 48, .28) 70%, rgba(31, 47, 72, .2));
+  --home-card-hover-border: rgba(180, 205, 245, .09);
+  --home-card-hover-shadow: 0 14px 34px rgba(2, 8, 18, .2), 0 2px 8px rgba(2, 8, 18, .12);
+  --home-card-focus-glow: rgba(141, 189, 255, .09);
   --soft-panel: rgba(20, 31, 50, .72);
   --control-active: rgba(141, 189, 255, .14);
   --control-surface: rgba(20, 31, 50, .58);
@@ -913,6 +945,10 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
     --header-surface-strong: rgba(20, 31, 50, .88);
     --footer-surface: linear-gradient(to bottom, rgba(11, 18, 32, 0), rgba(14, 22, 38, .68) 24px, rgba(14, 22, 38, .82));
     --card-hover: rgba(35, 52, 80, .62);
+    --home-card-hover-surface: linear-gradient(115deg, rgba(24, 37, 59, .46), rgba(18, 29, 48, .28) 70%, rgba(31, 47, 72, .2));
+    --home-card-hover-border: rgba(180, 205, 245, .09);
+    --home-card-hover-shadow: 0 14px 34px rgba(2, 8, 18, .2), 0 2px 8px rgba(2, 8, 18, .12);
+    --home-card-focus-glow: rgba(141, 189, 255, .09);
     --soft-panel: rgba(20, 31, 50, .72);
     --control-active: rgba(141, 189, 255, .14);
     --control-surface: rgba(20, 31, 50, .58);
