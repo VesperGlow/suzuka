@@ -245,6 +245,15 @@ if (root) {
   referenceClear.addEventListener("click", clearSource);
   postPickerToggle.addEventListener("click", () => setPickerOpen(postPicker.hidden));
   postSearch.addEventListener("input", renderPosts);
+  document.addEventListener("click", (event) => {
+    if (postPicker.hidden || postPicker.contains(event.target) || postPickerToggle.contains(event.target)) return;
+    setPickerOpen(false);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || postPicker.hidden) return;
+    setPickerOpen(false);
+    postPickerToggle.focus();
+  });
   renderSource();
   loadMessages();
 }
