@@ -2,6 +2,9 @@
   const storageKey = "suzuka-theme";
   const root = document.documentElement;
   const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const transitionDuration = 700;
+  let transitionTimer;
 
   const getSavedTheme = () => {
     try {
@@ -43,6 +46,26 @@
     updateControls();
   };
 
+  const applyThemeFromControl = (theme) => {
+    window.clearTimeout(transitionTimer);
+
+    if (reducedMotion.matches) {
+      root.classList.remove("theme-transitioning");
+    } else {
+      root.classList.add("theme-transitioning");
+      // Commit the transition rules before changing the theme variables.
+      void root.offsetWidth;
+    }
+
+    applyTheme(theme, true);
+
+    if (!reducedMotion.matches) {
+      transitionTimer = window.setTimeout(() => {
+        root.classList.remove("theme-transitioning");
+      }, transitionDuration);
+    }
+  };
+
   const declaredTheme = root.dataset.theme;
   applyTheme(
     declaredTheme === "dark" || declaredTheme === "light"
@@ -54,7 +77,7 @@
     updateControls();
     document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
       button.addEventListener("click", () => {
-        applyTheme(getResolvedTheme() === "dark" ? "light" : "dark", true);
+        applyThemeFromControl(getResolvedTheme() === "dark" ? "light" : "dark");
       });
     });
   });

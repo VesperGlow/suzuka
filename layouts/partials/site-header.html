@@ -36,7 +36,11 @@
             <path d="m15.8 15.8 5.2 5.2"></path>
           </svg>
         </a>
-        <a class="header-action lang-toggle language-switcher" href="{{ $languageURL }}" lang="{{ $languageLocale }}" hreflang="{{ $languageLocale }}" aria-label="{{ i18n "languageSwitcher" }}">{{ i18n "switchLanguage" }}</a>
+        <a class="header-action lang-toggle language-switcher" href="{{ $languageURL }}" hreflang="{{ $languageLocale }}" aria-label="{{ i18n "languageSwitcher" }}">
+          <span class="lang-toggle-option{{ if eq site.Language.Lang "zh-cn" }} is-current{{ end }}" lang="zh-CN">中</span>
+          <span class="lang-toggle-divider" aria-hidden="true">|</span>
+          <span class="lang-toggle-option{{ if eq site.Language.Lang "en" }} is-current{{ end }}" lang="en">EN</span>
+        </a>
       </div>
       <nav class="main-nav desktop-header-nav" aria-label="{{ i18n "mainNavigation" }}">
         {{ range site.Menus.main }}
