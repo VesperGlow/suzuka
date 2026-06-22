@@ -33,22 +33,64 @@ if (root) {
       clearButton.hidden = true;
     }
 
-    function resultCard(data) {
+    function tagsFor(data) {
+      const value = data.meta?.tags;
+      if (Array.isArray(value)) return value;
+      return typeof value === "string" ? value.split("||").filter(Boolean) : [];
+    }
+
+    function textFromExcerpt(value) {
+      return new DOMParser().parseFromString(String(value || ""), "text/html").body.textContent || "";
+    }
+
+    function highlightKeyword(text, query) {
+      const fragment = document.createDocumentFragment();
+      const keywords = [...new Set(query.trim().split(/\s+/u).filter(Boolean))]
+        .sort((left, right) => right.length - left.length);
+      if (!keywords.length) {
+        fragment.append(document.createTextNode(text));
+        return fragment;
+      }
+
+      const pattern = keywords
+        .map((keyword) => keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join("|");
+      const matches = text.matchAll(new RegExp(pattern, "giu"));
+      let position = 0;
+
+      for (const match of matches) {
+        fragment.append(document.createTextNode(text.slice(position, match.index)));
+        const mark = document.createElement("mark");
+        mark.className = "search-highlight";
+        mark.textContent = match[0];
+        fragment.append(mark);
+        position = match.index + match[0].length;
+      }
+      fragment.append(document.createTextNode(text.slice(position)));
+      return fragment;
+    }
+
+    function resultCard(data, query) {
       const article = document.createElement("article");
       const title = document.createElement("h2");
       const link = document.createElement("a");
       const date = document.createElement("time");
       const excerpt = document.createElement("p");
+      const tags = document.createElement("small");
 
       article.className = "search-result";
       link.href = data.url;
-      link.textContent = data.meta?.title || data.url;
+      link.append(highlightKeyword(data.meta?.title || data.url, query));
       title.append(link);
       date.className = "search-result-date";
       date.textContent = data.meta?.date || "";
       date.hidden = !date.textContent;
-      excerpt.innerHTML = data.excerpt || data.content || "";
-      article.append(title, date, excerpt);
+      excerpt.append(highlightKeyword(textFromExcerpt(data.excerpt || data.content), query));
+      tags.className = "search-result-tags";
+      const tagText = tagsFor(data).map((tag) => `#${tag}`).join("  ");
+      tags.append(highlightKeyword(tagText, query));
+      tags.hidden = !tagText;
+      article.append(title, date, excerpt, tags);
       return article;
     }
 
@@ -74,7 +116,7 @@ if (root) {
         const matches = await Promise.all(response.results.map((result) => result.data()));
         if (currentRequest !== requestId) return;
 
-        results.replaceChildren(...matches.map(resultCard));
+        results.replaceChildren(...matches.map((match) => resultCard(match, normalized)));
         status.textContent = matches.length
           ? messages.i18nFound.replace("{count}", matches.length)
           : messages.i18nEmpty;

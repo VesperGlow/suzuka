@@ -36,6 +36,37 @@ if (root) {
     return typeof value === "string" ? value.split("||").filter(Boolean) : [];
   }
 
+  function textFromExcerpt(value) {
+    return new DOMParser().parseFromString(String(value || ""), "text/html").body.textContent || "";
+  }
+
+  function highlightKeyword(text, query) {
+    const fragment = document.createDocumentFragment();
+    const keywords = [...new Set(query.trim().split(/\s+/u).filter(Boolean))]
+      .sort((left, right) => right.length - left.length);
+    if (!keywords.length) {
+      fragment.append(document.createTextNode(text));
+      return fragment;
+    }
+
+    const pattern = keywords
+      .map((keyword) => keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      .join("|");
+    const matches = text.matchAll(new RegExp(pattern, "giu"));
+    let position = 0;
+
+    for (const match of matches) {
+      fragment.append(document.createTextNode(text.slice(position, match.index)));
+      const mark = document.createElement("mark");
+      mark.className = "search-highlight";
+      mark.textContent = match[0];
+      fragment.append(mark);
+      position = match.index + match[0].length;
+    }
+    fragment.append(document.createTextNode(text.slice(position)));
+    return fragment;
+  }
+
   function openPopover() {
     popover.hidden = false;
     input.setAttribute("aria-expanded", "true");
@@ -60,7 +91,7 @@ if (root) {
     allResults.href = `${url.pathname}${url.search}`;
   }
 
-  function resultItem(data) {
+  function resultItem(data, query) {
     const article = document.createElement("article");
     const link = document.createElement("a");
     const title = document.createElement("strong");
@@ -71,12 +102,13 @@ if (root) {
     article.className = "header-search-result";
     article.setAttribute("role", "listitem");
     link.href = data.url;
-    title.textContent = data.meta?.title || data.url;
+    title.append(highlightKeyword(data.meta?.title || data.url, query));
     excerpt.className = "header-search-excerpt";
-    excerpt.innerHTML = data.excerpt || data.content || "";
+    excerpt.append(highlightKeyword(textFromExcerpt(data.excerpt || data.content), query));
     meta.textContent = data.meta?.date || new URL(data.url, window.location.origin).pathname;
     tags.className = "header-search-result-tags";
-    tags.textContent = tagsFor(data).map((tag) => `#${tag}`).join("  ");
+    const tagText = tagsFor(data).map((tag) => `#${tag}`).join("  ");
+    tags.append(highlightKeyword(tagText, query));
     tags.hidden = !tags.textContent;
     link.append(title, meta, excerpt, tags);
     article.append(link);
@@ -109,7 +141,7 @@ if (root) {
       );
       if (currentRequest !== requestId) return;
 
-      results.replaceChildren(...matches.map(resultItem));
+      results.replaceChildren(...matches.map((match) => resultItem(match, normalized)));
       status.textContent = matches.length ? "" : messages.i18nEmpty;
     } catch (error) {
       console.error("Header search failed:", error);
