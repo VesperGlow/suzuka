@@ -36,10 +36,15 @@
             <path d="m15.8 15.8 5.2 5.2"></path>
           </svg>
         </a>
-        <a class="header-action lang-toggle language-switcher" href="{{ $languageURL }}" hreflang="{{ $languageLocale }}" aria-label="{{ i18n "languageSwitcher" }}">
-          <span class="lang-toggle-option{{ if eq site.Language.Lang "zh-cn" }} is-current{{ end }}" lang="zh-CN">中</span>
-          <span class="lang-toggle-divider" aria-hidden="true">|</span>
-          <span class="lang-toggle-option{{ if eq site.Language.Lang "en" }} is-current{{ end }}" lang="en">EN</span>
+        <a class="header-action lang-toggle language-switcher {{ if eq site.Language.Lang "zh-cn" }}is-zh{{ else }}is-en{{ end }}" href="{{ $languageURL }}" hreflang="{{ $languageLocale }}" aria-label="{{ i18n "languageSwitcher" }}" data-language-toggle>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <g class="lang-toggle-char lang-toggle-zh">
+              <path d="M7 8h10M12 5v3M9 10c1.2 3.8 4.3 6.8 8 8M15 10c-1.1 3.8-4.2 6.8-8 8"></path>
+            </g>
+            <g class="lang-toggle-char lang-toggle-en">
+              <path d="M7.5 18 12 6l4.5 12M9 14h6"></path>
+            </g>
+          </svg>
         </a>
       </div>
       <nav class="main-nav desktop-header-nav" aria-label="{{ i18n "mainNavigation" }}">
@@ -56,3 +61,4 @@
     </div>
   </div>
 </header>
+<script src="{{ partial "asset-url.html" "js/language-toggle.js" }}" defer></script>
