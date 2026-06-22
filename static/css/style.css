@@ -75,7 +75,9 @@
   --radius-medium: 8px;
   --radius-pill: 999px;
   --duration-fast: .2s;
-  --ease-standard: ease;
+  --duration-medium: .36s;
+  --ease-standard: cubic-bezier(.2, .8, .2, 1);
+  --ease-emphasized: cubic-bezier(.22, 1, .36, 1);
   --font-size-xs: 11px;
   --font-size-sm: 12px;
   --font-size-ui: 13px;
@@ -760,14 +762,28 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
   a, .soft-button, .skip-link { transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard); }
-  .back-to-top img, .back-to-top-hint { transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard); }
+  .post-page .site-header { will-change: transform; transition: transform var(--duration-medium) var(--ease-emphasized); }
+  .post-page :where(.article-index, .article-sidebar) { transition: top var(--duration-medium) var(--ease-emphasized), max-height var(--duration-medium) var(--ease-emphasized); }
+  .header-search-wrap { transition: opacity 260ms var(--ease-emphasized), transform 260ms var(--ease-emphasized), visibility 0s linear 260ms; }
+  .header-tools.search-active .header-search-wrap { transition-delay: 0s; }
+  .header-tools [data-header-search-toggle] { transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), opacity var(--duration-fast) var(--ease-standard); }
+  .theme-toggle svg { transition: opacity 280ms var(--ease-standard), transform 320ms var(--ease-emphasized); }
+  .main-nav > a::after { transition: transform 280ms var(--ease-emphasized); }
+  .soft-button { transition-property: color, background-color, transform, box-shadow; transition-duration: var(--duration-fast), var(--duration-fast), 280ms, 280ms; transition-timing-function: var(--ease-standard), var(--ease-standard), var(--ease-emphasized), var(--ease-emphasized); }
+  :where(.text-link, .read-more) span { transition: transform 280ms var(--ease-emphasized); }
+  .source-link::before, .source-link::after { transition: opacity var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-emphasized), background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard), visibility 0s linear var(--duration-fast); }
+  .source-link:hover::before, .source-link:focus-visible::before, .source-link:hover::after, .source-link:focus-visible::after { transition-delay: 0s; }
+  .archive-tag-panel.is-collapsible { transition: grid-template-rows 320ms var(--ease-emphasized), opacity 240ms var(--ease-standard), visibility 0s linear 320ms; }
+  .archive-tag-toggle-icon { transition: transform 320ms var(--ease-emphasized); }
+  .article-lightbox-nav, .article-lightbox-close { transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), opacity var(--duration-fast) var(--ease-standard), transform 280ms var(--ease-emphasized); }
+  .article-lightbox-controls button { transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), transform 280ms var(--ease-emphasized); }
+  .back-to-top img, .back-to-top-hint { transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), opacity var(--duration-fast) var(--ease-standard), transform 320ms var(--ease-emphasized), filter 320ms var(--ease-emphasized); }
   .about-uptime { animation: about-uptime-surface 6s cubic-bezier(.45, 0, .25, 1) infinite; }
   .about-uptime-dot { animation: about-uptime-breathe 5.2s cubic-bezier(.45, 0, .25, 1) infinite; }
   .about-uptime-dot::before, .about-uptime-dot::after { animation: about-uptime-ripple 5.6s cubic-bezier(.45, 0, .25, 1) infinite; }
   .about-uptime-dot::after { animation-delay: 2.6s; }
   .article-lightbox[open] { animation: lightbox-enter var(--duration-fast) var(--ease-standard); }
   .article-lightbox[open]::backdrop { animation: lightbox-backdrop-enter var(--duration-fast) var(--ease-standard); }
-  .article-lightbox-nav { transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard); }
 }
 
 @keyframes about-uptime-breathe {
