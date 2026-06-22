@@ -33,8 +33,11 @@
       <div class="guestbook-compose">
       <form class="guestbook-form" data-guestbook-form>
         <aside class="guestbook-reference guestbook-reference-tools" data-guestbook-reference hidden>
-          <span>{{ i18n "guestbookCommentingOn" }}</span><a data-guestbook-reference-link></a>
-          <button type="button" data-guestbook-reference-clear aria-label="{{ i18n "guestbookClearPostLabel" }}">{{ i18n "guestbookClearPost" }}</button>
+          <span>{{ i18n "guestbookCommentingOn" }}</span>
+          <span class="guestbook-reference-target">
+            <a data-guestbook-reference-link></a>
+            <button type="button" data-guestbook-reference-clear aria-label="{{ i18n "guestbookClearPostLabel" }}">&times;</button>
+          </span>
         </aside>
 
         <div class="guestbook-field guestbook-name-field">
