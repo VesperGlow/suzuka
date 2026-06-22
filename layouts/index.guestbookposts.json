@@ -1,9 +1,13 @@
 {{- $items := slice -}}
-{{- range (where site.RegularPages "Section" "posts").ByDate.Reverse -}}
+{{- range (where hugo.Sites.Default.RegularPages "Section" "posts").ByDate.Reverse -}}
+  {{- $post := . -}}
+  {{- range where .Translations "Language.Lang" site.Language.Lang -}}
+    {{- $post = . -}}
+  {{- end -}}
   {{- $items = $items | append (dict
-    "title" .Title
-    "url" .RelPermalink
-    "date" (.Date.Format "2006-01-02")
+    "title" $post.Title
+    "url" $post.RelPermalink
+    "date" ($post.Date.Format "2006-01-02")
   ) -}}
 {{- end -}}
 {{- dict "items" $items | jsonify -}}

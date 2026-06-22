@@ -24,7 +24,7 @@ summaryLength = 90
   category = 'categories'
 
 [params]
-  assetVersion = '65'
+  assetVersion = '66'
   author = 'Suzuka'
   images = ['favicon/favicon-orb.webp']
 
@@ -94,6 +94,11 @@ summaryLength = 90
       name = 'Posts'
       pageRef = '/posts'
       weight = 20
+    [[languages.en.menus.main]]
+      identifier = 'guestbook'
+      name = 'Guestbook'
+      pageRef = '/pages/guestbook'
+      weight = 30
     [[languages.en.menus.main]]
       identifier = 'search'
       name = 'Search'

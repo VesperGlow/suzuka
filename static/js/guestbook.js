@@ -17,6 +17,22 @@ if (root) {
   const postSearch = root.querySelector("[data-guestbook-post-search]");
   const postPickerStatus = root.querySelector("[data-guestbook-post-picker-status]");
   const postResults = root.querySelector("[data-guestbook-post-results]");
+  const locale = document.documentElement.lang || "zh-CN";
+  const labels = {
+    postsEmpty: root.dataset.i18nPostsEmpty,
+    postsLoading: root.dataset.i18nPostsLoading,
+    postsUnavailable: root.dataset.i18nPostsUnavailable,
+    commentOn: root.dataset.i18nCommentOn,
+    referenceTitle: root.dataset.i18nReferenceTitle,
+    countOne: root.dataset.i18nCountOne,
+    countOther: root.dataset.i18nCountOther,
+    messagesEmpty: root.dataset.i18nMessagesEmpty,
+    messagesUnavailable: root.dataset.i18nMessagesUnavailable,
+    submitting: root.dataset.i18nSubmitting,
+    submitted: root.dataset.i18nSubmitted,
+    submitFailed: root.dataset.i18nSubmitFailed,
+    guest: root.dataset.i18nGuest,
+  };
 
   let messages = [];
   let posts = null;
@@ -27,7 +43,7 @@ if (root) {
     try {
       if (!String(value).startsWith("/") || String(value).startsWith("//")) return null;
       const url = new URL(value, window.location.origin);
-      if (url.origin !== window.location.origin || !url.pathname.startsWith("/posts/")) return null;
+      if (url.origin !== window.location.origin || !/^\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?posts\//i.test(url.pathname)) return null;
       return url.pathname;
     } catch {
       return null;
@@ -55,7 +71,7 @@ if (root) {
     reference.hidden = !source;
     referenceLink.replaceChildren();
     if (!source) return;
-    referenceLink.textContent = `《${source.title}》`;
+    referenceLink.textContent = labels.referenceTitle.replace("{title}", source.title);
     referenceLink.href = source.url;
   }
 
@@ -87,9 +103,9 @@ if (root) {
   }
 
   function renderPosts() {
-    const query = postSearch.value.trim().toLocaleLowerCase("zh-CN");
+    const query = postSearch.value.trim().toLocaleLowerCase(locale);
     const matches = (posts || [])
-      .filter((post) => !query || post.title.toLocaleLowerCase("zh-CN").includes(query))
+      .filter((post) => !query || post.title.toLocaleLowerCase(locale).includes(query))
       .slice(0, 10);
 
     const elements = matches.map((post) => {
@@ -107,7 +123,7 @@ if (root) {
       return item;
     });
     postResults.replaceChildren(...elements);
-    postPickerStatus.textContent = matches.length ? "" : "没有找到相关文章。";
+    postPickerStatus.textContent = matches.length ? "" : labels.postsEmpty;
   }
 
   async function loadPosts() {
@@ -115,7 +131,7 @@ if (root) {
       renderPosts();
       return;
     }
-    postPickerStatus.textContent = "正在读取文章…";
+    postPickerStatus.textContent = labels.postsLoading;
     try {
       const response = await fetch(postsURL, { headers: { Accept: "application/json" } });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -130,7 +146,7 @@ if (root) {
       renderPosts();
     } catch (error) {
       console.error("Unable to load guestbook posts", error);
-      postPickerStatus.textContent = "文章列表暂时无法读取，请稍后再试。";
+      postPickerStatus.textContent = labels.postsUnavailable;
     }
   }
 
@@ -145,7 +161,7 @@ if (root) {
     const website = externalURL(item.website);
     const author = website ? document.createElement("a") : document.createElement("span");
     author.className = "guestbook-message-author";
-    author.textContent = String(item.name || "");
+    author.textContent = String(item.name || labels.guest);
     if (website) {
       author.href = website;
       author.target = "_blank";
@@ -171,9 +187,9 @@ if (root) {
       const ref = document.createElement("p");
       ref.className = "guestbook-message-reference";
       const label = document.createElement("span");
-      label.textContent = "评论：";
+      label.textContent = labels.commentOn;
       const link = document.createElement("a");
-      link.textContent = `《${String(item.ref_title)}》`;
+      link.textContent = labels.referenceTitle.replace("{title}", String(item.ref_title));
       link.href = refURL;
       ref.append(label, link);
       article.append(ref);
@@ -185,9 +201,10 @@ if (root) {
 
   function renderMessages() {
     messageList.replaceChildren(...messages.map(createMessageElement));
-    count.textContent = messages.length ? `${messages.length} 条` : "";
+    const countTemplate = messages.length === 1 ? labels.countOne : labels.countOther;
+    count.textContent = messages.length ? countTemplate.replace("{count}", String(messages.length)) : "";
     listStatus.hidden = messages.length > 0;
-    if (!messages.length) listStatus.textContent = "还没有留言。";
+    if (!messages.length) listStatus.textContent = labels.messagesEmpty;
   }
 
   async function loadMessages() {
@@ -201,7 +218,7 @@ if (root) {
     } catch (error) {
       console.error("Unable to load guestbook messages", error);
       listStatus.hidden = false;
-      listStatus.textContent = "留言暂时无法读取，请稍后再试。";
+      listStatus.textContent = labels.messagesUnavailable;
     }
   }
 
@@ -220,7 +237,7 @@ if (root) {
     };
 
     submitButton.disabled = true;
-    formStatus.textContent = "正在提交…";
+    formStatus.textContent = labels.submitting;
     try {
       const response = await fetch(apiURL, {
         method: "POST",
@@ -233,10 +250,10 @@ if (root) {
       messages.unshift(result);
       renderMessages();
       form.elements.content.value = "";
-      formStatus.textContent = "留言已留下。";
+      formStatus.textContent = labels.submitted;
     } catch (error) {
       console.error("Unable to submit guestbook message", error);
-      formStatus.textContent = "提交失败，请稍后再试。";
+      formStatus.textContent = labels.submitFailed;
     } finally {
       submitButton.disabled = false;
     }

@@ -1,16 +1,17 @@
-{{- $url := printf "/guestbook/?ref_title=%s&ref_url=%s" (.Title | urlquery) (.RelPermalink | urlquery) -}}
+{{- $guestbook := site.GetPage "/pages/guestbook" -}}
+{{- $url := printf "%s?ref_title=%s&ref_url=%s" $guestbook.RelPermalink (.Title | urlquery) (.RelPermalink | urlquery) -}}
 <aside class="post-discussion">
   <a class="post-discussion-link" href="{{ $url | safeURL }}" aria-labelledby="post-discussion-title post-discussion-description post-discussion-entry-label">
     <span class="post-discussion-copy">
-      <strong id="post-discussion-title">想说点什么吗？</strong>
-      <span id="post-discussion-description">欢迎留下你的感想、补充，或不同的看法</span>
+      <strong id="post-discussion-title">{{ i18n "postDiscussionTitle" }}</strong>
+      <span id="post-discussion-description">{{ i18n "postDiscussionDescription" }}</span>
     </span>
     <span class="post-discussion-action">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M5.5 18.5 3 21v-5.2A8 8 0 0 1 4 4.5 11.5 11.5 0 0 1 12 2c5 0 9 3.1 9 7s-4 7-9 7a11.7 11.7 0 0 1-3.4-.5Z" />
         <path d="M8 9h8M8 12h5" />
       </svg>
-      <span id="post-discussion-entry-label">留言板</span>
+      <span id="post-discussion-entry-label">{{ i18n "guestbookTitle" }}</span>
       <span class="post-discussion-arrow" aria-hidden="true">→</span>
     </span>
   </a>

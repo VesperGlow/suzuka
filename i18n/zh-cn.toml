@@ -202,3 +202,72 @@ other = "回到首页"
 other = "网站源码"
 [dateFormat]
 other = "2006年01月02日"
+
+[guestbookTitle]
+other = "留言板"
+[guestbookEyebrow]
+other = "Guestbook"
+[guestbookFormLabel]
+other = "留言表单"
+[guestbookCommentingOn]
+other = "正在评论："
+[guestbookCommentOn]
+other = "评论："
+[guestbookReferenceTitle]
+other = "《{{ .Title }}》"
+[guestbookClearPost]
+other = "取消"
+[guestbookClearPostLabel]
+other = "取消评论文章"
+[guestbookPickPost]
+other = "选择一篇文章聊聊"
+[guestbookPickPostLabel]
+other = "选择要评论的文章"
+[guestbookSearchPosts]
+other = "搜索文章标题"
+[guestbookSearchPostsPlaceholder]
+other = "输入关键词，或从最近文章中选择"
+[guestbookPostsEmpty]
+other = "没有找到相关文章。"
+[guestbookPostsLoading]
+other = "正在读取文章…"
+[guestbookPostsUnavailable]
+other = "文章列表暂时无法读取，请稍后再试。"
+[guestbookName]
+other = "名字"
+[guestbookOptionalContact]
+other = "邮箱与网址（可选）"
+[guestbookEmail]
+other = "邮箱"
+[guestbookWebsite]
+other = "网址"
+[guestbookMessage]
+other = "留言"
+[guestbookMessagePlaceholder]
+other = "写下一点痕迹…"
+[guestbookSubmit]
+other = "留下留言"
+[guestbookSubmitting]
+other = "正在提交…"
+[guestbookSubmitted]
+other = "留言已留下。"
+[guestbookSubmitFailed]
+other = "提交失败，请稍后再试。"
+[guestbookMessagesHeading]
+other = "留言"
+[guestbookMessagesLoading]
+other = "正在读取留言…"
+[guestbookMessagesEmpty]
+other = "还没有留言。"
+[guestbookMessagesUnavailable]
+other = "留言暂时无法读取，请稍后再试。"
+[guestbookMessageCount]
+other = "{count} 条"
+[guestbookGuest]
+other = "游客"
+[guestbookNoScript]
+other = "请启用 JavaScript 后查看和提交留言。"
+[postDiscussionTitle]
+other = "想说点什么吗？"
+[postDiscussionDescription]
+other = "欢迎留下你的感想、补充，或不同的看法"

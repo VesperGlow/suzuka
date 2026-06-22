@@ -202,3 +202,73 @@ other = "Back home"
 other = "Source code"
 [dateFormat]
 other = "January 2, 2006"
+
+[guestbookTitle]
+other = "Guestbook"
+[guestbookEyebrow]
+other = "Guestbook"
+[guestbookFormLabel]
+other = "Guestbook form"
+[guestbookCommentingOn]
+other = "Commenting on:"
+[guestbookCommentOn]
+other = "Comment on:"
+[guestbookReferenceTitle]
+other = "“{{ .Title }}”"
+[guestbookClearPost]
+other = "Clear"
+[guestbookClearPostLabel]
+other = "Stop commenting on this post"
+[guestbookPickPost]
+other = "Pick a post to talk about"
+[guestbookPickPostLabel]
+other = "Choose a post to comment on"
+[guestbookSearchPosts]
+other = "Search post titles"
+[guestbookSearchPostsPlaceholder]
+other = "Type a keyword, or choose from recent posts"
+[guestbookPostsEmpty]
+other = "No related posts found."
+[guestbookPostsLoading]
+other = "Loading posts…"
+[guestbookPostsUnavailable]
+other = "The post list is temporarily unavailable. Please try again later."
+[guestbookName]
+other = "Name"
+[guestbookOptionalContact]
+other = "Email & website (optional)"
+[guestbookEmail]
+other = "Email"
+[guestbookWebsite]
+other = "Website"
+[guestbookMessage]
+other = "Message"
+[guestbookMessagePlaceholder]
+other = "Leave a small trace…"
+[guestbookSubmit]
+other = "Leave a message"
+[guestbookSubmitting]
+other = "Submitting…"
+[guestbookSubmitted]
+other = "Your message has been left."
+[guestbookSubmitFailed]
+other = "Submission failed. Please try again later."
+[guestbookMessagesHeading]
+other = "Messages"
+[guestbookMessagesLoading]
+other = "Loading messages…"
+[guestbookMessagesEmpty]
+other = "No messages yet."
+[guestbookMessagesUnavailable]
+other = "Messages are temporarily unavailable. Please try again later."
+[guestbookMessageCount]
+one = "{count} message"
+other = "{count} messages"
+[guestbookGuest]
+other = "Guest"
+[guestbookNoScript]
+other = "Enable JavaScript to view and leave messages."
+[postDiscussionTitle]
+other = "Want to say something?"
+[postDiscussionDescription]
+other = "Share your thoughts, additions, or a different perspective."
