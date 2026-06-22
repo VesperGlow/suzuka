@@ -172,6 +172,22 @@ other = "凉花"
 other = "循着关键词，找到散落在不同日子里的记录。"
 [archiveListLabel]
 other = "全部文章"
+[archiveViewLabel]
+other = "归档视图"
+[archiveViewDescriptionBefore]
+other = "按"
+[archiveViewDescriptionAfter]
+other = "浏览写下的每一篇记录。"
+[archiveCardView]
+other = "卡片"
+[archiveTimelineView]
+other = "时间"
+[archiveCardListLabel]
+other = "文章卡片"
+[archiveTimelineListLabel]
+other = "文章时间线"
+[archiveFilterEmpty]
+other = "这里暂时还没有对应的记录。"
 [postsRedirectTitle]
 other = "正在前往全部文章"
 [postsRedirectDescription]

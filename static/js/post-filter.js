@@ -5,6 +5,31 @@ document.querySelectorAll("[data-post-filter-scope]").forEach((scope) => {
   const items = [...scope.querySelectorAll("[data-filter-item]")];
   const groups = [...scope.querySelectorAll("[data-filter-group]")];
   const empty = scope.querySelector("[data-filter-empty]");
+  const viewButtons = [...scope.querySelectorAll("[data-archive-view]")];
+  const viewPanels = [...scope.querySelectorAll("[data-archive-view-panel]")];
+
+  function setView(view) {
+    if (!viewButtons.some((button) => button.dataset.archiveView === view)) return;
+
+    viewButtons.forEach((button) => {
+      const active = button.dataset.archiveView === view;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+    viewPanels.forEach((panel) => {
+      panel.hidden = panel.dataset.archiveViewPanel !== view;
+    });
+
+    const hash = view === "timeline" ? "#timeline" : location.pathname + location.search;
+    history.replaceState(null, "", hash);
+  }
+
+  if (viewButtons.length && viewPanels.length) {
+    viewButtons.forEach((button) => {
+      button.addEventListener("click", () => setView(button.dataset.archiveView));
+    });
+    setView(location.hash === "#timeline" ? "timeline" : "card");
+  }
 
   if (tagToggle && tagPanel) {
     tagToggle.addEventListener("click", () => {

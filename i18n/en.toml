@@ -172,6 +172,22 @@ other = "Suzuka"
 other = "Follow the keywords to notes scattered across different days."
 [archiveListLabel]
 other = "All posts"
+[archiveViewLabel]
+other = "Archive view"
+[archiveViewDescriptionBefore]
+other = "Browse every note in"
+[archiveViewDescriptionAfter]
+other = "view."
+[archiveCardView]
+other = "Cards"
+[archiveTimelineView]
+other = "Timeline"
+[archiveCardListLabel]
+other = "Post cards"
+[archiveTimelineListLabel]
+other = "Post timeline"
+[archiveFilterEmpty]
+other = "There are no matching notes here yet."
 [postsRedirectTitle]
 other = "Taking you to all posts"
 [postsRedirectDescription]

@@ -1,0 +1,19 @@
+{{- $categories := .Params.categories | default (slice) -}}
+{{- $tags := .Params.tags | default (slice) -}}
+<article class="archive-timeline-item" data-filter-item data-categories="{{ $categories | jsonify }}" data-tags="{{ $tags | jsonify }}">
+  <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "01.02" }}</time>
+  <div class="archive-timeline-body">
+    <h3><a href="{{ .RelPermalink }}">{{ .Title }}</a></h3>
+    <p>{{ with .Description }}{{ . }}{{ else }}{{ .Summary | plainify }}{{ end }}</p>
+    <div class="archive-timeline-meta">
+      {{ range $categories }}
+        <button type="button" data-filter-type="categories" data-filter-value="{{ . }}" aria-pressed="false">{{ . }}</button>
+      {{ end }}
+      {{ range $tags }}
+        <button type="button" data-filter-type="tags" data-filter-value="{{ . }}" aria-pressed="false">#{{ . }}</button>
+      {{ end }}
+      <span>{{ i18n "wordCount" (dict "Count" .WordCount) }}</span>
+      <span>{{ i18n "imageCount" (dict "Count" (strings.Count "<img" .Content)) }}</span>
+    </div>
+  </div>
+</article>
