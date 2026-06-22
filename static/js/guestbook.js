@@ -17,6 +17,7 @@ if (root) {
   const postSearch = root.querySelector("[data-guestbook-post-search]");
   const postPickerStatus = root.querySelector("[data-guestbook-post-picker-status]");
   const postResults = root.querySelector("[data-guestbook-post-results]");
+  const pickerAutoFocusQuery = window.matchMedia("(min-width: 960px) and (hover: hover) and (pointer: fine)");
   const locale = document.documentElement.lang || "zh-CN";
   const labels = {
     postsEmpty: root.dataset.i18nPostsEmpty,
@@ -98,7 +99,11 @@ if (root) {
     postPickerToggle.setAttribute("aria-expanded", String(open));
     if (open) {
       loadPosts();
-      postSearch.focus();
+      if (pickerAutoFocusQuery.matches) {
+        requestAnimationFrame(() => {
+          if (!postPicker.hidden) postSearch.focus({ preventScroll: true });
+        });
+      }
     }
   }
 

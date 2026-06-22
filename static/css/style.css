@@ -1099,10 +1099,27 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
 .post-discussion-action > span { display: inline-flex; align-items: center; }
 .post-discussion-link:hover .post-discussion-action { color: var(--accent-dark); transform: translateX(2px); }
 
+@media (max-width: 959px) {
+  .guestbook-layout { grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .guestbook-compose { position: static; max-height: none; overflow: visible; background: transparent; border: 0; box-shadow: none; }
+  .guestbook-header { border: 0; box-shadow: none; }
+  .guestbook-form { padding: 0 2px 18px; background: transparent; border-block: 0; box-shadow: none; }
+  .guestbook-reference-tools { justify-content: center; margin: 0 0 16px; padding-bottom: 0; border-bottom: 0; }
+  .guestbook-reference { width: 100%; justify-content: center; }
+  .guestbook-post-picker-toggle { width: fit-content; max-width: 100%; margin-inline: auto; padding: 5px 13px; background: color-mix(in srgb, var(--control-surface) 55%, transparent); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); border-radius: var(--radius-pill); text-align: center; }
+  .guestbook-post-picker { width: 100%; margin: -2px 0 16px; padding: 12px; background: color-mix(in srgb, var(--control-surface) 45%, transparent); border: 1px solid color-mix(in srgb, var(--list-line) 60%, transparent); border-radius: var(--radius-medium); box-shadow: none; }
+  .guestbook-post-results { max-height: min(260px, 45vh); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text-faint) 35%, transparent) transparent; }
+  .guestbook-post-results li + li { border-color: color-mix(in srgb, var(--list-line) 55%, transparent); }
+  .guestbook-post-results::-webkit-scrollbar { width: 5px; }
+  .guestbook-post-results::-webkit-scrollbar-track { background: transparent; }
+  .guestbook-post-results::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text-faint) 30%, transparent); border-radius: var(--radius-pill); }
+  .guestbook-post-picker input, .guestbook-field input, .guestbook-field textarea { background: color-mix(in srgb, var(--control-surface) 65%, transparent); border-color: color-mix(in srgb, var(--line) 70%, transparent); }
+}
+
 @media (max-width: 768px) {
   .guestbook-layout { gap: 28px; }
-  .guestbook-form { padding: 16px 2px 18px; }
-  .guestbook-post-picker-toggle { width: fit-content; margin-left: 0; }
+  .guestbook-form { padding: 0 2px 18px; }
+  .guestbook-post-picker-toggle { width: fit-content; margin-inline: auto; }
   .guestbook-post-results button { align-items: flex-start; flex-direction: column; gap: 1px; }
   .guestbook-optional-fields-inner { grid-template-columns: 1fr; }
   .guestbook-form-footer { align-items: flex-end; }
