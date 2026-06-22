@@ -19,16 +19,26 @@ document.querySelectorAll("[data-post-filter-scope]").forEach((scope) => {
     viewPanels.forEach((panel) => {
       panel.hidden = panel.dataset.archiveViewPanel !== view;
     });
-
-    const hash = view === "timeline" ? "#timeline" : location.pathname + location.search;
-    history.replaceState(null, "", hash);
   }
 
   if (viewButtons.length && viewPanels.length) {
+    const viewFromHash = () => location.hash === "#timeline" ? "timeline" : "card";
+    const hashForView = (view) => view === "timeline" ? "#timeline" : "#cards";
+
     viewButtons.forEach((button) => {
-      button.addEventListener("click", () => setView(button.dataset.archiveView));
+      button.addEventListener("click", () => {
+        const view = button.dataset.archiveView;
+        setView(view);
+        if (location.hash !== hashForView(view)) location.hash = hashForView(view);
+      });
     });
-    setView(location.hash === "#timeline" ? "timeline" : "card");
+    window.addEventListener("hashchange", () => setView(viewFromHash()));
+
+    const initialView = viewFromHash();
+    setView(initialView);
+    if (!["#cards", "#timeline"].includes(location.hash)) {
+      history.replaceState(null, "", hashForView(initialView));
+    }
   }
 
   if (tagToggle && tagPanel) {
