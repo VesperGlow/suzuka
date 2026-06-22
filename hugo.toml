@@ -8,7 +8,13 @@ summaryLength = 90
   pagerSize = 6
 
 [outputs]
-  home = ['HTML', 'RSS', 'JSON']
+  home = ['HTML', 'RSS', 'JSON', 'GuestbookPosts']
+
+[outputFormats.GuestbookPosts]
+  mediaType = 'application/json'
+  baseName = 'guestbook-posts'
+  isPlainText = true
+  notAlternative = true
 
 [permalinks]
   posts = '/posts/:slugorcontentbasename/'
@@ -18,7 +24,7 @@ summaryLength = 90
   category = 'categories'
 
 [params]
-  assetVersion = '31'
+  assetVersion = '43'
   author = 'Suzuka'
   images = ['favicon/favicon-orb.webp']
 
@@ -55,6 +61,11 @@ summaryLength = 90
       name = '文章'
       pageRef = '/posts'
       weight = 20
+    [[languages.zh-cn.menus.main]]
+      identifier = 'guestbook'
+      name = '留言'
+      pageRef = '/pages/guestbook'
+      weight = 30
     [[languages.zh-cn.menus.main]]
       identifier = 'search'
       name = '搜索'

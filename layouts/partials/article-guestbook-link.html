@@ -1,0 +1,4 @@
+{{- $url := printf "/guestbook/?ref_title=%s&ref_url=%s" (.Title | urlquery) (.RelPermalink | urlquery) -}}
+<aside class="article-guestbook-cta">
+  <a href="{{ $url | safeURL }}">去留言板聊这篇</a>
+</aside>

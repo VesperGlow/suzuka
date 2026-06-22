@@ -21,7 +21,10 @@
 
       <div class="prose">{{ .Content }}</div>
 
-      {{ if $isPost }}{{ partial "article-navigation.html" . }}{{ end }}
+      {{ if $isPost }}
+        {{ partial "article-guestbook-link.html" . }}
+        {{ partial "article-navigation.html" . }}
+      {{ end }}
     </div>
 
     {{ if $hasToc }}

@@ -5,3 +5,9 @@
 scripts/__pycache__/
 
 AGENTS.md
+
+# Guestbook service runtime/build files
+guestbook-service/guestbook-service
+guestbook-service/data/
+guestbook-service/*.db
+guestbook-service/*.db-*
