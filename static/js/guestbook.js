@@ -12,11 +12,14 @@ if (root) {
   const reference = root.querySelector("[data-guestbook-reference]");
   const referenceLink = root.querySelector("[data-guestbook-reference-link]");
   const referenceClear = root.querySelector("[data-guestbook-reference-clear]");
+  const layout = root.querySelector(".guestbook-layout");
+  const pickerDrawer = root.querySelector("[data-guestbook-picker-drawer]");
   const postPickerToggle = root.querySelector("[data-guestbook-post-picker-toggle]");
   const postPicker = root.querySelector("[data-guestbook-post-picker]");
   const postSearch = root.querySelector("[data-guestbook-post-search]");
   const postPickerStatus = root.querySelector("[data-guestbook-post-picker-status]");
   const postResults = root.querySelector("[data-guestbook-post-results]");
+  const pickerDesktopQuery = window.matchMedia("(min-width: 960px)");
   const pickerAutoFocusQuery = window.matchMedia("(min-width: 960px) and (hover: hover) and (pointer: fine)");
   const locale = document.documentElement.lang || "zh-CN";
   const labels = {
@@ -38,6 +41,7 @@ if (root) {
   let messages = [];
   let posts = null;
   let source = readSource();
+  let pickerCloseTimer = 0;
 
   function postURL(value) {
     if (!value) return null;
@@ -95,16 +99,28 @@ if (root) {
   }
 
   function setPickerOpen(open) {
-    postPicker.hidden = !open;
+    window.clearTimeout(pickerCloseTimer);
     postPickerToggle.setAttribute("aria-expanded", String(open));
     if (open) {
+      postPicker.hidden = false;
+      requestAnimationFrame(() => layout.classList.add("is-picker-open"));
       loadPosts();
       if (pickerAutoFocusQuery.matches) {
         requestAnimationFrame(() => {
-          if (!postPicker.hidden) postSearch.focus({ preventScroll: true });
+          if (layout.classList.contains("is-picker-open")) postSearch.focus({ preventScroll: true });
         });
       }
+      return;
     }
+
+    layout.classList.remove("is-picker-open");
+    if (!pickerDesktopQuery.matches) {
+      postPicker.hidden = true;
+      return;
+    }
+    pickerCloseTimer = window.setTimeout(() => {
+      if (!layout.classList.contains("is-picker-open")) postPicker.hidden = true;
+    }, 260);
   }
 
   function renderPosts() {
@@ -265,14 +281,14 @@ if (root) {
   });
 
   referenceClear.addEventListener("click", clearSource);
-  postPickerToggle.addEventListener("click", () => setPickerOpen(postPicker.hidden));
+  postPickerToggle.addEventListener("click", () => setPickerOpen(!layout.classList.contains("is-picker-open")));
   postSearch.addEventListener("input", renderPosts);
   document.addEventListener("click", (event) => {
-    if (postPicker.hidden || postPicker.contains(event.target) || postPickerToggle.contains(event.target)) return;
+    if (!layout.classList.contains("is-picker-open") || pickerDrawer.contains(event.target) || postPickerToggle.contains(event.target)) return;
     setPickerOpen(false);
   });
   document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape" || postPicker.hidden) return;
+    if (event.key !== "Escape" || !layout.classList.contains("is-picker-open")) return;
     setPickerOpen(false);
     postPickerToggle.focus();
   });

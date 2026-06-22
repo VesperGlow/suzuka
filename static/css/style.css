@@ -1020,9 +1020,11 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
 .guestbook-post-picker input { width: 100%; padding: 7px 9px; color: var(--ink); background: var(--control-surface); border: 1px solid var(--line); border-radius: var(--radius-small); outline: 0; font: 13px/1.6 var(--sans); }
 .guestbook-post-picker input:focus { background: var(--glass-hover); border-color: var(--accent-border); box-shadow: 0 0 0 2px rgba(110, 155, 194, .07); }
 .guestbook-post-picker-status { margin: 8px 0 0; color: var(--text-faint); font-size: var(--font-size-sm); }
-.guestbook-post-results { max-height: 220px; margin: 7px 0 0; padding: 0; overflow-y: auto; list-style: none; }
+.guestbook-post-results { --guestbook-post-row-height: 46px; max-height: calc(var(--guestbook-post-row-height) * 2.5); margin: 7px 0 0; padding: 0; overflow-y: auto; list-style: none; }
+.guestbook-post-results li { height: var(--guestbook-post-row-height); }
 .guestbook-post-results li + li { border-top: 1px solid var(--list-line); }
-.guestbook-post-results button { width: 100%; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 7px 3px; color: var(--text-subtle); background: transparent; border: 0; cursor: pointer; text-align: left; font: 13px/1.6 var(--sans); }
+.guestbook-post-results button { width: 100%; height: 100%; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 7px 3px; color: var(--text-subtle); background: transparent; border: 0; cursor: pointer; text-align: left; font: 13px/1.6 var(--sans); }
+.guestbook-post-results button > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .guestbook-post-results button:hover { color: var(--accent-dark); background: var(--surface-hover); }
 .guestbook-post-results time { flex: 0 0 auto; color: var(--text-faint); font-size: var(--font-size-xs); }
 .guestbook-field { display: grid; gap: 6px; }
@@ -1053,31 +1055,44 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
 .guestbook-message-content { margin: 9px 0 0; color: var(--ink); line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }
 .guestbook-message-reference { margin: 8px 0 0; color: var(--text-faint); font-size: var(--font-size-sm); }
 .guestbook-message-reference a { color: var(--text-subtle); }
+.guestbook-sticky-side { min-width: 0; }
+@media (max-width: 959px) {
+  .guestbook-sticky-side { display: block; position: static; height: auto; max-height: none; overflow: visible; }
+}
 @media (min-width: 960px) {
   .guestbook-page { padding-top: 24px; overflow: visible; font-size: 17px; }
   .guestbook-header { padding: 0 0 18px; }
   .guestbook-header .eyebrow { font-size: 12px; }
   .guestbook-app { margin-top: 0; padding-top: 0; overflow: visible; }
-  .guestbook-layout { grid-template-columns: minmax(360px, 400px) minmax(0, 1fr); gap: clamp(40px, 4vw, 56px); margin-top: 0; padding-top: 0; overflow: visible; align-items: start; }
-  .guestbook-compose { position: sticky; top: calc(var(--header-height, 72px) + 24px); height: fit-content; max-height: none; overflow: visible; align-self: start; }
+  .guestbook-layout { --guestbook-sticky-width: 400px; --guestbook-picker-width: 0px; position: relative; grid-template-columns: minmax(360px, var(--guestbook-sticky-width)) minmax(0, 1fr); gap: clamp(40px, 4vw, 56px); margin-top: 0; padding-top: 0; overflow: visible; align-items: start; transition: grid-template-columns 260ms ease; }
+  .guestbook-layout.is-picker-open { --guestbook-sticky-width: clamp(760px, 54vw, 900px); --guestbook-picker-width: clamp(360px, 28vw, 480px); }
+  .guestbook-sticky-side { min-width: 0; height: fit-content; max-height: none; display: grid; grid-template-columns: minmax(360px, 400px) var(--guestbook-picker-width); position: sticky; top: calc(var(--header-height, 72px) + 24px); align-self: start; overflow: visible; transition: grid-template-columns 260ms ease; }
+  .guestbook-rail { min-width: 0; position: relative; height: fit-content; max-height: none; overflow: visible; align-self: start; }
+  .guestbook-header, .guestbook-compose, .guestbook-form { position: static; top: auto; }
+  .guestbook-compose { max-height: none; overflow: visible; }
   .guestbook-form { padding: 0 2px 18px; background: transparent; border-block: 0; box-shadow: none; }
   .guestbook-reference-tools { justify-content: center; margin: 0 0 14px; padding-bottom: 0; border-bottom: 0; }
   .guestbook-reference { width: 100%; justify-content: center; }
   .guestbook-reference, .guestbook-reference button { font-size: 13px; }
-  .guestbook-post-picker-toggle { width: fit-content; margin-inline: auto; padding: 4px 12px; background: var(--control-surface); border: 1px solid var(--line); border-radius: var(--radius-pill); text-align: center; font-size: 13px; }
-  .guestbook-post-picker { margin-top: -4px; padding: 12px; background: color-mix(in srgb, var(--control-surface) 75%, transparent); border: 1px solid var(--list-line); border-radius: var(--radius-medium); }
+  .guestbook-picker-drawer { min-width: 0; height: auto; max-height: calc(100vh - var(--header-height, 72px) - 48px); position: static; align-self: start; overflow: hidden; background: transparent; border-inline: 1px solid color-mix(in srgb, var(--line) 42%, transparent); border-radius: 0; box-shadow: none; }
+  .guestbook-picker-handle { width: 28px; max-height: 240px; display: inline-flex; align-items: center; justify-content: center; position: absolute; z-index: 20; top: 50%; right: 0; transform: translate(50%, -50%); writing-mode: vertical-rl; text-orientation: mixed; margin: 0; padding: 14px 7px; color: var(--text-subtle); background: color-mix(in srgb, var(--control-surface) 92%, transparent); border: 1px solid var(--line); border-radius: var(--radius-pill); font: 13px/1.4 var(--sans); letter-spacing: .04em; opacity: 1; transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard); }
+  .guestbook-picker-handle:hover, .guestbook-picker-handle[aria-expanded="true"] { color: var(--accent-dark); background: var(--control-active); border-color: var(--accent-border); }
+  .guestbook-picker-panel { width: 100%; height: auto; max-height: inherit; min-width: 0; min-height: 0; display: flex; flex-direction: column; margin: 0; padding: 10px clamp(24px, 2.5vw, 36px) 14px; overflow: hidden; opacity: 0; pointer-events: none; transform: translateX(-8px); background: color-mix(in srgb, var(--control-surface) 18%, transparent); border: 0; border-radius: 0; box-shadow: none; transition: opacity 200ms ease, transform 240ms ease; }
+  .guestbook-layout.is-picker-open .guestbook-picker-panel { opacity: 1; pointer-events: auto; transform: translateX(0); }
+  .guestbook-picker-panel > label, .guestbook-picker-panel > input, .guestbook-picker-panel > .guestbook-post-picker-status { flex: 0 0 auto; }
   .guestbook-post-picker label { font-size: 12px; }
   .guestbook-post-picker input, .guestbook-post-results button { font-size: 14px; }
   .guestbook-post-picker-status { font-size: 13px; }
-  .guestbook-post-results { max-height: min(220px, 28vh); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text-faint) 35%, transparent) transparent; }
+  .guestbook-post-results { --guestbook-post-row-height: 52px; flex: 1 1 auto; min-height: 0; max-height: min(520px, 62vh); padding-right: 6px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text-faint) 28%, transparent) transparent; }
   .guestbook-post-results time { font-size: 12px; }
   .guestbook-post-results::-webkit-scrollbar { width: 6px; }
   .guestbook-post-results::-webkit-scrollbar-track { background: transparent; }
-  .guestbook-post-results::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text-faint) 35%, transparent); border-radius: var(--radius-pill); }
+  .guestbook-post-results::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text-faint) 28%, transparent); border-radius: var(--radius-pill); }
+  .guestbook-post-results::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--accent) 42%, transparent); }
   .guestbook-field label, .guestbook-optional-fields, .guestbook-form-status { font-size: 13px; }
   .guestbook-field input, .guestbook-field textarea { font-size: 15px; }
   .guestbook-submit { font-size: 14px; }
-  .guestbook-thread { min-width: 0; margin-top: 0; padding-top: 0; align-self: start; }
+  .guestbook-thread { min-width: 0; margin-top: 0; padding: 0; align-self: start; }
   .guestbook-thread > :first-child { margin-top: 0; }
   .guestbook-messages-header h2 { font-size: 21px; }
   .guestbook-messages-header span { font-size: 13px; }
@@ -1101,14 +1116,16 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
 
 @media (max-width: 959px) {
   .guestbook-layout { grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .guestbook-rail { position: static; max-height: none; overflow: visible; }
+  .guestbook-picker-drawer { display: block; }
   .guestbook-compose { position: static; max-height: none; overflow: visible; background: transparent; border: 0; box-shadow: none; }
   .guestbook-header { border: 0; box-shadow: none; }
   .guestbook-form { padding: 0 2px 18px; background: transparent; border-block: 0; box-shadow: none; }
   .guestbook-reference-tools { justify-content: center; margin: 0 0 16px; padding-bottom: 0; border-bottom: 0; }
   .guestbook-reference { width: 100%; justify-content: center; }
-  .guestbook-post-picker-toggle { width: fit-content; max-width: 100%; margin-inline: auto; padding: 5px 13px; background: color-mix(in srgb, var(--control-surface) 55%, transparent); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); border-radius: var(--radius-pill); text-align: center; }
+  .guestbook-picker-handle { width: fit-content; max-width: 100%; display: flex; margin: 0 auto 16px; padding: 5px 13px; writing-mode: horizontal-tb; color: var(--text-subtle); background: color-mix(in srgb, var(--control-surface) 55%, transparent); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); border-radius: var(--radius-pill); text-align: center; }
   .guestbook-post-picker { width: 100%; margin: -2px 0 16px; padding: 12px; background: color-mix(in srgb, var(--control-surface) 45%, transparent); border: 1px solid color-mix(in srgb, var(--list-line) 60%, transparent); border-radius: var(--radius-medium); box-shadow: none; }
-  .guestbook-post-results { max-height: min(260px, 45vh); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text-faint) 35%, transparent) transparent; }
+  .guestbook-post-results { --guestbook-post-row-height: 56px; max-height: calc(var(--guestbook-post-row-height) * 2.5); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text-faint) 35%, transparent) transparent; }
   .guestbook-post-results li + li { border-color: color-mix(in srgb, var(--list-line) 55%, transparent); }
   .guestbook-post-results::-webkit-scrollbar { width: 5px; }
   .guestbook-post-results::-webkit-scrollbar-track { background: transparent; }

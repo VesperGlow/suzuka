@@ -21,7 +21,8 @@
       data-i18n-guest="{{ i18n "guestbookGuest" }}"
     >
       <div class="guestbook-layout">
-      <aside class="guestbook-compose" aria-label="{{ i18n "guestbookFormLabel" }}">
+      <div class="guestbook-sticky-side">
+      <aside class="guestbook-rail" aria-label="{{ i18n "guestbookFormLabel" }}">
       {{ partial "page-hero.html" (dict
         "page" .
         "eyebrow" (i18n "guestbookEyebrow")
@@ -29,21 +30,12 @@
         "class" "guestbook-header"
       ) }}
 
+      <div class="guestbook-compose">
       <form class="guestbook-form" data-guestbook-form>
-        <div class="guestbook-reference-tools">
-          <aside class="guestbook-reference" data-guestbook-reference hidden>
-            <span>{{ i18n "guestbookCommentingOn" }}</span><a data-guestbook-reference-link></a>
-            <button type="button" data-guestbook-reference-clear aria-label="{{ i18n "guestbookClearPostLabel" }}">{{ i18n "guestbookClearPost" }}</button>
-          </aside>
-          <button class="guestbook-post-picker-toggle" type="button" data-guestbook-post-picker-toggle aria-expanded="false" aria-controls="guestbook-post-picker">{{ i18n "guestbookPickPost" }}</button>
-        </div>
-
-        <section class="guestbook-post-picker" id="guestbook-post-picker" data-guestbook-post-picker hidden aria-label="{{ i18n "guestbookPickPostLabel" }}">
-          <label for="guestbook-post-search">{{ i18n "guestbookSearchPosts" }}</label>
-          <input id="guestbook-post-search" type="search" data-guestbook-post-search placeholder="{{ i18n "guestbookSearchPostsPlaceholder" }}" autocomplete="off">
-          <p class="guestbook-post-picker-status" data-guestbook-post-picker-status role="status" aria-live="polite"></p>
-          <ul class="guestbook-post-results" data-guestbook-post-results></ul>
-        </section>
+        <aside class="guestbook-reference guestbook-reference-tools" data-guestbook-reference hidden>
+          <span>{{ i18n "guestbookCommentingOn" }}</span><a data-guestbook-reference-link></a>
+          <button type="button" data-guestbook-reference-clear aria-label="{{ i18n "guestbookClearPostLabel" }}">{{ i18n "guestbookClearPost" }}</button>
+        </aside>
 
         <div class="guestbook-field guestbook-name-field">
           <label for="guestbook-name">{{ i18n "guestbookName" }}</label>
@@ -74,7 +66,20 @@
           <button class="guestbook-submit" type="submit">{{ i18n "guestbookSubmit" }}</button>
         </div>
       </form>
+      </div>
+
+      <button class="guestbook-post-picker-toggle guestbook-picker-handle" type="button" data-guestbook-post-picker-toggle aria-expanded="false" aria-controls="guestbook-post-picker">{{ i18n "guestbookPickPost" }}</button>
       </aside>
+
+      <div class="guestbook-picker-drawer" data-guestbook-picker-drawer>
+        <section class="guestbook-post-picker guestbook-picker-panel" id="guestbook-post-picker" data-guestbook-post-picker hidden aria-label="{{ i18n "guestbookPickPostLabel" }}">
+          <label for="guestbook-post-search">{{ i18n "guestbookSearchPosts" }}</label>
+          <input id="guestbook-post-search" type="search" data-guestbook-post-search placeholder="{{ i18n "guestbookSearchPostsPlaceholder" }}" autocomplete="off">
+          <p class="guestbook-post-picker-status" data-guestbook-post-picker-status role="status" aria-live="polite"></p>
+          <ul class="guestbook-post-results" data-guestbook-post-results></ul>
+        </section>
+      </div>
+      </div>
 
       <section class="guestbook-messages guestbook-thread" aria-labelledby="guestbook-messages-title">
         <header class="guestbook-messages-header">
