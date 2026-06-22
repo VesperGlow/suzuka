@@ -24,7 +24,7 @@ summaryLength = 90
   category = 'categories'
 
 [params]
-  assetVersion = '54'
+  assetVersion = '55'
   author = 'Suzuka'
   images = ['favicon/favicon-orb.webp']
 

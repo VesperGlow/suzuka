@@ -9,7 +9,8 @@
 
     {{- $postsIndex := site.Home.OutputFormats.Get "GuestbookPosts" -}}
     <div class="guestbook-app" data-guestbook-app data-api-url="/api/guestbook/messages" data-posts-url="{{ $postsIndex.RelPermalink }}">
-      <form class="guestbook-form" data-guestbook-form>
+      <div class="guestbook-layout">
+      <form class="guestbook-form guestbook-compose" data-guestbook-form>
         <div class="guestbook-reference-tools">
           <aside class="guestbook-reference" data-guestbook-reference hidden>
             <span>正在评论：</span><a data-guestbook-reference-link></a>
@@ -55,7 +56,7 @@
         </div>
       </form>
 
-      <section class="guestbook-messages" aria-labelledby="guestbook-messages-title">
+      <section class="guestbook-messages guestbook-thread" aria-labelledby="guestbook-messages-title">
         <header class="guestbook-messages-header">
           <h2 id="guestbook-messages-title">留言</h2>
           <span data-guestbook-count aria-live="polite"></span>
@@ -63,6 +64,7 @@
         <p class="guestbook-list-status" data-guestbook-list-status role="status">正在读取留言…</p>
         <ol class="guestbook-message-list" data-guestbook-message-list></ol>
       </section>
+      </div>
 
       <noscript><p class="guestbook-list-status">请启用 JavaScript 后查看和提交留言。</p></noscript>
     </div>

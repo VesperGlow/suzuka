@@ -1005,7 +1005,7 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
   }
 }
 /* SQLite guestbook */
-.guestbook-app { display: grid; gap: 40px; }
+.guestbook-layout { display: grid; gap: 40px; }
 .guestbook-form { padding: 20px 2px 22px; background: rgba(228, 238, 248, .12); border-block: 1px solid var(--line); }
 .guestbook-reference-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; margin: -4px 0 16px; padding: 0 0 10px; border-bottom: 1px solid var(--list-line); }
 .guestbook-reference { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; color: var(--text-faint); font-size: var(--font-size-sm); }
@@ -1053,6 +1053,11 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
 .guestbook-message-content { margin: 9px 0 0; color: var(--ink); line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }
 .guestbook-message-reference { margin: 8px 0 0; color: var(--text-faint); font-size: var(--font-size-sm); }
 .guestbook-message-reference a { color: var(--text-subtle); }
+@media (min-width: 960px) {
+  .guestbook-layout { grid-template-columns: minmax(360px, 400px) minmax(0, 1fr); gap: clamp(40px, 4vw, 56px); align-items: start; }
+  .guestbook-compose { position: sticky; top: calc(var(--header-height, 72px) + 24px); max-height: calc(100vh - var(--header-height, 72px) - 48px); overflow: auto; align-self: start; }
+  .guestbook-thread { min-width: 0; }
+}
 .post-discussion { width: 100%; margin-top: 38px; }
 .post-discussion-link { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; color: inherit; background: var(--control-surface); border: 1px solid var(--line); border-radius: var(--radius-medium); transition: background-color 200ms ease-out, border-color 200ms ease-out, transform 200ms ease-out, color 200ms ease-out; }
 .post-discussion-link:hover { color: inherit; background: var(--control-active); border-color: var(--accent-border); }
@@ -1066,7 +1071,7 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
 .post-discussion-link:hover .post-discussion-action { color: var(--accent-dark); transform: translateX(2px); }
 
 @media (max-width: 768px) {
-  .guestbook-app { gap: 28px; }
+  .guestbook-layout { gap: 28px; }
   .guestbook-form { padding: 16px 2px 18px; }
   .guestbook-post-picker-toggle { width: fit-content; margin-left: 0; }
   .guestbook-post-results button { align-items: flex-start; flex-direction: column; gap: 1px; }
