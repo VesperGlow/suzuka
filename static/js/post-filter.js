@@ -8,8 +8,34 @@ document.querySelectorAll("[data-post-filter-scope]").forEach((scope) => {
   const viewButtons = [...scope.querySelectorAll("[data-archive-view]")];
   const viewPanels = [...scope.querySelectorAll("[data-archive-view-panel]")];
 
-  function setView(view) {
-    if (!viewButtons.some((button) => button.dataset.archiveView === view)) return;
+  const archiveViews = ["cards", "timeline"];
+
+  function isArchiveView(view) {
+    return archiveViews.includes(view);
+  }
+
+  function viewFromHash() {
+    const view = location.hash.slice(1);
+    return isArchiveView(view) ? view : null;
+  }
+
+  function storedArchiveView() {
+    try {
+      const view = localStorage.getItem("archiveView");
+      return isArchiveView(view) ? view : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function getInitialArchiveView() {
+    return viewFromHash() || storedArchiveView() || "cards";
+  }
+
+  function setArchiveView(view, options = {}) {
+    if (!isArchiveView(view)) return;
+
+    const { store = true, updateHash = true } = options;
 
     viewButtons.forEach((button) => {
       const active = button.dataset.archiveView === view;
@@ -19,26 +45,34 @@ document.querySelectorAll("[data-post-filter-scope]").forEach((scope) => {
     viewPanels.forEach((panel) => {
       panel.hidden = panel.dataset.archiveViewPanel !== view;
     });
+
+    if (store) {
+      try {
+        localStorage.setItem("archiveView", view);
+      } catch {
+        // The view still works when storage is unavailable.
+      }
+    }
+
+    const hash = `#${view}`;
+    if (updateHash && location.hash !== hash) {
+      history.replaceState(null, "", hash);
+    }
   }
 
   if (viewButtons.length && viewPanels.length) {
-    const viewFromHash = () => location.hash === "#timeline" ? "timeline" : "card";
-    const hashForView = (view) => view === "timeline" ? "#timeline" : "#cards";
-
     viewButtons.forEach((button) => {
       button.addEventListener("click", () => {
-        const view = button.dataset.archiveView;
-        setView(view);
-        if (location.hash !== hashForView(view)) location.hash = hashForView(view);
+        setArchiveView(button.dataset.archiveView);
       });
     });
-    window.addEventListener("hashchange", () => setView(viewFromHash()));
 
-    const initialView = viewFromHash();
-    setView(initialView);
-    if (!["#cards", "#timeline"].includes(location.hash)) {
-      history.replaceState(null, "", hashForView(initialView));
-    }
+    window.addEventListener("hashchange", () => {
+      const view = viewFromHash();
+      if (view) setArchiveView(view, { updateHash: false });
+    });
+
+    setArchiveView(getInitialArchiveView());
   }
 
   if (tagToggle && tagPanel) {

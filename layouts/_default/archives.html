@@ -10,7 +10,7 @@
           <p class="archive-view-description">
             <span>{{ i18n "archiveViewDescriptionBefore" }}</span>
             <span class="archive-view-switch" role="group" aria-label="{{ i18n "archiveViewLabel" }}">
-              <button type="button" class="active" data-archive-view="card" aria-pressed="true">{{ i18n "archiveCardView" }}</button>
+              <button type="button" class="active" data-archive-view="cards" aria-pressed="true">{{ i18n "archiveCardView" }}</button>
               <button type="button" data-archive-view="timeline" aria-pressed="false">{{ i18n "archiveTimelineView" }}</button>
             </span>
             <span>{{ i18n "archiveViewDescriptionAfter" }}</span>
@@ -22,7 +22,7 @@
     </aside>
 
     <div class="archive-content">
-      <section class="archive-card-list" data-archive-view-panel="card" aria-label="{{ i18n "archiveCardListLabel" }}">
+      <section class="archive-card-list" data-archive-view-panel="cards" aria-label="{{ i18n "archiveCardListLabel" }}">
         {{ range $paginator.Pages }}
           {{ partial "archive-card.html" . }}
         {{ else }}
