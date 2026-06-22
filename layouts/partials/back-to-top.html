@@ -1,12 +1,9 @@
-{{- $tracksReading := and .IsPage (eq .Section "posts") -}}
-<button class="back-to-top{{ if $tracksReading }} back-to-top-reading{{ end }}" type="button" aria-label="{{ i18n "backToTop" }}" data-back-to-top{{ if $tracksReading }} style="--reading-remainder: 100%"{{ end }} hidden>
+<button class="back-to-top back-to-top-reading" type="button" aria-label="{{ i18n "backToTop" }}" data-back-to-top style="--reading-remainder: 100%" hidden>
   <span class="back-to-top-hint" aria-hidden="true">↑</span>
-  {{ if $tracksReading }}
   <picture class="back-to-top-layer back-to-top-silhouette" aria-hidden="true">
     <source media="(max-width: 768px)" srcset="{{ "characters/suzuka_sp.webp" | relURL }}">
     <img src="{{ "characters/suzuka_pc.webp" | relURL }}" alt="" width="1264" height="2034" loading="lazy" decoding="async">
   </picture>
-  {{ end }}
   <picture class="back-to-top-layer back-to-top-color">
     <source media="(max-width: 768px)" srcset="{{ "characters/suzuka_sp.webp" | relURL }}">
     <img src="{{ "characters/suzuka_pc.webp" | relURL }}" alt="" width="1264" height="2034" loading="lazy" decoding="async">
