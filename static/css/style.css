@@ -551,6 +551,14 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
 .archive-card-footer .read-more { flex: 0 0 auto; }
 .archive-content { min-width: 0; }
 .archive-card-list[hidden], .archive-timeline-list[hidden] { display: none; }
+html[data-archive-view="cards"] .archive-card-list,
+html[data-archive-view="timeline"] .archive-timeline-list { display: block; }
+html[data-archive-view="cards"] .archive-card-list { display: grid; }
+html[data-archive-view="cards"] .archive-timeline-list,
+html[data-archive-view="timeline"] .archive-card-list { display: none; }
+html[data-archive-view="timeline"] .archive-view-switch button[data-archive-view="cards"] { color: var(--muted); background: transparent; box-shadow: none; }
+html[data-archive-view="timeline"] .archive-view-switch button[data-archive-view="timeline"] { color: var(--accent-dark); background: var(--control-active); box-shadow: 0 2px 8px rgba(76, 112, 148, .08); }
+html.archive-no-transition .archive-view-switch button { transition: none; }
 .archive-timeline-list { min-width: 0; padding: 2px 0 30px; }
 .archive-timeline-year { position: relative; display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 24px; }
 .archive-timeline-year + .archive-timeline-year { padding-top: 38px; }

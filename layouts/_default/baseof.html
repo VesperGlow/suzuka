@@ -11,6 +11,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="{{ $description }}">
   <meta id="theme-color" name="theme-color" content="#f5f9fc">
+  {{ if eq .Layout "archives" }}
+    <script>
+      (() => {
+        const root = document.documentElement;
+        const hashView = location.hash.slice(1);
+        let view = hashView === "cards" || hashView === "timeline" ? hashView : null;
+
+        if (!view) {
+          try {
+            const storedView = localStorage.getItem("archiveView");
+            if (storedView === "cards" || storedView === "timeline") view = storedView;
+          } catch {}
+        }
+
+        root.dataset.archiveView = view || "cards";
+        root.classList.add("archive-no-transition");
+      })();
+    </script>
+  {{ end }}
   <script src="{{ partial "asset-url.html" "js/theme.js" }}"></script>
   <title>{{ if .IsHome }}{{ site.Title }}{{ else }}{{ .Title }} · {{ site.Title }}{{ end }}</title>
   <link rel="canonical" href="{{ $canonicalURL }}">

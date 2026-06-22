@@ -29,13 +29,16 @@ document.querySelectorAll("[data-post-filter-scope]").forEach((scope) => {
   }
 
   function getInitialArchiveView() {
-    return viewFromHash() || storedArchiveView() || "cards";
+    const earlyView = document.documentElement.dataset.archiveView;
+    return viewFromHash() || (isArchiveView(earlyView) ? earlyView : null) || storedArchiveView() || "cards";
   }
 
   function setArchiveView(view, options = {}) {
     if (!isArchiveView(view)) return;
 
     const { store = true, updateHash = true } = options;
+
+    document.documentElement.dataset.archiveView = view;
 
     viewButtons.forEach((button) => {
       const active = button.dataset.archiveView === view;
@@ -72,7 +75,10 @@ document.querySelectorAll("[data-post-filter-scope]").forEach((scope) => {
       if (view) setArchiveView(view, { updateHash: false });
     });
 
-    setArchiveView(getInitialArchiveView());
+    setArchiveView(getInitialArchiveView(), { store: false, updateHash: false });
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => document.documentElement.classList.remove("archive-no-transition"));
+    });
   }
 
   if (tagToggle && tagPanel) {
