@@ -1018,9 +1018,17 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
 .guestbook-message-content { margin: 9px 0 0; color: var(--ink); line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }
 .guestbook-message-reference { margin: 8px 0 0; color: var(--text-faint); font-size: var(--font-size-sm); }
 .guestbook-message-reference a { color: var(--text-subtle); }
-.article-guestbook-cta { margin-top: 38px; text-align: center; }
-.article-guestbook-cta a { display: inline-flex; align-items: center; padding: 8px 16px; color: var(--accent-dark); background: var(--control-surface); border: 1px solid var(--accent-border); border-radius: var(--radius-pill); font-size: var(--font-size-ui); transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard); }
-.article-guestbook-cta a:hover { color: var(--accent-dark); background: var(--control-active); border-color: var(--accent); }
+.post-discussion { width: 100%; margin-top: 38px; }
+.post-discussion-link { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; color: inherit; background: var(--control-surface); border: 1px solid var(--line); border-radius: var(--radius-medium); transition: background-color 200ms ease-out, border-color 200ms ease-out, transform 200ms ease-out, color 200ms ease-out; }
+.post-discussion-link:hover { color: inherit; background: var(--control-active); border-color: var(--accent-border); }
+.post-discussion-link:focus-visible { outline: 1px solid var(--accent-border); outline-offset: 3px; box-shadow: 0 0 0 3px var(--accent-soft); }
+.post-discussion-copy { min-width: 0; display: flex; flex-direction: column; justify-content: center; padding: 17px 22px; }
+.post-discussion-copy strong { color: var(--ink); font: 500 16px/1.55 var(--serif); }
+.post-discussion-copy > span { margin-top: 5px; color: var(--muted); font-size: var(--font-size-ui); line-height: 1.7; }
+.post-discussion-action { width: fit-content; display: inline-flex; align-items: center; justify-self: end; gap: 7px; margin-right: 20px; padding: 7px 10px; color: var(--text-subtle); font-size: var(--font-size-ui); line-height: 1; transition: transform 200ms ease-out, color 200ms ease-out; }
+.post-discussion-action svg { width: 18px; height: 18px; flex: 0 0 auto; display: block; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.post-discussion-action > span { display: inline-flex; align-items: center; }
+.post-discussion-link:hover .post-discussion-action { color: var(--accent-dark); transform: translateX(2px); }
 
 @media (max-width: 768px) {
   .guestbook-app { gap: 28px; }
@@ -1031,5 +1039,8 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
   .guestbook-form-footer { align-items: flex-end; }
   .guestbook-message { padding: 17px 0; }
   .guestbook-message-header { align-items: flex-start; flex-direction: column; gap: 3px; }
-  .article-guestbook-cta { margin-top: 30px; }
+  .post-discussion { margin-top: 30px; }
+  .post-discussion-link { grid-template-columns: 1fr; text-align: left; }
+  .post-discussion-copy { padding: 16px 17px 10px; }
+  .post-discussion-action { justify-self: start; margin: 0 17px 15px; }
 }
