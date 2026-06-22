@@ -769,7 +769,8 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
   .about-prose p { margin: .9em 0; }
   .about-residency-row { grid-area: uptime; padding: 0 .5rem; }
   .about-residency-badge { gap: .7rem; padding: .6rem .85rem; }
-  .about-uptime p { min-width: 0; text-align: center; }
+  .about-uptime p[data-uptime-mobile-format] { min-width: 0; display: flex; flex: 1 1 auto; justify-content: center; font-size: clamp(.82rem, 3.4vw, .95rem); letter-spacing: .01em; text-align: center; }
+  .about-uptime p[data-uptime-mobile-format] > span { min-width: 0; flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .guestbook-page { padding: 0 18px 48px; }
   .guestbook-header { padding: 28px 0 22px; }
   .not-found-character::after { display: none; }
