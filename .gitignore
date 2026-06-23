@@ -5,6 +5,9 @@
 scripts/__pycache__/
 
 AGENTS.md
+CLAUDE.md
+
+node_modules/
 
 # Guestbook service runtime/build files
 guestbook-service/guestbook-service
