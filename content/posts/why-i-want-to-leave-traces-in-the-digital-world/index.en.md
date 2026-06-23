@@ -15,7 +15,7 @@ tags:
   - LOVEPICAL-POPPY!
 description: "Starting with LOVEPICAL-POPPY! and Yaotome Suzuka, a note on why I want to preserve the characters, screenshots, and feelings I have loved on a site of my own."
 images:
-  - "/images/posts/2026/06/start/001.webp"
+  - "001.webp"
 ---
 
 The internet is always moving forward.
@@ -26,7 +26,7 @@ That is why I wanted to build a little site of my own.
 
 ## A Screenshot I Do Not Want to Lose
 
-![Yaotome Suzuka happily presents a dessert decorated with a doll and cherries](/images/posts/2026/06/start/001.webp)
+![Yaotome Suzuka happily presents a dessert decorated with a doll and cherries](001.webp)
 
 *Rather than leave screenshots buried on my hard drive, I want to give these cherished moments somewhere I can return to.*
 

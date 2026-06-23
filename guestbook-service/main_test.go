@@ -52,6 +52,43 @@ func TestCreateAndListMessages(t *testing.T) {
 	}
 }
 
+func TestRateLimit(t *testing.T) {
+	now := time.Date(2026, 6, 22, 12, 0, 0, 0, time.UTC)
+	db, err := openDatabase(filepath.Join(t.TempDir(), "guestbook.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { db.Close() })
+	a := &app{db: db, now: func() time.Time { return now }, limiter: newRateLimiter(postBurst, postWindow, func() time.Time { return now })}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/messages", a.handleMessages)
+	handler := securityHeaders(mux)
+
+	post := func() int {
+		body := `{"name":"Suzuka","content":"hello"}`
+		request := httptest.NewRequest(http.MethodPost, "/messages", strings.NewReader(body))
+		request.Header.Set("Content-Type", "application/json")
+		request.Header.Set("X-Forwarded-For", "203.0.113.7")
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		return response.Code
+	}
+
+	for i := 0; i < postBurst; i++ {
+		if code := post(); code != http.StatusCreated {
+			t.Fatalf("request %d status = %d", i+1, code)
+		}
+	}
+	if code := post(); code != http.StatusTooManyRequests {
+		t.Fatalf("over-limit status = %d, want 429", code)
+	}
+
+	now = now.Add(postWindow + time.Second)
+	if code := post(); code != http.StatusCreated {
+		t.Fatalf("after window status = %d, want 201", code)
+	}
+}
+
 func TestValidation(t *testing.T) {
 	handler := testApp(t)
 	tests := []struct {

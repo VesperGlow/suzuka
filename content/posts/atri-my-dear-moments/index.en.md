@@ -20,7 +20,7 @@ Yet after I finished the game, what stayed in my memory was not any of those pre
 
 There are ruins left by the rising sea, lives constrained by energy shortages and a future with no visible way forward, and pain reaching out from the past. But whenever I look back, the first things I see are always the shade of trees, white clouds, and light upon the water. And Atri taking Natsuki's hand as though she has no intention of letting him refuse.
 
-![Beneath the trees, Atri takes Natsuki's hand](/images/posts/2026/06/atri-my-dear-moments/001.webp)
+![Beneath the trees, Atri takes Natsuki's hand](001.webp)
 
 ## She Burst into His Life Like Summer
 
@@ -34,7 +34,7 @@ Atri therefore does not "heal" him with one beautiful line. She is often noisy e
 
 Atri is his complete opposite. Everything interests her, as though the world cannot truly be over as long as she can still run forward today.
 
-![Atri smiles amid a burst of clear water](/images/posts/2026/06/atri-my-dear-moments/002.webp)
+![Atri smiles amid a burst of clear water](002.webp)
 
 I love the small routines of the game's first half. Repairing broken equipment, returning to school, looking for a way to power the island, and then working with everyone to turn an idea into something real. Every problem is concrete: which materials are missing, why a machine will not run, whether the lights can come on tonight. These immediate, practical questions lead Natsuki to use his knowledge again and to return to the space between people.
 
@@ -46,7 +46,7 @@ Atri is always present in these everyday moments. She helps and causes trouble, 
 
 What Atri gives Natsuki, then, cannot be described as love alone. She lets him believe again that although his body carries a wound that cannot be erased, his life did not end with it. He can still solve problems, still be needed, and still reach out a hand to someone.
 
-![Atri lies in the shade while several small birds rest beside her](/images/posts/2026/06/atri-my-dear-moments/003.webp)
+![Atri lies in the shade while several small birds rest beside her](003.webp)
 
 ## A Heart Needs No Certificate
 
@@ -58,7 +58,7 @@ The latter half of the game brings this question closer and makes it crueler. Ho
 
 But the question quickly returns to humanity itself. Human emotions are also shaped by memory, experience, and instinct. We cannot open another person's heart and confirm that it contains a love one hundred percent pure. We can only see what they say, what they do, and what they choose when it matters. If that is enough for us to understand a person, why should Atri be required to offer more exacting proof?
 
-![Underwater, Atri leans in to kiss Natsuki](/images/posts/2026/06/atri-my-dear-moments/004.webp)
+![Underwater, Atri leans in to kiss Natsuki](004.webp)
 
 The kiss beneath the water is moving not because it finally labels their relationship as romance. At that moment, neither of them has been promised a future. They simply answer each other's feelings within the time they have, treating a heart they cannot prove as something real.
 
@@ -76,7 +76,7 @@ Gradually, I could distinguish the warmth of those days. The school holds the vo
 
 Forty-five days thus feel longer than the number suggests. Natsuki and Atri do not merely share one miracle. They spend many ordinary mornings and evenings together. Their feelings gain places in which to settle: a classroom, a repaired machine, a road beside the sea, and an idle conversation with no special meaning that somehow remains in memory.
 
-![Beneath the stars, Natsuki embraces Atri](/images/posts/2026/06/atri-my-dear-moments/005.webp)
+![Beneath the stars, Natsuki embraces Atri](005.webp)
 
 The story does not deny their parting. On the contrary, it reminds the player from the beginning that Atri and Natsuki's time must eventually end. Precisely because it cannot last forever, their relationship is not a beautiful dream that can be saved and reloaded without limit, but a reality they must live with care.
 
@@ -108,7 +108,7 @@ At times I wished the school and the island community had been explored a little
 
 I love the feeling *ATRI*'s ending leaves behind. It carries regret and a romance peculiar to science fiction, yet it does not keep its characters forever inside their grief. The sea has drowned the old world, but people will still seek a new life. After a fleeting encounter ends, those left behind will go on carrying its memory.
 
-![At sunset, Atri takes Natsuki's hand and runs toward the sea](/images/posts/2026/06/atri-my-dear-moments/006.webp)
+![At sunset, Atri takes Natsuki's hand and runs toward the sea](006.webp)
 
 Long after finishing the game, I may forget some events, but I doubt I will forget Atri running beside the sea. The wind catches her skirt, Natsuki struggles to keep up, and the sunset colors the sky in tones that hardly seem real. The image feels like the whole work in miniature: the world is not gentle, and their time together is not long enough, but while their hands are still joined, they should run forward with all their strength.
 

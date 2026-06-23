@@ -13,7 +13,7 @@ tags:
 description: "From an android being delivered to a daughter finally acknowledged: revisiting Philia and Jude's journey toward their destination in Stella of the End."
 spoiler: "This post contains the complete story and ending of Stella of the End."
 images:
-  - "/images/posts/2026/06/tsui-no-stella/016.webp"
+  - "016.webp"
 ---
 
 The story of [*Stella of the End*](https://vndb.org/v29443) begins with a delivery job.
@@ -30,7 +30,7 @@ When I began the game, I was not thinking that far ahead. Philia simply seemed l
 
 ## What She Wants Is to Be an Ordinary Person
 
-![Philia stands before a clothing-store window and gazes at a white dress](/images/posts/2026/06/tsui-no-stella/001.webp)
+![Philia stands before a clothing-store window and gazes at a white dress](001.webp)
 
 Philia stands before a clothing-store window, looking at the white dress inside. It is easy to read this image as a girl's fondness for pretty clothes, but what she truly longs for is the utterly ordinary life behind that dress.
 
@@ -42,7 +42,7 @@ For Philia, "becoming human" therefore does not mean acquiring some higher quali
 
 The very ordinariness of that wish makes her original circumstances feel especially cold.
 
-![Philia awakens inside a mechanical space washed in cold light](/images/posts/2026/06/tsui-no-stella/002.webp)
+![Philia awakens inside a mechanical space washed in cold light](002.webp)
 
 The Philia first presented to the player is not the girl who stops at a window for a dress, but an android lying in a mechanical chamber. Cold light falls across her, and she resembles an object just removed from a container: her body can be inspected, her condition verified, and then she can be loaded into a commission whose destination was written long ago.
 
@@ -52,7 +52,7 @@ I love that the story does not immediately erase this distance. Jude's detachmen
 
 ## From Cargo to Traveling Companion
 
-![Jude carries Philia through a mechanical facility flooded with bright light](/images/posts/2026/06/tsui-no-stella/003.webp)
+![Jude carries Philia through a mechanical facility flooded with bright light](003.webp)
 
 When Jude picks Philia up and carries her forward, the image resembles a rescue, but this is not yet the beginning of a tender story. He has simply accepted a job, and she is the object that must be delivered. He protects her first because a transporter is supposed to keep his cargo safe.
 
@@ -62,7 +62,7 @@ At rest, Philia is quiet and entirely unguarded. She grows tired, can be hurt, a
 
 The first time I clearly felt Jude's attitude change was not when he said something tender, but precisely because he still did not know how. His words retain the tone of a transporter, while his actions begin to move ahead of that hard language: stopping to wait for her, checking her condition, and instinctively putting her before himself when danger comes. The requirements of the job can explain any one of these acts, but struggle to explain them all.
 
-![Jude drives while Philia sleeps beside him](/images/posts/2026/06/tsui-no-stella/004.webp)
+![Jude drives while Philia sleeps beside him](004.webp)
 
 The car continues toward the same destination, but the relationship inside has already changed. Philia can sleep beside Jude because she trusts him to keep driving. Jude, too, begins to notice not only whether the cargo is damaged, but whether she sleeps peacefully and can endure the journey.
 
@@ -72,7 +72,7 @@ At the ending, however, I felt that this slowness could not have been removed. C
 
 Care and transport look similar on the surface: providing food, avoiding danger, and keeping to the journey. The difference lies in small places. Transport asks whether an object can be delivered intact. Care wonders how she will feel when she wakes, whether she is afraid, and what kind of scenery she hopes to see.
 
-![Philia looks out at the world through the car window](/images/posts/2026/06/tsui-no-stella/005.webp)
+![Philia looks out at the world through the car window](005.webp)
 
 Philia looks through the car window at the world outside. The ruins do not return to their former state for the sake of her curiosity, but to her, the clear glass, passing light, and unseen landscape at the end of the road remain worth watching.
 
@@ -82,7 +82,7 @@ She begins to observe the road, understand this world, and form choices through 
 
 ## Who Deserves to Be Called Human Among the Ruins?
 
-![Delilah's damaged mechanical body lies among the ruins](/images/posts/2026/06/tsui-no-stella/006.webp)
+![Delilah's damaged mechanical body lies among the ruins](006.webp)
 
 The apocalypse in *Stella of the End* is not a beautiful backdrop placed behind its characters. Bodies break, resources always run out, and many choices offer no perfect answer. Again and again, it brings forward a question easily set aside in peaceful life: where does the boundary between human and machine truly lie?
 
@@ -90,19 +90,19 @@ When Delilah lies broken, the inside of her mechanical body is exposed among the
 
 This hesitation carries more force than a standard answer. Flesh can be damaged and machinery can be damaged. People are changed by their surroundings, while androids are likewise shaped into different selves by memory and harm. Structure can explain a body, but not every reason that brought her here.
 
-![Delilah and Jude exchange a quiet, complicated look](/images/posts/2026/06/tsui-no-stella/007.webp)
+![Delilah and Jude exchange a quiet, complicated look](007.webp)
 
 Delilah is also a mirror for Philia. Similar construction does not lead them to the same ending. What was written into them at manufacture certainly matters, but so do the people they later meet, the treatment they receive, and the choices they make when there is nowhere left to retreat.
 
 Philia receives trust and companionship on her journey; Delilah presents another possibility. "Philia is becoming more human" can no longer be offered as casual praise. Possessing a will does not automatically bring happiness. The world can hurt her, and she must bear the consequences of her choices.
 
-![Red-eyed, Philia raises a gun and takes aim](/images/posts/2026/06/tsui-no-stella/008.webp)
+![Red-eyed, Philia raises a gun and takes aim](008.webp)
 
 When Philia raises a gun with glowing red eyes, she is no longer the child who can only wait for Jude to protect her. She has begun to use her own strength to guard what matters to her.
 
 The scene is powerful, yet I cannot simply call it "cool." The girl who once looked at a white dress through a shop window has now learned to aim a weapon at someone. She has indeed grown, but the cost is plain. Jude can teach her how to survive, but cannot forever keep the world's cruelty beyond her sight.
 
-![Philia fires in the wasteland before the remains of a colossal machine](/images/posts/2026/06/tsui-no-stella/009.webp)
+![Philia fires in the wasteland before the remains of a colossal machine](009.webp)
 
 The colossal mechanical remains press down upon the wasteland, making Philia's figure seem very small. This world never welcomes her gently merely because she wants to be human. It teaches her curiosity and forces her to learn to shoot. It gives her a traveling companion and makes her understand that loss cannot be avoided.
 
@@ -130,13 +130,13 @@ It is what they will call one another.
 
 ## What He Transported Was His Daughter
 
-![At the ending, Philia looks at Jude through her tears](/images/posts/2026/06/tsui-no-stella/010.webp)
+![At the ending, Philia looks at Jude through her tears](010.webp)
 
 After the gunfire, the story leaves its final time to the two of them. There is no greater enemy and no new answer. Philia looks at Jude through tears, and all the care, dependence, and attachment left unspoken along the road must finally be given a name.
 
 From here, I could barely keep myself outside the story. The earlier dangers made me tense, and Delilah's fate hurt, but only when the image became quiet did I truly understand that this journey was ending. The story does not rush into the next scene. It lets Philia look at Jude, and makes the player wait beside her for those few words.
 
-![Jude gives Philia the surname "Gray"](/images/posts/2026/06/tsui-no-stella/011.webp)
+![Jude gives Philia the surname "Gray"](011.webp)
 
 Jude gives Philia the surname "Gray."
 
@@ -146,7 +146,7 @@ Nor is this a ceremony that turns Philia into a human. When she gazed at the whi
 
 By this point I could guess what he might say next, yet the actual wording still went beyond what I expected. Not a partner, not an important person, and not the vague word "family." Jude chooses one very specific name.
 
-![Jude says, "What I transported was... my daughter"](/images/posts/2026/06/tsui-no-stella/012.webp)
+![Jude says, "What I transported was... my daughter"](012.webp)
 
 "What I transported was... my daughter."
 
@@ -160,7 +160,7 @@ The first thing that returns to my mind when I hear "my daughter" is not a decis
 
 The words "my daughter" reinterpret the same road, the same job, and the same destination from the beginning. What he protected was not merchandise that needed to remain intact. Before he even realized it, he was learning to be a father; and in the last thing he could do, he left his daughter a path on which to live.
 
-![Jude says that he delivered his daughter to her destination](/images/posts/2026/06/tsui-no-stella/013.webp)
+![Jude says that he delivered his daughter to her destination](013.webp)
 
 Thus, "I delivered my daughter... to her destination" sounds at once like a transporter's report and a father's acknowledgment of his final escort.
 
@@ -168,7 +168,7 @@ The two identities overlap in this moment. As a transporter, he completes the co
 
 Calling himself her father does not give Jude ownership of Philia's life. The last thing he does is let go. He cannot walk through her future for her; all he can do is bring her to its entrance. And then, watch her go.
 
-![In the distance, Philia bids Jude farewell: "Well then, I'm off, Papa"](/images/posts/2026/06/tsui-no-stella/014.webp)
+![In the distance, Philia bids Jude farewell: "Well then, I'm off, Papa"](014.webp)
 
 "Well then, I'm off, Papa."
 
@@ -178,7 +178,7 @@ And just after they finally say it, they have to part.
 
 Philia does not say merely "I'm leaving," but "I'm setting out." The meanings are close, but the emotions are entirely different. "I'm leaving" easily holds one's gaze on the farewell. Setting out turns that gaze toward what lies ahead. She accepts the name Jude gave her and also accepts that the remaining road is hers to walk.
 
-![Carrying a case, Philia walks alone toward the distance](/images/posts/2026/06/tsui-no-stella/015.webp)
+![Carrying a case, Philia walks alone toward the distance](015.webp)
 
 In the distant view without dialogue, Philia carries her case and walks away. The game does not make her stand there crying forever, nor use more dialogue to summarize her feelings. She turns around and truly takes her first step.
 
@@ -188,7 +188,7 @@ At the journey's beginning, she was picked up, loaded, and transported by someon
 
 ## The World Ended, but the Journey Continues
 
-![Beneath a vast sky, two figures walk through green-covered ruins toward a distant city](/images/posts/2026/06/tsui-no-stella/016.webp)
+![Beneath a vast sky, two figures walk through green-covered ruins toward a distant city](016.webp)
 
 The world of *Stella of the End* lies broken, yet green growth covers the ruins again. A city stands silently in the distance, the sky remains vast, and the road does not disappear at the edge of the image.
 
