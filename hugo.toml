@@ -66,11 +66,6 @@ summaryLength = 90
       pageRef = '/pages/guestbook'
       weight = 30
     [[languages.zh-cn.menus.main]]
-      identifier = 'search'
-      name = '搜索'
-      pageRef = '/pages/search'
-      weight = 60
-    [[languages.zh-cn.menus.main]]
       identifier = 'about'
       name = '凉花'
       pageRef = '/pages/about'
@@ -98,11 +93,6 @@ summaryLength = 90
       name = 'Guestbook'
       pageRef = '/pages/guestbook'
       weight = 30
-    [[languages.en.menus.main]]
-      identifier = 'search'
-      name = 'Search'
-      pageRef = '/pages/search'
-      weight = 60
     [[languages.en.menus.main]]
       identifier = 'about'
       name = 'Suzuka'

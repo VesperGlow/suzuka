@@ -22,14 +22,8 @@ other = "Index"
 other = "Page"
 [allPostsEyebrow]
 other = "All posts"
-[searchEyebrow]
-other = "Search"
-[searchDescription]
-other = "在文章标题、正文和标签中查找。"
 [searchArticles]
 other = "搜索文章"
-[searchPlaceholder]
-other = "输入关键词……"
 [headerSearchPlaceholder]
 other = "搜索庭院里的文字……"
 [clear]
@@ -38,24 +32,18 @@ other = "清空"
 other = "清除搜索"
 [search]
 other = "搜索"
-[searchPrompt]
-other = "输入关键词开始搜索。"
 [searching]
 other = "正在搜索……"
-[searchFound]
-other = "找到 {{ .Count }} 篇相关文字"
-[searchEmpty]
-other = "没有找到相关文字。也许它还没有落进这座微蓝的庭院里。"
 [headerSearchEmpty]
 other = "没有找到相关文字。"
-[searchUnavailable]
-other = "搜索索引暂时不可用，请稍后再试。"
 [headerSearchUnavailable]
 other = "搜索暂时不可用，请稍后再试。"
 [searchResults]
 other = "搜索结果"
-[viewAllResults]
-other = "查看全部结果"
+[headerSearchCount]
+other = "共 {{ .Count }} 条结果"
+[headerSearchMore]
+other = "加载更多"
 [empty]
 other = "这里暂时还是空的。"
 [filterEmpty]

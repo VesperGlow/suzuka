@@ -9,14 +9,16 @@ if (root) {
   const popover = root.querySelector(".header-search-popover");
   const status = root.querySelector(".header-search-status");
   const results = root.querySelector(".header-search-results");
-  const allResults = root.querySelector(".header-search-all");
+  const loadMore = root.querySelector(".header-search-more");
   const messages = root.dataset;
-  if (form && input && clearButton && popover && status && results && allResults) {
+  if (form && input && clearButton && popover && status && results && loadMore) {
   const mobileQuery = window.matchMedia("(max-width: 768px)");
   const minimumLength = 2;
+  const pageSize = 10;
   let debounceTimer;
   let requestId = 0;
   let suppressFocusOpen = false;
+  let activeSearch = null;
 
   const loadPagefind = () => {
     if (typeof window.suzukaLoadPagefind !== "function") {
@@ -80,15 +82,11 @@ if (root) {
   function resetResults() {
     window.clearTimeout(debounceTimer);
     requestId += 1;
+    activeSearch = null;
     results.replaceChildren();
+    loadMore.hidden = true;
     status.textContent = "";
     closePopover();
-  }
-
-  function updateAllResultsLink(query) {
-    const url = new URL(root.dataset.searchUrl, window.location.origin);
-    url.searchParams.set("q", query);
-    allResults.href = `${url.pathname}${url.search}`;
   }
 
   function resultItem(data, query) {
@@ -115,6 +113,22 @@ if (root) {
     return article;
   }
 
+  async function renderNextBatch(search) {
+    const batch = search.queue.splice(0, pageSize);
+    if (!batch.length) {
+      loadMore.hidden = true;
+      return;
+    }
+
+    loadMore.disabled = true;
+    const matches = await Promise.all(batch.map((result) => result.data()));
+    if (search.request !== requestId) return;
+
+    results.append(...matches.map((match) => resultItem(match, search.query)));
+    loadMore.disabled = false;
+    loadMore.hidden = search.queue.length === 0;
+  }
+
   async function runSearch(query) {
     const normalized = query.trim();
     if (normalized.length < minimumLength) {
@@ -124,8 +138,8 @@ if (root) {
 
     const currentRequest = ++requestId;
     results.replaceChildren();
+    loadMore.hidden = true;
     status.textContent = messages.i18nSearching;
-    updateAllResultsLink(normalized);
     openPopover();
 
     try {
@@ -135,18 +149,22 @@ if (root) {
       });
       if (currentRequest !== requestId) return;
 
-      const limit = mobileQuery.matches ? 4 : 5;
-      const matches = await Promise.all(
-        response.results.slice(0, limit).map((result) => result.data())
-      );
-      if (currentRequest !== requestId) return;
+      if (!response.results.length) {
+        activeSearch = null;
+        status.textContent = messages.i18nEmpty;
+        return;
+      }
 
-      results.replaceChildren(...matches.map((match) => resultItem(match, normalized)));
-      status.textContent = matches.length ? "" : messages.i18nEmpty;
+      const search = { request: currentRequest, query: normalized, queue: response.results.slice() };
+      activeSearch = search;
+      status.textContent = messages.i18nCount.replace("{count}", response.results.length);
+      await renderNextBatch(search);
     } catch (error) {
       console.error("Header search failed:", error);
       if (currentRequest !== requestId) return;
+      activeSearch = null;
       results.replaceChildren();
+      loadMore.hidden = true;
       status.textContent = messages.i18nUnavailable;
     }
   }
@@ -164,6 +182,10 @@ if (root) {
     event.preventDefault();
     setSearchActive(true);
     input.focus();
+  });
+
+  loadMore.addEventListener("click", () => {
+    if (activeSearch) renderNextBatch(activeSearch);
   });
 
   input.addEventListener("input", () => {

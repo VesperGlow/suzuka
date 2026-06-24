@@ -2,12 +2,13 @@
   id="header-search"
   class="header-search-wrap"
   data-header-search
-  data-search-url="{{ relLangURL "search/" }}"
   data-i18n-searching="{{ i18n "searching" }}"
   data-i18n-empty="{{ i18n "headerSearchEmpty" }}"
   data-i18n-unavailable="{{ i18n "headerSearchUnavailable" }}"
+  data-i18n-count="{{ i18n "headerSearchCount" (dict "Count" "{count}") }}"
+  data-i18n-more="{{ i18n "headerSearchMore" }}"
 >
-  <form class="header-search" role="search" action="{{ relLangURL "search/" }}" method="get" novalidate>
+  <form class="header-search" role="search" novalidate>
     <label class="sr-only" for="header-search-input">{{ i18n "searchArticles" }}</label>
     <input
       id="header-search-input"
@@ -26,7 +27,7 @@
   <div id="header-search-popover" class="header-search-popover" hidden>
     <p class="header-search-status" aria-live="polite"></p>
     <div class="header-search-results" role="list" aria-label="{{ i18n "searchResults" }}"></div>
-    <a class="header-search-all" href="{{ relLangURL "search/" }}">{{ i18n "viewAllResults" }} <span aria-hidden="true">→</span></a>
+    <button class="header-search-more" type="button" hidden>{{ i18n "headerSearchMore" }}</button>
   </div>
 </div>
 <script type="module" src="{{ partial "asset-url.html" "js/header-search.js" }}"></script>

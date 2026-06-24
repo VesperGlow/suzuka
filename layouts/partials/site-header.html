@@ -38,12 +38,12 @@
             <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"></path>
           </svg>
         </button>
-        <a class="header-action nav-search-toggle" href="{{ relLangURL "search/" }}" data-header-search-toggle aria-label="{{ i18n "searchLabel" }}" aria-controls="header-search" aria-expanded="false">
+        <button class="header-action nav-search-toggle" type="button" data-header-search-toggle aria-label="{{ i18n "searchLabel" }}" aria-controls="header-search" aria-expanded="false">
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
             <circle cx="10.5" cy="10.5" r="7.25"></circle>
             <path d="m15.8 15.8 5.2 5.2"></path>
           </svg>
-        </a>
+        </button>
         <a class="header-action lang-toggle language-switcher {{ if eq site.Language.Lang "zh-cn" }}is-zh{{ else }}is-en{{ end }}" href="{{ $languageURL }}" hreflang="{{ $languageLocale }}" aria-label="{{ i18n "languageSwitcher" }}" data-language-toggle>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
             <g class="lang-toggle-char lang-toggle-zh">

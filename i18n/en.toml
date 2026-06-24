@@ -22,14 +22,8 @@ other = "Index"
 other = "Page"
 [allPostsEyebrow]
 other = "All posts"
-[searchEyebrow]
-other = "Search"
-[searchDescription]
-other = "Search article titles, content, and tags."
 [searchArticles]
 other = "Search posts"
-[searchPlaceholder]
-other = "Enter keywords..."
 [headerSearchPlaceholder]
 other = "Search the garden..."
 [clear]
@@ -38,24 +32,18 @@ other = "Clear"
 other = "Clear search"
 [search]
 other = "Search"
-[searchPrompt]
-other = "Enter keywords to start searching."
 [searching]
 other = "Searching..."
-[searchFound]
-other = "Found {{ .Count }} matching posts"
-[searchEmpty]
-other = "No matching posts were found."
 [headerSearchEmpty]
 other = "No matching posts found."
-[searchUnavailable]
-other = "The search index is temporarily unavailable. Please try again later."
 [headerSearchUnavailable]
 other = "Search is temporarily unavailable. Please try again later."
 [searchResults]
 other = "Search results"
-[viewAllResults]
-other = "View all results"
+[headerSearchCount]
+other = "{{ .Count }} results"
+[headerSearchMore]
+other = "Load more"
 [empty]
 other = "Nothing here yet."
 [filterEmpty]
