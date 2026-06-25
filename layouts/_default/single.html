@@ -23,8 +23,10 @@
 
       {{ if $isPost }}
         <footer class="post-footer">
-          {{ partial "article-engagement.html" . }}
-          {{ partial "article-guestbook-link.html" . }}
+          <div class="post-actions">
+            {{ partial "article-engagement.html" . }}
+            {{ partial "article-guestbook-link.html" . }}
+          </div>
           {{ partial "article-navigation.html" . }}
         </footer>
       {{ end }}
