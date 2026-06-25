@@ -184,8 +184,6 @@ other = "Lost in the pale blue garden"
 other = "This path does not lead to a page. Follow the blue light back."
 [backHome]
 other = "Back home"
-[sourceCode]
-other = "Source code"
 [dateFormat]
 other = "January 2, 2006"
 

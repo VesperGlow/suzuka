@@ -182,8 +182,6 @@ other = "迷路在微蓝庭院里"
 other = "这条小径没有通向页面，沿着蓝色微光回去吧。"
 [backHome]
 other = "回到首页"
-[sourceCode]
-other = "网站源码"
 [dateFormat]
 other = "2006年01月02日"
 
