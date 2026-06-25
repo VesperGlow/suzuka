@@ -1,4 +1,4 @@
-module suzuka-chan.moe/guestbook-service
+module suzuka-chan.moe/api
 
 go 1.23
 

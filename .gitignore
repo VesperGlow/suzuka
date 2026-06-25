@@ -9,8 +9,8 @@ CLAUDE.md
 
 node_modules/
 
-# Guestbook service runtime/build files
-guestbook-service/guestbook-service
-guestbook-service/data/
-guestbook-service/*.db
-guestbook-service/*.db-*
+# Backend service runtime/build files
+api/api
+api/data/
+api/*.db
+api/*.db-*
