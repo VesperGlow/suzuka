@@ -176,10 +176,6 @@ other = "文章卡片"
 other = "文章时间线"
 [archiveFilterEmpty]
 other = "这里暂时还没有对应的记录。"
-[postsRedirectTitle]
-other = "正在前往全部文章"
-[postsRedirectDescription]
-other = "如果页面没有自动跳转，请直接打开归档页。"
 [notFoundTitle]
 other = "迷路在微蓝庭院里"
 [notFoundDescription]

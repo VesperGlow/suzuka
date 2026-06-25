@@ -178,10 +178,6 @@ other = "Post cards"
 other = "Post timeline"
 [archiveFilterEmpty]
 other = "There are no matching notes here yet."
-[postsRedirectTitle]
-other = "Taking you to all posts"
-[postsRedirectDescription]
-other = "If the page does not redirect automatically, open the archive."
 [notFoundTitle]
 other = "Lost in the pale blue garden"
 [notFoundDescription]

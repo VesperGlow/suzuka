@@ -67,7 +67,7 @@ summaryLength = 90
     [[languages.zh-cn.menus.main]]
       identifier = 'posts'
       name = '文章'
-      pageRef = '/posts'
+      pageRef = '/archives'
       weight = 20
     [[languages.zh-cn.menus.main]]
       identifier = 'guestbook'
@@ -95,7 +95,7 @@ summaryLength = 90
     [[languages.en.menus.main]]
       identifier = 'posts'
       name = 'Posts'
-      pageRef = '/posts'
+      pageRef = '/archives'
       weight = 20
     [[languages.en.menus.main]]
       identifier = 'guestbook'

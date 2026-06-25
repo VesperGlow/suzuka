@@ -10,9 +10,7 @@ categories:
 tags:
   - Blog
   - Personal Site
-  - Galgame
   - Yaotome Suzuka
-  - LOVEPICAL-POPPY!
 description: "Starting with LOVEPICAL-POPPY! and Yaotome Suzuka, a note on why I want to preserve the characters, screenshots, and feelings I have loved on a site of my own."
 images:
   - "001.webp"
