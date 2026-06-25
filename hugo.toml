@@ -34,7 +34,7 @@ summaryLength = 90
 
 [params]
   author = 'Suzuka'
-  images = ['favicon/favicon-orb.webp']
+  images = ['favicon/og-image.png']
 
 [markup]
   [markup.goldmark]

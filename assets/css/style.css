@@ -152,7 +152,7 @@ a:hover { color: var(--accent); }
 .post-page .site-header.is-header-visible { transform: translateY(0); }
 .header-inner { position: relative; min-height: var(--header-height); display: flex; align-items: center; justify-content: space-between; gap: 32px; }
 .site-brand { display: inline-flex; align-items: center; gap: 11px; }
-.brand-mark { display: block; width: 34px; height: 34px; object-fit: cover; border-radius: 50%; }
+.brand-mark { display: block; width: 34px; height: 34px; object-fit: contain; }
 .brand-text { font: 600 17px/1.2 var(--serif); letter-spacing: .04em; }
 .header-tools { position: static; width: min(var(--search-width), 42vw); display: flex; align-items: center; }
 .header-search-wrap { position: absolute; z-index: 32; top: calc(100% + 8px); right: 0; width: min(var(--search-width), calc(100vw - 32px)); visibility: hidden; display: flex; align-items: center; overflow: visible; opacity: 0; pointer-events: none; transform: translateY(-8px) scale(.985); transform-origin: top center; }
