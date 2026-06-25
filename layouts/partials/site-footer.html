@@ -3,6 +3,7 @@
     <span class="footer-copyright">© {{ now.Year }} {{ site.Params.author }}</span>
     <span class="footer-note">
       {{ with site.Home.OutputFormats.Get "rss" }}<a href="{{ .RelPermalink }}">RSS</a>{{ end }}
+      {{ with site.Home.OutputFormats.Get "JSONFeed" }}<a href="{{ .RelPermalink }}">JSON Feed</a>{{ end }}
       <i aria-hidden="true"></i>
       <a href="https://icp.gov.moe/?keyword=20266779" target="_blank" rel="noopener noreferrer">{{ i18n "moeICP" }}</a>
     </span>

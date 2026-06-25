@@ -8,11 +8,20 @@ summaryLength = 90
   pagerSize = 6
 
 [outputs]
-  home = ['HTML', 'RSS', 'JSON', 'GuestbookPosts']
+  home = ['HTML', 'RSS', 'JSON', 'GuestbookPosts', 'JSONFeed']
+
+[mediaTypes.'application/feed+json']
+  suffixes = ['json']
 
 [outputFormats.GuestbookPosts]
   mediaType = 'application/json'
   baseName = 'guestbook-posts'
+  isPlainText = true
+  notAlternative = true
+
+[outputFormats.JSONFeed]
+  mediaType = 'application/feed+json'
+  baseName = 'feed'
   isPlainText = true
   notAlternative = true
 

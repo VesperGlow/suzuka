@@ -23,6 +23,7 @@
 
       {{ if $isPost }}
         <footer class="post-footer">
+          {{ partial "article-engagement.html" . }}
           {{ partial "article-guestbook-link.html" . }}
           {{ partial "article-navigation.html" . }}
         </footer>
@@ -39,5 +40,6 @@
     {{ partial "article-lightbox.html" . }}
     <script src="{{ partial "asset-url.html" "js/article-lightbox.js" }}" defer></script>
     <script src="{{ partial "asset-url.html" "js/article-header-scroll.js" }}" defer></script>
+    <script src="{{ partial "asset-url.html" "js/article-engagement.js" }}" defer></script>
   {{ end }}
 {{ end }}

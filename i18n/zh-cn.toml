@@ -259,3 +259,25 @@ other = "请启用 JavaScript 后查看和提交留言。"
 other = "想说点什么吗？"
 [postDiscussionDescription]
 other = "欢迎留下你的感想、补充，或不同的看法"
+[viewCount]
+other = "阅读 {count} 次"
+[reactionLabel]
+other = "喜欢"
+[subscribeTitle]
+other = "订阅更新"
+[subscribeDescription]
+other = "用习惯的阅读器追更，新文章第一时间送达。"
+[subscribeRSS]
+other = "RSS"
+[subscribeJSONFeed]
+other = "JSON Feed"
+[statsLabel]
+other = "庭院数据"
+[statsPosts]
+other = "文章"
+[statsWords]
+other = "累计字数"
+[statsViews]
+other = "总阅读"
+[statsReactions]
+other = "累计喜欢"

@@ -18,11 +18,13 @@ func testApp(t *testing.T) http.Handler {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { db.Close() })
-	a := &app{db: db, now: func() time.Time {
-		return time.Date(2026, 6, 22, 12, 0, 0, 0, time.UTC)
-	}}
+	now := func() time.Time { return time.Date(2026, 6, 22, 12, 0, 0, 0, time.UTC) }
+	a := &app{db: db, now: now, counterLimiter: newRateLimiter(counterBurst, counterWindow, now)}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/messages", a.handleMessages)
+	mux.HandleFunc("/views", a.handleCounter("page_views"))
+	mux.HandleFunc("/reactions", a.handleCounter("reactions"))
+	mux.HandleFunc("/summary", a.handleSummary)
 	return securityHeaders(mux)
 }
 
@@ -86,6 +88,147 @@ func TestRateLimit(t *testing.T) {
 	now = now.Add(postWindow + time.Second)
 	if code := post(); code != http.StatusCreated {
 		t.Fatalf("after window status = %d, want 201", code)
+	}
+}
+
+func TestCounters(t *testing.T) {
+	handler := testApp(t)
+
+	bump := func(endpoint, path string) counterResponse {
+		t.Helper()
+		body, _ := json.Marshal(map[string]string{"path": path})
+		request := httptest.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
+		request.Header.Set("Content-Type", "application/json")
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		if response.Code != http.StatusOK {
+			t.Fatalf("POST %s status = %d, body = %s", endpoint, response.Code, response.Body.String())
+		}
+		var out counterResponse
+		if err := json.NewDecoder(response.Body).Decode(&out); err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+
+	read := func(endpoint, path string) counterResponse {
+		t.Helper()
+		request := httptest.NewRequest(http.MethodGet, endpoint+"?path="+path, nil)
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		if response.Code != http.StatusOK {
+			t.Fatalf("GET %s status = %d, body = %s", endpoint, response.Code, response.Body.String())
+		}
+		var out counterResponse
+		if err := json.NewDecoder(response.Body).Decode(&out); err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+
+	// 未记录过的文章读数为 0。
+	if got := read("/views", "/posts/example/"); got.Count != 0 {
+		t.Fatalf("initial views = %d, want 0", got.Count)
+	}
+	// 连续自增。
+	if got := bump("/views", "/posts/example/"); got.Count != 1 {
+		t.Fatalf("first view = %d, want 1", got.Count)
+	}
+	if got := bump("/views", "/posts/example/"); got.Count != 2 {
+		t.Fatalf("second view = %d, want 2", got.Count)
+	}
+	if got := read("/views", "/posts/example/"); got.Count != 2 {
+		t.Fatalf("read-back views = %d, want 2", got.Count)
+	}
+	// 反应与阅读数互不影响，且按 path 独立计数。
+	if got := bump("/reactions", "/posts/example/"); got.Count != 1 {
+		t.Fatalf("reaction = %d, want 1", got.Count)
+	}
+	if got := read("/views", "/posts/example/"); got.Count != 2 {
+		t.Fatalf("views after reaction = %d, want 2 (tables must be separate)", got.Count)
+	}
+	if got := read("/views", "/posts/other/"); got.Count != 0 {
+		t.Fatalf("other-path views = %d, want 0", got.Count)
+	}
+}
+
+func TestSummary(t *testing.T) {
+	handler := testApp(t)
+
+	post := func(endpoint, path string) {
+		t.Helper()
+		body, _ := json.Marshal(map[string]string{"path": path})
+		request := httptest.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
+		request.Header.Set("Content-Type", "application/json")
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		if response.Code != http.StatusOK {
+			t.Fatalf("POST %s status = %d", endpoint, response.Code)
+		}
+	}
+
+	summary := func() (views, reactions int64) {
+		t.Helper()
+		request := httptest.NewRequest(http.MethodGet, "/summary", nil)
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		if response.Code != http.StatusOK {
+			t.Fatalf("GET /summary status = %d", response.Code)
+		}
+		var out struct {
+			Views     int64 `json:"views"`
+			Reactions int64 `json:"reactions"`
+		}
+		if err := json.NewDecoder(response.Body).Decode(&out); err != nil {
+			t.Fatal(err)
+		}
+		return out.Views, out.Reactions
+	}
+
+	// 空库汇总为 0。
+	if v, r := summary(); v != 0 || r != 0 {
+		t.Fatalf("empty summary = (%d, %d), want (0, 0)", v, r)
+	}
+	// 跨多篇文章累加。
+	post("/views", "/posts/a/")
+	post("/views", "/posts/a/")
+	post("/views", "/posts/b/")
+	post("/reactions", "/posts/a/")
+	if v, r := summary(); v != 3 || r != 1 {
+		t.Fatalf("summary = (%d, %d), want (3, 1)", v, r)
+	}
+}
+
+func TestCounterRejectsBadPath(t *testing.T) {
+	handler := testApp(t)
+	cases := []struct {
+		name, method, target, body string
+	}{
+		{"get missing path", http.MethodGet, "/views", ""},
+		{"get external", http.MethodGet, "/views?path=https://example.com/posts/a/", ""},
+		{"get non-post", http.MethodGet, "/reactions?path=/about/", ""},
+		{"post non-post", http.MethodPost, "/views", `{"path":"/about/"}`},
+		{"post traversal", http.MethodPost, "/reactions", `{"path":"/posts/../about/"}`},
+		{"post unknown field", http.MethodPost, "/views", `{"path":"/posts/a/","x":1}`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var bodyReader *strings.Reader
+			if tc.body != "" {
+				bodyReader = strings.NewReader(tc.body)
+			} else {
+				bodyReader = strings.NewReader("")
+			}
+			request := httptest.NewRequest(tc.method, tc.target, bodyReader)
+			if tc.method == http.MethodPost {
+				request.Header.Set("Content-Type", "application/json")
+			}
+			response := httptest.NewRecorder()
+			handler.ServeHTTP(response, request)
+			if response.Code != http.StatusBadRequest {
+				t.Fatalf("status = %d, want 400, body = %s", response.Code, response.Body.String())
+			}
+		})
 	}
 }
 

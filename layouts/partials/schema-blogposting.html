@@ -1,0 +1,30 @@
+{{- $cover := partial "archive-cover-url.html" . -}}
+{{- $images := slice -}}
+{{- with .Params.images -}}
+  {{- range . -}}{{- $images = $images | append (. | absURL) -}}{{- end -}}
+{{- else -}}
+  {{- with $cover -}}{{- $images = $images | append (. | absURL) -}}{{- end -}}
+{{- end -}}
+{{- if not $images -}}
+  {{- range site.Params.images -}}{{- $images = $images | append (. | absURL) -}}{{- end -}}
+{{- end -}}
+{{- $desc := .Description | default (.Summary | plainify) | plainify | htmlUnescape | replaceRE `\s+` " " | strings.TrimSpace -}}
+{{- $keywords := slice -}}
+{{- range .GetTerms "tags" -}}{{- $keywords = $keywords | append .LinkTitle -}}{{- end -}}
+{{- $author := dict "@type" "Person" "name" site.Params.author -}}
+{{- with site.GetPage "/pages/about" -}}{{- $author = merge $author (dict "url" .Permalink) -}}{{- end -}}
+{{- $data := dict
+  "@context" "https://schema.org"
+  "@type" "BlogPosting"
+  "headline" .Title
+  "description" $desc
+  "image" $images
+  "keywords" (delimit $keywords ", ")
+  "mainEntityOfPage" (dict "@type" "WebPage" "@id" .Permalink)
+  "datePublished" (.Date.Format "2006-01-02T15:04:05Z07:00")
+  "dateModified" (.Lastmod.Format "2006-01-02T15:04:05Z07:00")
+  "author" $author
+  "publisher" (dict "@type" "Person" "name" site.Params.author)
+  "inLanguage" site.Language.Locale
+-}}
+<script type="application/ld+json">{{ jsonify $data | safeJS }}</script>

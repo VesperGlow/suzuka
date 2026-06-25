@@ -7,6 +7,8 @@
       </header>
 
       <div class="prose about-prose">{{ .Content }}</div>
+      {{ partial "about-stats.html" . }}
+      {{ partial "subscribe.html" . }}
       <div class="about-residency-row">
         {{ partial "about-uptime.html" . }}
       </div>
@@ -18,4 +20,5 @@
     </picture>
   </article>
   <script type="module" src="{{ partial "asset-url.html" "js/about-uptime.js" }}"></script>
+  <script src="{{ partial "asset-url.html" "js/about-stats.js" }}" defer></script>
 {{ end }}

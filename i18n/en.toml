@@ -262,3 +262,25 @@ other = "Enable JavaScript to view and leave messages."
 other = "Want to say something?"
 [postDiscussionDescription]
 other = "Share your thoughts, additions, or a different perspective."
+[viewCount]
+other = "{count} reads"
+[reactionLabel]
+other = "Like"
+[subscribeTitle]
+other = "Subscribe"
+[subscribeDescription]
+other = "Follow new posts in your favorite reader."
+[subscribeRSS]
+other = "RSS"
+[subscribeJSONFeed]
+other = "JSON Feed"
+[statsLabel]
+other = "Garden stats"
+[statsPosts]
+other = "Posts"
+[statsWords]
+other = "Words"
+[statsViews]
+other = "Reads"
+[statsReactions]
+other = "Likes"
