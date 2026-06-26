@@ -1,0 +1,5 @@
+# 构建镜像时无需进入上下文的内容。
+/data/
+/backend
+README.md
+*_test.go

@@ -1,0 +1,33 @@
+# 多阶段构建：alpine 下用 CGO 编译 go-sqlite3，产出静态二进制后塞进极小运行镜像。
+FROM docker.io/library/golang:1.23-alpine AS build
+
+# go-sqlite3 需要 CGO + C 编译器；build-base 提供 musl-gcc 等工具链。
+RUN apk add --no-cache build-base
+
+WORKDIR /src
+
+# 先拷依赖清单，利用层缓存。
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+# 静态链接，便于在 scratch 上运行，无需携带 libc。
+RUN CGO_ENABLED=1 GOOS=linux \
+    go build -trimpath \
+    -ldflags '-s -w -linkmode external -extldflags "-static"' \
+    -o /out/backend .
+
+# 运行镜像：scratch + 仅放二进制；应用不发起外部 TLS，无需 CA 证书。
+FROM scratch
+
+COPY --from=build /out/backend /backend
+
+# 容器内监听全部网卡，由 quadlet 的 PublishPort 限定到宿主回环。
+ENV GUESTBOOK_ADDR=0.0.0.0:8787 \
+    GUESTBOOK_DB_PATH=/data/guestbook.db
+
+EXPOSE 8787
+VOLUME ["/data"]
+
+ENTRYPOINT ["/backend"]

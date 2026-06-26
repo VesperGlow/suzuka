@@ -5,8 +5,8 @@ the guestbook, per-post view counts, likes, and the about-page totals.
 Building `github.com/mattn/go-sqlite3` requires CGO and a C compiler.
 
 ```bash
-CGO_ENABLED=1 go build -o api .
-./api
+CGO_ENABLED=1 go build -o backend .
+./backend
 ```
 
 The service listens on `127.0.0.1:8787` and stores data in
@@ -15,8 +15,8 @@ when needed:
 
 ```bash
 GUESTBOOK_ADDR=127.0.0.1:8787 \
-GUESTBOOK_DB_PATH=/var/lib/suzuka/api.db \
-./api
+GUESTBOOK_DB_PATH=/var/lib/suzuka/backend.db \
+./backend
 ```
 
 nginx strips `/api/guestbook` before proxying, so the service itself exposes:

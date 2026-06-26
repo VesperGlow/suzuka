@@ -9,8 +9,10 @@ CLAUDE.md
 
 node_modules/
 
+.claude/
+
 # Backend service runtime/build files
-api/api
-api/data/
-api/*.db
-api/*.db-*
+backend/backend
+backend/data/
+backend/*.db
+backend/*.db-*

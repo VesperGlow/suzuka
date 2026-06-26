@@ -1,4 +1,4 @@
-module suzuka-chan.moe/api
+module suzuka-chan.moe/backend
 
 go 1.23
 
