@@ -1,0 +1,11 @@
+version: "2"
+
+# 留言后端的 golangci-lint 配置（v2）。
+# 默认启用 errcheck / govet / ineffassign / staticcheck / unused。
+linters:
+  settings:
+    errcheck:
+      # 这些 stdlib 的 Close 在 defer / 清理路径里按惯例忽略错误，不算缺陷。
+      exclude-functions:
+        - (*database/sql.DB).Close
+        - (*database/sql.Rows).Close
