@@ -2,10 +2,11 @@
 
 Minimal HTTP + SQLite service powering the site's interactive bits:
 the guestbook, per-post view counts, likes, and the about-page totals.
-Building `github.com/mattn/go-sqlite3` requires CGO and a C compiler.
+Uses the pure-Go `modernc.org/sqlite` driver, so no CGO or C compiler is
+needed and the binary cross-compiles cleanly.
 
 ```bash
-CGO_ENABLED=1 go build -o backend .
+CGO_ENABLED=0 go build -o backend .
 ./backend
 ```
 
