@@ -10,7 +10,49 @@ on:
   workflow_dispatch:
 
 jobs:
+  # 先跑 vet + 单元测试；纯 Go 驱动后无需 CGO / C 工具链，测试环境很干净。
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache-dependency-path: backend/go.sum
+
+      - name: Vet
+        working-directory: backend
+        run: go vet ./...
+
+      - name: Test
+        working-directory: backend
+        run: go test ./...
+
+  # 静态检查作为旁路反馈：不阻断镜像发布，但会在 PR 上报告问题。
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache-dependency-path: backend/go.sum
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: backend
+          args: --timeout=5m
+
   build-push:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
