@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 // openDatabase 打开（必要时创建）SQLite 库，并幂等地建好留言、阅读数、喜欢三张表。
@@ -16,7 +16,8 @@ func openDatabase(path string) (*sql.DB, error) {
 		return nil, fmt.Errorf("create database directory: %w", err)
 	}
 
-	db, err := sql.Open("sqlite3", path+"?_busy_timeout=5000&_journal_mode=WAL&_foreign_keys=on")
+	// 纯 Go 驱动 modernc.org/sqlite：驱动名为 "sqlite"，连接参数用 _pragma=… 形式。
+	db, err := sql.Open("sqlite", path+"?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=foreign_keys(on)")
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
