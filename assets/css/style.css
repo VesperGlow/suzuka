@@ -291,7 +291,7 @@ a:hover { color: var(--accent); }
 /* Layer: components (continued) */
 /* Post list */
 .post-list { overflow: hidden; background: var(--list-surface); border-top: 1px solid var(--list-line); border-radius: var(--list-radius); box-shadow: var(--list-shadow); backdrop-filter: blur(14px); }
-.post-card { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 16px; padding: 18px 8px; border-bottom: 1px solid var(--list-line); transition: transform 320ms cubic-bezier(.22, 1, .36, 1), background-color 320ms cubic-bezier(.22, 1, .36, 1); }
+.post-card { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 16px; padding: 18px 8px; border-bottom: 1px solid var(--list-line); transition: transform 320ms cubic-bezier(.22, 1, .36, 1), background-color 320ms cubic-bezier(.22, 1, .36, 1); content-visibility: auto; contain-intrinsic-size: auto 130px; }
 .post-date { padding-top: 4px; color: var(--muted); text-align: center; }
 .post-date strong { display: block; color: var(--accent); font: 500 17px/1.2 var(--serif); }
 .post-date span { display: block; margin-top: 2px; font-size: 9px; letter-spacing: .08em; }
@@ -538,7 +538,7 @@ html.lightbox-open, html.lightbox-open body { overflow: hidden; overscroll-behav
 .archive-tag-filter .tag-filter-list { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-top: 0; }
 .archive-tag-filter .tag-filter-list button { padding: .4rem .65rem; font-size: .75rem; }
 .archive-card-list { min-width: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr)); gap: clamp(24px, 2.2vw, 32px); align-items: stretch; }
-.archive-card { min-width: 0; display: flex; overflow: hidden; flex-direction: column; background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-medium); box-shadow: var(--soft-shadow); backdrop-filter: blur(14px); transition: transform 360ms cubic-bezier(.22, 1, .36, 1), box-shadow 360ms cubic-bezier(.22, 1, .36, 1), background-color 360ms cubic-bezier(.22, 1, .36, 1), border-color 360ms cubic-bezier(.22, 1, .36, 1); }
+.archive-card { min-width: 0; display: flex; overflow: hidden; flex-direction: column; background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius-medium); box-shadow: var(--soft-shadow); backdrop-filter: blur(14px); transition: transform 360ms cubic-bezier(.22, 1, .36, 1), box-shadow 360ms cubic-bezier(.22, 1, .36, 1), background-color 360ms cubic-bezier(.22, 1, .36, 1), border-color 360ms cubic-bezier(.22, 1, .36, 1); content-visibility: auto; contain-intrinsic-size: auto 700px; }
 .archive-card-cover { position: relative; display: block; overflow: hidden; aspect-ratio: 16 / 10; background: var(--paper-deep); border-radius: var(--radius-medium) var(--radius-medium) 0 0; }
 .archive-card-cover img, .archive-card-placeholder { width: 100%; height: 100%; display: block; }
 .archive-card-cover img { position: absolute; inset: 0; object-fit: cover; transition: transform 380ms cubic-bezier(.22, 1, .36, 1); }
@@ -996,7 +996,7 @@ html.archive-no-transition .archive-view-switch button { transition: none; }
 .guestbook-messages-header span { color: var(--text-faint); font-size: var(--font-size-sm); }
 .guestbook-list-status { margin: 24px 0 0; color: var(--muted); text-align: center; }
 .guestbook-message-list { margin: 0; padding: 0; list-style: none; }
-.guestbook-message { padding: 18px 2px; border-bottom: 1px solid var(--list-line); }
+.guestbook-message { padding: 18px 2px; border-bottom: 1px solid var(--list-line); content-visibility: auto; contain-intrinsic-size: auto 130px; }
 .guestbook-message-header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
 .guestbook-message-author { color: var(--accent-dark); font: 600 15px/1.5 var(--serif); }
 .guestbook-message-time { flex: 0 0 auto; color: var(--text-faint); font-size: var(--font-size-xs); }
