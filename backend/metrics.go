@@ -25,20 +25,14 @@ type counterResponse struct {
 	Count int64  `json:"count"`
 }
 
-// handleCounter 返回某张计数表（page_views / reactions）的读写处理器。
-// table 是代码内常量，不来自用户输入，可安全拼入 SQL。
-func (a *app) handleCounter(table string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			a.readCounter(w, r, table)
-		case http.MethodPost:
-			a.bumpCounter(w, r, table)
-		default:
-			w.Header().Set("Allow", "GET, POST")
-			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
-		}
-	}
+// readCounterHandler / bumpCounterHandler 把某张计数表（page_views / reactions）
+// 的表名绑定进处理器。table 是代码内常量，不来自用户输入，可安全拼入 SQL。
+func (a *app) readCounterHandler(table string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) { a.readCounter(w, r, table) }
+}
+
+func (a *app) bumpCounterHandler(table string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) { a.bumpCounter(w, r, table) }
 }
 
 func (a *app) readCounter(w http.ResponseWriter, r *http.Request, table string) {
@@ -106,12 +100,8 @@ RETURNING count`, table), pagePath).Scan(&count)
 }
 
 // handleSummary 返回全站累计的阅读量与喜欢数，供「关于」页展示。只读，无需限流。
+// 路由已限定为 GET，方法校验交给 ServeMux。
 func (a *app) handleSummary(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.Header().Set("Allow", "GET")
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
-		return
-	}
 	var summary struct {
 		Views     int64 `json:"views"`
 		Reactions int64 `json:"reactions"`

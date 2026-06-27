@@ -20,12 +20,7 @@ func testApp(t *testing.T) http.Handler {
 	t.Cleanup(func() { db.Close() })
 	now := func() time.Time { return time.Date(2026, 6, 22, 12, 0, 0, 0, time.UTC) }
 	a := &app{db: db, now: now, counterLimiter: newRateLimiter(counterBurst, counterWindow, now)}
-	mux := http.NewServeMux()
-	mux.HandleFunc("/messages", a.handleMessages)
-	mux.HandleFunc("/views", a.handleCounter("page_views"))
-	mux.HandleFunc("/reactions", a.handleCounter("reactions"))
-	mux.HandleFunc("/summary", a.handleSummary)
-	return securityHeaders(mux)
+	return a.handler()
 }
 
 func TestCreateAndListMessages(t *testing.T) {
@@ -62,9 +57,7 @@ func TestRateLimit(t *testing.T) {
 	}
 	t.Cleanup(func() { db.Close() })
 	a := &app{db: db, now: func() time.Time { return now }, limiter: newRateLimiter(postBurst, postWindow, func() time.Time { return now })}
-	mux := http.NewServeMux()
-	mux.HandleFunc("/messages", a.handleMessages)
-	handler := securityHeaders(mux)
+	handler := a.handler()
 
 	post := func() int {
 		body := `{"name":"Suzuka","content":"hello"}`

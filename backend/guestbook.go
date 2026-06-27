@@ -29,22 +29,6 @@ type message struct {
 	CreatedAt string `json:"created_at"`
 }
 
-func (a *app) handleMessages(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/messages" {
-		writeError(w, http.StatusNotFound, "not found")
-		return
-	}
-
-	switch r.Method {
-	case http.MethodGet:
-		a.listMessages(w, r)
-	case http.MethodPost:
-		a.createMessage(w, r)
-	default:
-		w.Header().Set("Allow", "GET, POST")
-		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
-	}
-}
 
 func (a *app) listMessages(w http.ResponseWriter, r *http.Request) {
 	rows, err := a.db.QueryContext(r.Context(), `

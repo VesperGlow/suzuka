@@ -51,7 +51,7 @@ func envOrDefault(key, fallback string) string {
 	return fallback
 }
 
-// newApp 组装路由：留言、阅读数、喜欢，以及「关于」页的汇总数据。
+// newApp 组装服务依赖并返回 HTTP 处理器。
 func newApp(db *sql.DB) http.Handler {
 	a := &app{
 		db:             db,
@@ -59,11 +59,21 @@ func newApp(db *sql.DB) http.Handler {
 		limiter:        newRateLimiter(postBurst, postWindow, time.Now),
 		counterLimiter: newRateLimiter(counterBurst, counterWindow, time.Now),
 	}
+	return a.handler()
+}
+
+// handler 组装路由：留言、阅读数、喜欢，以及「关于」页的汇总数据。
+// 用 Go 1.22+ ServeMux 的「方法 + 路径」模式注册，方法不匹配时由标准库
+// 自动返回 405 并填好 Allow 头，无需在各处理器里手动 switch。
+func (a *app) handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/messages", a.handleMessages)
-	mux.HandleFunc("/views", a.handleCounter("page_views"))
-	mux.HandleFunc("/reactions", a.handleCounter("reactions"))
-	mux.HandleFunc("/summary", a.handleSummary)
+	mux.HandleFunc("GET /messages", a.listMessages)
+	mux.HandleFunc("POST /messages", a.createMessage)
+	mux.HandleFunc("GET /views", a.readCounterHandler("page_views"))
+	mux.HandleFunc("POST /views", a.bumpCounterHandler("page_views"))
+	mux.HandleFunc("GET /reactions", a.readCounterHandler("reactions"))
+	mux.HandleFunc("POST /reactions", a.bumpCounterHandler("reactions"))
+	mux.HandleFunc("GET /summary", a.handleSummary)
 	return securityHeaders(mux)
 }
 
