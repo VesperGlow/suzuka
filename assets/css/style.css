@@ -996,6 +996,10 @@ html.archive-no-transition .archive-view-switch button { transition: none; }
 .guestbook-messages-header span { color: var(--text-faint); font-size: var(--font-size-sm); }
 .guestbook-list-status { margin: 24px 0 0; color: var(--muted); text-align: center; }
 .guestbook-message-list { margin: 0; padding: 0; list-style: none; }
+.guestbook-load-more { display: block; margin: 22px auto 0; padding: 7px 18px; color: var(--text-subtle); background: var(--control-surface); border: 1px solid var(--line); border-radius: var(--radius-pill); cursor: pointer; font: var(--font-size-sm)/1.5 var(--sans); }
+.guestbook-load-more[hidden] { display: none; }
+.guestbook-load-more:hover { color: var(--accent-dark); border-color: var(--accent-border); }
+.guestbook-load-more:disabled { opacity: .55; cursor: wait; }
 .guestbook-message { padding: 18px 2px; border-bottom: 1px solid var(--list-line); content-visibility: auto; contain-intrinsic-size: auto 130px; }
 .guestbook-message-header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
 .guestbook-message-author { color: var(--accent-dark); font: 600 15px/1.5 var(--serif); }

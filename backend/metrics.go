@@ -46,7 +46,7 @@ func (a *app) readCounter(w http.ResponseWriter, r *http.Request, table string) 
 	err := a.db.QueryRowContext(r.Context(),
 		fmt.Sprintf("SELECT count FROM %s WHERE path = ?", table), pagePath).Scan(&count)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		writeError(w, http.StatusInternalServerError, "unable to load count")
+		a.writeInternalError(w, r, "unable to load count", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, counterResponse{Path: pagePath, Count: count})
@@ -93,7 +93,7 @@ INSERT INTO %s (path, count) VALUES (?, 1)
 ON CONFLICT(path) DO UPDATE SET count = count + 1
 RETURNING count`, table), pagePath).Scan(&count)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "unable to update count")
+		a.writeInternalError(w, r, "unable to update count", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, counterResponse{Path: pagePath, Count: count})
@@ -108,12 +108,12 @@ func (a *app) handleSummary(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := a.db.QueryRowContext(r.Context(),
 		"SELECT COALESCE(SUM(count), 0) FROM page_views").Scan(&summary.Views); err != nil {
-		writeError(w, http.StatusInternalServerError, "unable to load summary")
+		a.writeInternalError(w, r, "unable to load summary", err)
 		return
 	}
 	if err := a.db.QueryRowContext(r.Context(),
 		"SELECT COALESCE(SUM(count), 0) FROM reactions").Scan(&summary.Reactions); err != nil {
-		writeError(w, http.StatusInternalServerError, "unable to load summary")
+		a.writeInternalError(w, r, "unable to load summary", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, summary)

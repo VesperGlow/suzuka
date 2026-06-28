@@ -8,6 +8,7 @@ if (root) {
   const formStatus = root.querySelector("[data-guestbook-form-status]");
   const listStatus = root.querySelector("[data-guestbook-list-status]");
   const messageList = root.querySelector("[data-guestbook-message-list]");
+  const loadMoreButton = root.querySelector("[data-guestbook-load-more]");
   const count = root.querySelector("[data-guestbook-count]");
   const reference = root.querySelector("[data-guestbook-reference]");
   const referenceLink = root.querySelector("[data-guestbook-reference-link]");
@@ -32,6 +33,7 @@ if (root) {
     countOther: root.dataset.i18nCountOther,
     messagesEmpty: root.dataset.i18nMessagesEmpty,
     messagesUnavailable: root.dataset.i18nMessagesUnavailable,
+    loadMore: root.dataset.i18nLoadMore,
     submitting: root.dataset.i18nSubmitting,
     submitted: root.dataset.i18nSubmitted,
     submitFailed: root.dataset.i18nSubmitFailed,
@@ -39,6 +41,8 @@ if (root) {
   };
 
   let messages = [];
+  let totalMessages = 0;
+  let nextBeforeID = 0;
   let posts = null;
   let source = readSource();
   let pickerCloseTimer = 0;
@@ -222,24 +226,37 @@ if (root) {
 
   function renderMessages() {
     messageList.replaceChildren(...messages.map(createMessageElement));
-    const countTemplate = messages.length === 1 ? labels.countOne : labels.countOther;
-    count.textContent = messages.length ? countTemplate.replace("{count}", String(messages.length)) : "";
+    const countTemplate = totalMessages === 1 ? labels.countOne : labels.countOther;
+    count.textContent = totalMessages ? countTemplate.replace("{count}", String(totalMessages)) : "";
     listStatus.hidden = messages.length > 0;
     if (!messages.length) listStatus.textContent = labels.messagesEmpty;
+    loadMoreButton.hidden = !nextBeforeID;
   }
 
-  async function loadMessages() {
+  async function loadMessages(append = false) {
+    if (append && !nextBeforeID) return;
+    loadMoreButton.disabled = append;
     try {
-      const response = await fetch(apiURL, { headers: { Accept: "application/json" } });
+      const requestURL = new URL(apiURL, window.location.origin);
+      requestURL.searchParams.set("limit", "50");
+      if (append) requestURL.searchParams.set("before_id", String(nextBeforeID));
+      const response = await fetch(requestURL, { headers: { Accept: "application/json" } });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const payload = await response.json();
-      if (!Array.isArray(payload)) throw new Error("Invalid response");
-      messages = payload;
+      if (!payload || !Array.isArray(payload.messages)) throw new Error("Invalid response");
+      messages = append ? messages.concat(payload.messages) : payload.messages;
+      totalMessages = Number.isSafeInteger(payload.total_count) ? payload.total_count : messages.length;
+      nextBeforeID = Number.isSafeInteger(payload.next_before_id) ? payload.next_before_id : 0;
       renderMessages();
     } catch (error) {
       console.error("Unable to load guestbook messages", error);
-      listStatus.hidden = false;
-      listStatus.textContent = labels.messagesUnavailable;
+      if (!append) {
+        listStatus.hidden = false;
+        listStatus.textContent = labels.messagesUnavailable;
+      }
+    } finally {
+      loadMoreButton.disabled = false;
+      loadMoreButton.textContent = labels.loadMore;
     }
   }
 
@@ -269,6 +286,7 @@ if (root) {
       if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
 
       messages.unshift(result);
+      totalMessages += 1;
       renderMessages();
       form.elements.content.value = "";
       formStatus.textContent = labels.submitted;
@@ -283,6 +301,7 @@ if (root) {
   referenceClear.addEventListener("click", clearSource);
   postPickerToggle.addEventListener("click", () => setPickerOpen(!layout.classList.contains("is-picker-open")));
   postSearch.addEventListener("input", renderPosts);
+  loadMoreButton.addEventListener("click", () => loadMessages(true));
   document.addEventListener("click", (event) => {
     if (!layout.classList.contains("is-picker-open") || pickerDrawer.contains(event.target) || postPickerToggle.contains(event.target)) return;
     setPickerOpen(false);

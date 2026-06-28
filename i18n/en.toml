@@ -245,6 +245,8 @@ other = "Loading messages…"
 other = "No messages yet."
 [guestbookMessagesUnavailable]
 other = "Messages are temporarily unavailable. Please try again later."
+[guestbookLoadMore]
+other = "Load more"
 [guestbookMessageCount]
 one = "{count} message"
 other = "{count} messages"

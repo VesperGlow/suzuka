@@ -15,6 +15,7 @@
       data-i18n-count-other="{{ i18n "guestbookMessageCount" 2 }}"
       data-i18n-messages-empty="{{ i18n "guestbookMessagesEmpty" }}"
       data-i18n-messages-unavailable="{{ i18n "guestbookMessagesUnavailable" }}"
+      data-i18n-load-more="{{ i18n "guestbookLoadMore" }}"
       data-i18n-submitting="{{ i18n "guestbookSubmitting" }}"
       data-i18n-submitted="{{ i18n "guestbookSubmitted" }}"
       data-i18n-submit-failed="{{ i18n "guestbookSubmitFailed" }}"
@@ -91,6 +92,7 @@
         </header>
         <p class="guestbook-list-status" data-guestbook-list-status role="status">{{ i18n "guestbookMessagesLoading" }}</p>
         <ol class="guestbook-message-list" data-guestbook-message-list></ol>
+        <button class="guestbook-load-more" type="button" data-guestbook-load-more hidden>{{ i18n "guestbookLoadMore" }}</button>
       </section>
       </div>
 

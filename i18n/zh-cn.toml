@@ -243,6 +243,8 @@ other = "正在读取留言…"
 other = "还没有留言。"
 [guestbookMessagesUnavailable]
 other = "留言暂时无法读取，请稍后再试。"
+[guestbookLoadMore]
+other = "加载更多"
 [guestbookMessageCount]
 other = "{count} 条"
 [guestbookGuest]

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -25,7 +26,7 @@ func testApp(t *testing.T) http.Handler {
 
 func TestCreateAndListMessages(t *testing.T) {
 	handler := testApp(t)
-	body := `{"name":"Suzuka","email":"","website":"","content":"hello <b>world</b>","ref_title":"An article","ref_url":"/posts/example/"}`
+	body := `{"name":"Suzuka","email":"suzuka@example.com","website":"https://example.com","content":"hello <b>world</b>","ref_title":"An article","ref_url":"/posts/example/"}`
 	request := httptest.NewRequest(http.MethodPost, "/messages", strings.NewReader(body))
 	request.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
@@ -34,18 +35,86 @@ func TestCreateAndListMessages(t *testing.T) {
 		t.Fatalf("POST status = %d, body = %s", response.Code, response.Body.String())
 	}
 
-	request = httptest.NewRequest(http.MethodGet, "/messages", nil)
+	request = httptest.NewRequest(http.MethodGet, "/messages?limit=50", nil)
 	response = httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
 	if response.Code != http.StatusOK {
 		t.Fatalf("GET status = %d, body = %s", response.Code, response.Body.String())
 	}
-	var messages []message
-	if err := json.NewDecoder(response.Body).Decode(&messages); err != nil {
+	var page messagePage
+	if err := json.NewDecoder(response.Body).Decode(&page); err != nil {
 		t.Fatal(err)
 	}
-	if len(messages) != 1 || messages[0].Content != "hello <b>world</b>" || messages[0].RefURL != "/posts/example/" || messages[0].Email != "" {
-		t.Fatalf("unexpected messages: %#v", messages)
+	if page.TotalCount != 1 || len(page.Messages) != 1 || page.Messages[0].Content != "hello <b>world</b>" || page.Messages[0].RefURL != "/posts/example/" || page.Messages[0].Email != "" || page.Messages[0].Website != "https://example.com" {
+		t.Fatalf("unexpected message page: %#v", page)
+	}
+
+	request = httptest.NewRequest(http.MethodGet, "/messages", nil)
+	response = httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	var legacy []message
+	if err := json.NewDecoder(response.Body).Decode(&legacy); err != nil || len(legacy) != 1 {
+		t.Fatalf("legacy message response = %#v, err = %v", legacy, err)
+	}
+}
+
+func TestMessagePagination(t *testing.T) {
+	handler := testApp(t)
+	for i := 0; i < 55; i++ {
+		body := `{"name":"Suzuka","content":"message"}`
+		request := httptest.NewRequest(http.MethodPost, "/messages", strings.NewReader(body))
+		request.Header.Set("Content-Type", "application/json")
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		if response.Code != http.StatusCreated {
+			t.Fatalf("POST %d status = %d, body = %s", i+1, response.Code, response.Body.String())
+		}
+	}
+
+	load := func(target string) messagePage {
+		t.Helper()
+		request := httptest.NewRequest(http.MethodGet, target, nil)
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		if response.Code != http.StatusOK {
+			t.Fatalf("GET %s status = %d, body = %s", target, response.Code, response.Body.String())
+		}
+		var page messagePage
+		if err := json.NewDecoder(response.Body).Decode(&page); err != nil {
+			t.Fatal(err)
+		}
+		return page
+	}
+
+	first := load("/messages?limit=20")
+	if first.TotalCount != 55 || len(first.Messages) != 20 || first.NextBeforeID == 0 {
+		t.Fatalf("unexpected first page: count=%d messages=%d next=%d", first.TotalCount, len(first.Messages), first.NextBeforeID)
+	}
+	second := load("/messages?limit=20&before_id=" + strconv.FormatInt(first.NextBeforeID, 10))
+	if second.TotalCount != 55 || len(second.Messages) != 20 || second.Messages[0].ID >= first.Messages[len(first.Messages)-1].ID {
+		t.Fatalf("unexpected second page: %#v", second)
+	}
+	third := load("/messages?limit=20&before_id=" + strconv.FormatInt(second.NextBeforeID, 10))
+	if len(third.Messages) != 15 || third.NextBeforeID != 0 {
+		t.Fatalf("unexpected final page: messages=%d next=%d", len(third.Messages), third.NextBeforeID)
+	}
+}
+
+func TestMessagePaginationRejectsBadParameters(t *testing.T) {
+	handler := testApp(t)
+	for _, target := range []string{
+		"/messages?limit=0",
+		"/messages?limit=101",
+		"/messages?limit=nope",
+		"/messages?before_id=0",
+		"/messages?before_id=nope",
+	} {
+		request := httptest.NewRequest(http.MethodGet, target, nil)
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		if response.Code != http.StatusBadRequest {
+			t.Fatalf("GET %s status = %d, want 400", target, response.Code)
+		}
 	}
 }
 
@@ -239,6 +308,9 @@ func TestValidation(t *testing.T) {
 		{"external reference", `{"name":"Suzuka","content":"hello","ref_title":"Article","ref_url":"https://example.com/posts/a/"}`},
 		{"non-post reference", `{"name":"Suzuka","content":"hello","ref_title":"Article","ref_url":"/about/"}`},
 		{"traversing reference", `{"name":"Suzuka","content":"hello","ref_title":"Article","ref_url":"/posts/../about/"}`},
+		{"invalid email", `{"name":"Suzuka","content":"hello","email":"not-an-email"}`},
+		{"unsafe website", `{"name":"Suzuka","content":"hello","website":"javascript:alert(1)"}`},
+		{"website credentials", `{"name":"Suzuka","content":"hello","website":"https://user:pass@example.com"}`},
 		{"unknown field", `{"name":"Suzuka","content":"hello","admin":true}`},
 	}
 	for _, test := range tests {
@@ -251,5 +323,56 @@ func TestValidation(t *testing.T) {
 				t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
 			}
 		})
+	}
+}
+
+func TestClientIPTrustsOnlyLocalProxy(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	request.RemoteAddr = "198.51.100.10:1234"
+	request.Header.Set("X-Forwarded-For", "203.0.113.7")
+	if got := clientIP(request); got != "198.51.100.10" {
+		t.Fatalf("public peer client IP = %q", got)
+	}
+
+	request.RemoteAddr = "10.0.0.2:1234"
+	if got := clientIP(request); got != "203.0.113.7" {
+		t.Fatalf("trusted proxy client IP = %q", got)
+	}
+
+	request.Header.Set("X-Forwarded-For", "not-an-ip")
+	if got := clientIP(request); got != "10.0.0.2" {
+		t.Fatalf("invalid forwarded client IP = %q", got)
+	}
+}
+
+func TestRateLimiterBoundsTrackedKeys(t *testing.T) {
+	now := time.Date(2026, 6, 22, 12, 0, 0, 0, time.UTC)
+	limiter := newRateLimiter(1, time.Minute, func() time.Time { return now })
+	limiter.maxKeys = 2
+
+	if !limiter.allow("one") || !limiter.allow("two") || !limiter.allow("three") {
+		t.Fatal("first request for each bucket should pass")
+	}
+	if limiter.allow("four") {
+		t.Fatal("new keys should share the full overflow bucket")
+	}
+	if len(limiter.hits) != limiter.maxKeys+1 {
+		t.Fatalf("tracked keys = %d, want %d", len(limiter.hits), limiter.maxKeys+1)
+	}
+}
+
+func TestDatabaseSchemaVersion(t *testing.T) {
+	db, err := openDatabase(filepath.Join(t.TempDir(), "guestbook.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	var version int
+	if err := db.QueryRow("PRAGMA user_version").Scan(&version); err != nil {
+		t.Fatal(err)
+	}
+	if version != currentSchemaVersion {
+		t.Fatalf("schema version = %d, want %d", version, currentSchemaVersion)
 	}
 }

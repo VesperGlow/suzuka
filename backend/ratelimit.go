@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const maxRateLimitKeys = 10_000
+
 // rateLimiter 是一个按 key 的滑动窗口限流器，用于挡住对写接口的滥用。
 // 注意：客户端 IP 取自 X-Forwarded-For，依赖上游反向代理正确设置该头，
 // 该头可被伪造，因此这只是基础的防滥用，不是安全边界。
@@ -15,6 +17,7 @@ type rateLimiter struct {
 	now       func() time.Time
 	hits      map[string][]time.Time
 	lastSweep time.Time
+	maxKeys   int
 }
 
 func newRateLimiter(limit int, window time.Duration, now func() time.Time) *rateLimiter {
@@ -24,6 +27,7 @@ func newRateLimiter(limit int, window time.Duration, now func() time.Time) *rate
 		now:       now,
 		hits:      make(map[string][]time.Time),
 		lastSweep: now(),
+		maxKeys:   maxRateLimitKeys,
 	}
 }
 
@@ -38,6 +42,12 @@ func (rl *rateLimiter) allow(key string) bool {
 	if now.Sub(rl.lastSweep) >= rl.window {
 		rl.sweep(cutoff)
 		rl.lastSweep = now
+	}
+
+	// 伪造大量来源地址时，不允许 map 无界增长。容量耗尽后的新地址共享一个保守桶，
+	// 老地址仍按各自窗口正常计算。
+	if _, exists := rl.hits[key]; !exists && len(rl.hits) >= rl.maxKeys {
+		key = "__overflow__"
 	}
 
 	recent := rl.hits[key][:0]

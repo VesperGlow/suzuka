@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"path"
 	"strings"
@@ -15,20 +16,34 @@ import (
 // 请求体上限，留言与计数写接口共用。
 const maxRequestBytes = 16 << 10
 
-// clientIP 取请求来源 IP，优先信任反向代理写入的 X-Forwarded-For。
+// clientIP 取请求来源 IP。仅当直连方来自回环或私有网络（即常见的本机/容器反代）时，
+// 才信任 X-Forwarded-For；公网直连客户端不能靠伪造请求头绕过限流。
+// 上游反代仍须覆盖而不是透传客户端自带的 X-Forwarded-For。
 func clientIP(r *http.Request) string {
-	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
-		if comma := strings.IndexByte(forwarded, ','); comma >= 0 {
-			forwarded = forwarded[:comma]
-		}
-		if ip := strings.TrimSpace(forwarded); ip != "" {
-			return ip
+	remote := parseRemoteIP(r.RemoteAddr)
+	if remote.IsValid() && (remote.IsLoopback() || remote.IsPrivate()) {
+		for _, value := range strings.Split(r.Header.Get("X-Forwarded-For"), ",") {
+			if forwarded, err := netip.ParseAddr(strings.TrimSpace(value)); err == nil {
+				return forwarded.Unmap().String()
+			}
 		}
 	}
+	if remote.IsValid() {
+		return remote.Unmap().String()
+	}
+
 	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
 		return host
 	}
 	return r.RemoteAddr
+}
+
+func parseRemoteIP(value string) netip.Addr {
+	if address, err := netip.ParseAddrPort(value); err == nil {
+		return address.Addr()
+	}
+	address, _ := netip.ParseAddr(strings.Trim(value, "[]"))
+	return address
 }
 
 // ensureJSONEnd 确认请求体里只有一个 JSON 对象，没有尾随内容。
@@ -61,4 +76,12 @@ func writeJSON(w http.ResponseWriter, status int, value any) {
 	if err := json.NewEncoder(w).Encode(value); err != nil {
 		log.Printf("write JSON response: %v", err)
 	}
+}
+
+// writeInternalError 对外隐藏实现细节，同时把真实错误留在服务日志中便于排查。
+func (a *app) writeInternalError(w http.ResponseWriter, r *http.Request, operation string, err error) {
+	if a.logger != nil {
+		a.logger.Printf("%s %s: %s: %v", r.Method, r.URL.Path, operation, err)
+	}
+	writeError(w, http.StatusInternalServerError, operation)
 }

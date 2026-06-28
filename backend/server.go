@@ -1,15 +1,19 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"mime"
 	"net/http"
 	"os"
+	"os/signal"
 	"path"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -17,17 +21,24 @@ import (
 type app struct {
 	db             *sql.DB
 	now            func() time.Time
+	logger         *log.Logger
 	limiter        *rateLimiter
 	counterLimiter *rateLimiter
 }
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	addr := envOrDefault("GUESTBOOK_ADDR", "127.0.0.1:8787")
 	dbPath := envOrDefault("GUESTBOOK_DB_PATH", filepath.Join("data", "guestbook.db"))
 
 	db, err := openDatabase(dbPath)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer db.Close()
 
@@ -38,12 +49,47 @@ func main() {
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      15 * time.Second,
 		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    32 << 10,
 	}
 
 	log.Printf("guestbook service listening on %s (database: %s)", addr, dbPath)
-	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-		log.Fatal(err)
+	if err := serveUntilSignal(server); err != nil {
+		return fmt.Errorf("serve HTTP: %w", err)
 	}
+	return nil
+}
+
+// serveUntilSignal 在收到终止信号时停止接收新请求，并给在途请求留出完成时间。
+func serveUntilSignal(server *http.Server) error {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	serveErr := make(chan error, 1)
+	go func() { serveErr <- server.ListenAndServe() }()
+
+	select {
+	case err := <-serveErr:
+		if errors.Is(err, http.ErrServerClosed) {
+			return nil
+		}
+		return err
+	case <-ctx.Done():
+		log.Printf("shutdown signal received")
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		if closeErr := server.Close(); closeErr != nil {
+			log.Printf("force close HTTP server: %v", closeErr)
+		}
+		return fmt.Errorf("graceful shutdown: %w", err)
+	}
+
+	if err := <-serveErr; !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	return nil
 }
 
 func envOrDefault(key, fallback string) string {
@@ -58,6 +104,7 @@ func newApp(db *sql.DB) http.Handler {
 	a := &app{
 		db:             db,
 		now:            time.Now,
+		logger:         log.Default(),
 		limiter:        newRateLimiter(postBurst, postWindow, time.Now),
 		counterLimiter: newRateLimiter(counterBurst, counterWindow, time.Now),
 	}

@@ -71,5 +71,8 @@ hugo && npx -y pagefind --site public
     ghcr.io/<owner>/suzuka:latest
   ```
 
+  外层反代必须覆盖客户端传入的 `X-Forwarded-For`，不要原样追加；留言数据位于
+  `/data` 卷，应使用支持 SQLite/WAL 的方式定期备份。
+
   Hugo 版本通过 `Containerfile` 的 `HUGO_VERSION` / `PAGEFIND_VERSION` 构建参数钉死，
   与本地保持一致。`backend/Containerfile` 仍保留，用于只跑后端 API 的场景。
