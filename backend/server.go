@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	"log"
+	"mime"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -51,7 +53,7 @@ func envOrDefault(key, fallback string) string {
 	return fallback
 }
 
-// newApp 组装服务依赖并返回 HTTP 处理器。
+// newApp 组装服务依赖并返回对外的 HTTP 处理器。
 func newApp(db *sql.DB) http.Handler {
 	a := &app{
 		db:             db,
@@ -59,7 +61,25 @@ func newApp(db *sql.DB) http.Handler {
 		limiter:        newRateLimiter(postBurst, postWindow, time.Now),
 		counterLimiter: newRateLimiter(counterBurst, counterWindow, time.Now),
 	}
-	return a.handler()
+	return a.rootHandler()
+}
+
+// rootHandler 决定最终对外的处理器形态：
+//   - 设置了 GUESTBOOK_STATIC_DIR 时进入「单容器」模式：根路径托管 Hugo 静态产物，
+//     留言板 API 收敛到 /api/guestbook/ 前缀下（与前端 fetch 的路径一致，
+//     由本进程剥掉前缀，省掉外层 nginx 反代）。
+//   - 未设置时退回纯 API 模式（本地开发或仅后端镜像），行为与之前完全一致。
+func (a *app) rootHandler() http.Handler {
+	api := a.handler()
+	staticDir := strings.TrimSpace(os.Getenv("GUESTBOOK_STATIC_DIR"))
+	if staticDir == "" {
+		return api
+	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/api/guestbook/", http.StripPrefix("/api/guestbook", api))
+	mux.Handle("/", newStaticHandler(staticDir))
+	return mux
 }
 
 // handler 组装路由：留言、阅读数、喜欢，以及「关于」页的汇总数据。
@@ -83,4 +103,64 @@ func securityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("Cache-Control", "no-store")
 		next.ServeHTTP(w, r)
 	})
+}
+
+// newStaticHandler 在根路径托管 Hugo 产物。运行用的 scratch 镜像里没有
+// /etc/mime.types，这里手动补几个 Go 内建表缺失、但站点会用到的扩展名，
+// 避免字体 / manifest / feed 被当成 application/octet-stream 下发。
+func newStaticHandler(dir string) http.Handler {
+	for ext, typ := range map[string]string{
+		".woff":        "font/woff",
+		".woff2":       "font/woff2",
+		".ttf":         "font/ttf",
+		".otf":         "font/otf",
+		".ico":         "image/x-icon",
+		".webmanifest": "application/manifest+json",
+		".xml":         "application/xml",
+	} {
+		_ = mime.AddExtensionType(ext, typ)
+	}
+
+	fileServer := http.FileServer(http.Dir(dir))
+	notFoundPage := filepath.Join(dir, "404.html")
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			w.Header().Set("Allow", "GET, HEAD")
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// 复刻 FileServer 的定位逻辑：先 path.Clean 收敛掉 ".." 防目录穿越，
+		// 命中目录时回退到其 index.html。命中则交给 FileServer（自带
+		// Last-Modified / Range / 条件请求）；未命中则返回 Hugo 的 404.html，
+		// 与原先静态托管的体验保持一致。
+		target := filepath.Join(dir, filepath.FromSlash(path.Clean("/"+r.URL.Path)))
+		if info, err := os.Stat(target); err == nil && info.IsDir() {
+			target = filepath.Join(target, "index.html")
+		}
+		if _, err := os.Stat(target); err != nil {
+			serveNotFound(w, r, notFoundPage)
+			return
+		}
+
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		fileServer.ServeHTTP(w, r)
+	})
+}
+
+// serveNotFound 输出站点自带的 404 页面并带上 404 状态码；
+// 页面缺失时退回标准库的纯文本 404。
+func serveNotFound(w http.ResponseWriter, r *http.Request, page string) {
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	body, err := os.ReadFile(page)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusNotFound)
+	if r.Method != http.MethodHead {
+		_, _ = w.Write(body)
+	}
 }

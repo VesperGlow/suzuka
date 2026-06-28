@@ -54,5 +54,22 @@ hugo && npx -y pagefind --site public
 
 ## 部署
 
-- 静态站点：`public/` 由静态托管 / CDN 提供，nginx 反代后端 `/api/guestbook`（会剥掉该前缀）。
-- 后端镜像：`backend/**` 变更时由 GitHub Actions 跑 `go vet` + 测试，并构建推送容器镜像到 GHCR（见 `.github/workflows/backend-image.yml`）。
+前后端打进**一个容器**：Go 进程在根路径托管 Hugo 静态产物，并把留言板接口收敛到
+`/api/guestbook/` 前缀下（与前端 `fetch` 路径一致，由进程自身剥前缀，无需 nginx 反代）。
+
+- **自动构建**：push 到 `main` 时 GitHub Actions 跑 `go vet` + 测试，再三阶段构建
+  （Hugo + Pagefind → 编译 Go → 合进 scratch）并推镜像到 GHCR
+  `ghcr.io/<owner>/suzuka:latest`（见 `.github/workflows/site-image.yml` 与根目录 `Containerfile`）。
+- **VPS 只负责跑容器**，监听 HTTP，由 Cloudflare / 反代在前面终止 TLS：
+
+  ```sh
+  # 命名卷持久化 SQLite，发布到宿主回环；外层代理把 80/443 转到 127.0.0.1:8787。
+  podman pull   ghcr.io/<owner>/suzuka:latest
+  podman run -d --name suzuka --restart=always \
+    -p 127.0.0.1:8787:8787 \
+    -v suzuka-data:/data \
+    ghcr.io/<owner>/suzuka:latest
+  ```
+
+  Hugo 版本通过 `Containerfile` 的 `HUGO_VERSION` / `PAGEFIND_VERSION` 构建参数钉死，
+  与本地保持一致。`backend/Containerfile` 仍保留，用于只跑后端 API 的场景。

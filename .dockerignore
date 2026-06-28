@@ -1,0 +1,11 @@
+# 构建合并镜像时无需进入上下文的内容。
+.git
+.github
+.claude
+public/
+.hugo_build.lock
+data/
+backend/data/
+backend/*_test.go
+node_modules/
+*.log

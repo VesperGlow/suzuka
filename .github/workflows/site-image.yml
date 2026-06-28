@@ -1,16 +1,13 @@
-name: Build backend image
+name: Build site image
 
-# 仅当后端源码变化时构建并推送镜像；也可手动触发。
+# 站点内容或后端任意变更都重建合并镜像（前端 + 后端打进一个容器）；也可手动触发。
 on:
   push:
     branches: [main]
-    paths:
-      - "backend/**"
-      - ".github/workflows/backend-image.yml"
   workflow_dispatch:
 
 jobs:
-  # 先跑 vet + 单元测试；纯 Go 驱动后无需 CGO / C 工具链，测试环境很干净。
+  # 先跑 vet + 单元测试；纯 Go 驱动无需 CGO / C 工具链。
   test:
     runs-on: ubuntu-latest
     steps:
@@ -31,8 +28,7 @@ jobs:
         working-directory: backend
         run: go test ./...
 
-  # 静态检查作为旁路反馈：continue-on-error 让它即使失败也不影响整体 run 结论，
-  # 更不阻断镜像发布（build-push 只 needs: test）。配置见 backend/.golangci.yml。
+  # 静态检查作为旁路反馈：失败不阻断镜像发布（build-push 只 needs: test）。
   lint:
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -46,7 +42,6 @@ jobs:
           go-version: "1.25"
           cache-dependency-path: backend/go.sum
 
-      # v7 才支持 golangci-lint v2（latest 现已是 v2.x）；v6 跑 v2 会以退出码 3 失败。
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
@@ -64,6 +59,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -71,12 +69,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 自动生成镜像名（小写）与标签：latest + 短 SHA。
+      # 镜像名取仓库全名（metadata-action 会自动转小写）：ghcr.io/<owner>/suzuka。
       - name: Image metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/backend
+          images: ghcr.io/${{ github.repository }}
           tags: |
             type=raw,value=latest
             type=sha,format=short
@@ -84,8 +82,10 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
-          file: ./backend/Containerfile
+          context: .
+          file: ./Containerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
