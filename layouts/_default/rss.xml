@@ -17,7 +17,7 @@
     <title>{{ if eq .Title site.Title }}{{ site.Title }}{{ else }}{{ with .Title }}{{ . }} · {{ end }}{{ site.Title }}{{ end }}</title>
     <link>{{ .Permalink }}</link>
     <description>{{ with .Description }}{{ . }}{{ else }}{{ site.Params.description }}{{ end }}</description>
-    <generator>Hugo</generator>
+    <generator>{{ site.Title }}</generator>
     <language>{{ site.Language.Locale }}</language>
     {{- with site.Params.author }}
     <managingEditor>{{ . }}</managingEditor>

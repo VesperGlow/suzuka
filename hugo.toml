@@ -3,9 +3,14 @@ defaultContentLanguage = 'zh-cn'
 defaultContentLanguageInSubdir = false
 enableRobotsTXT = true
 summaryLength = 90
+disableHugoGeneratorInject = true
 
 [pagination]
   pagerSize = 6
+  path = 'p'
+
+[outputFormats.RSS]
+  baseName = 'feed'
 
 [outputs]
   home = ['HTML', 'RSS', 'JSON', 'GuestbookPosts', 'JSONFeed']

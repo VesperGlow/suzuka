@@ -75,7 +75,7 @@
       await pagefind.init();
       return pagefind;
     } catch (error) {
-      console.info("Using the Hugo search index:", error.message);
+      console.info("Using the built-in search index:", error.message);
       return loadFallbackSearch();
     }
   };
