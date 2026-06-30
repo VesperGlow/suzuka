@@ -4,7 +4,6 @@
 .claude
 public/
 .hugo_build.lock
-data/
 backend/data/
 backend/*_test.go
 node_modules/
