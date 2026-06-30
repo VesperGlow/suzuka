@@ -192,8 +192,69 @@ func newStaticHandler(dir string) http.Handler {
 		}
 
 		w.Header().Set("X-Content-Type-Options", "nosniff")
+		if cc := cacheControlFor(r.URL.Path); cc != "" {
+			w.Header().Set("Cache-Control", cc)
+		}
 		fileServer.ServeHTTP(w, r)
 	})
+}
+
+const (
+	// 指纹化资源：文件名内嵌内容 hash，内容变了文件名就变，可放心钉死缓存。
+	immutableCache = "public, max-age=31536000, immutable"
+	// 文件名固定但内容会随发布变化的资源：每次回源做条件请求校验，
+	// 命中则 304。否则 CDN/浏览器会把旧版本钉死一年（典型受害者是 pagefind 搜索索引）。
+	revalidateCache = "no-cache"
+)
+
+// cacheControlFor 决定静态资源的 Cache-Control。让 origin 成为缓存策略的唯一事实源，
+// 这样无论前面的 Cloudflare / 反代「遵循源站头」即可得到正确行为。
+//
+// 关键区分：pagefind 的 pagefind.js / pagefind-entry.json 文件名固定、内容却随文章更新，
+// 一旦被当成指纹资源 immutable 缓存，老访客就会一直拿到旧索引、搜不到新文章。
+func cacheControlFor(urlPath string) string {
+	base := path.Base(urlPath)
+
+	// pagefind：带 hash 的分片可长期缓存；固定名的入口与运行时必须回源校验。
+	if strings.HasPrefix(urlPath, "/pagefind/") {
+		if strings.HasPrefix(urlPath, "/pagefind/index/") ||
+			strings.HasPrefix(urlPath, "/pagefind/fragment/") ||
+			strings.HasSuffix(base, ".pagefind") {
+			return immutableCache
+		}
+		return revalidateCache
+	}
+
+	// Hugo 生成的搜索回退索引：固定名，每次发布都变。
+	if base == "index.json" {
+		return revalidateCache
+	}
+
+	// Hugo 指纹资源（name.min.<hash>.ext）：改了内容即换名字，可 immutable。
+	if isFingerprinted(base) {
+		return immutableCache
+	}
+
+	// 其余（HTML、favicon、manifest 等）沿用默认协商缓存，不显式声明。
+	return ""
+}
+
+// isFingerprinted 判断是否为 Hugo 指纹文件：倒数第二段为一段长十六进制内容散列。
+func isFingerprinted(base string) bool {
+	parts := strings.Split(base, ".")
+	if len(parts) < 3 {
+		return false
+	}
+	seg := parts[len(parts)-2]
+	if len(seg) < 16 {
+		return false
+	}
+	for _, r := range seg {
+		if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f')) {
+			return false
+		}
+	}
+	return true
 }
 
 // serveNotFound 输出站点自带的 404 页面并带上 404 状态码；
