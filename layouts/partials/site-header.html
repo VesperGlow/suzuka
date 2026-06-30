@@ -23,7 +23,8 @@
       <div class="header-actions">
         {{- with site.GetPage "/pages/guestbook" -}}
           <a class="header-action mobile-guestbook-link{{ if eq $.RelPermalink .RelPermalink }} active{{ end }}" href="{{ .RelPermalink }}" aria-label="{{ i18n "guestbookTitle" }}" title="{{ i18n "guestbookTitle" }}"{{ if eq $.RelPermalink .RelPermalink }} aria-current="page"{{ end }}>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
+            <!-- viewBox shifted to optically center the off-center bubble glyph within the round button/tap-ring -->
+            <svg viewBox="-1.41 0.21 24 24" aria-hidden="true">
               <path d="M5.5 18.5 3 21v-5.25A8.5 8.5 0 1 1 6.2 19.2"></path>
               <path d="M8 11h8M8 14h5"></path>
             </svg>
