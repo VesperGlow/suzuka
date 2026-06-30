@@ -73,14 +73,18 @@
       : getSavedTheme()
   );
 
-  document.addEventListener("DOMContentLoaded", () => {
-    updateControls();
-    document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
-      button.addEventListener("click", () => {
-        applyThemeFromControl(getResolvedTheme() === "dark" ? "light" : "dark");
-      });
-    });
+  // Delegate on document so the toggle responds the moment it is parsed,
+  // without waiting for DOMContentLoaded (and the deferred scripts it blocks on).
+  document.addEventListener("click", (event) => {
+    const toggle =
+      event.target instanceof Element
+        ? event.target.closest("[data-theme-toggle]")
+        : null;
+    if (!toggle) return;
+    applyThemeFromControl(getResolvedTheme() === "dark" ? "light" : "dark");
   });
+
+  document.addEventListener("DOMContentLoaded", updateControls);
 
   colorScheme.addEventListener("change", () => {
     if (!root.dataset.theme) updateControls();
