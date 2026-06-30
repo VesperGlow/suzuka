@@ -1,0 +1,17 @@
+{{- /*
+  入参：远程图片 URL。构建时用 resources.GetRemote 下载并自托管（带内容指纹、可缓存），
+  返回站内 RelPermalink；下载失败则回退为原始 URL（热链），并打警告。
+  （本站 Hugo 的 GetRemote 能下载图片，但无法解析 JSON 响应，故 VNDB 封面 URL 由数据预置而非实时查 API。）
+  外层用 partialCached 按 URL 去重，每个 URL 整站只下载一次。
+*/ -}}
+{{- $url := . -}}
+{{- $out := $url -}}
+{{- with $url -}}
+  {{- $r := try (resources.GetRemote .) -}}
+  {{- with $r.Err -}}
+    {{- warnf "remote-image: 下载失败 %q：%s（回退热链）" $url . -}}
+  {{- else -}}
+    {{- with $r.Value -}}{{- $out = .RelPermalink -}}{{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- return $out -}}

@@ -75,6 +75,11 @@ disableHugoGeneratorInject = true
       pageRef = '/archives'
       weight = 20
     [[languages.zh-cn.menus.main]]
+      identifier = 'games'
+      name = '书架'
+      pageRef = '/pages/games'
+      weight = 25
+    [[languages.zh-cn.menus.main]]
       identifier = 'guestbook'
       name = '留言'
       pageRef = '/pages/guestbook'
@@ -102,6 +107,11 @@ disableHugoGeneratorInject = true
       name = 'Posts'
       pageRef = '/archives'
       weight = 20
+    [[languages.en.menus.main]]
+      identifier = 'games'
+      name = 'Shelf'
+      pageRef = '/pages/games'
+      weight = 25
     [[languages.en.menus.main]]
       identifier = 'guestbook'
       name = 'Guestbook'

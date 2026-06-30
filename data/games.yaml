@@ -1,0 +1,89 @@
+# 首页/「书架」页的 Galgame 数据。每条对应一部作品，按此文件顺序展示。
+#
+# 字段说明（除 title 外都可省略）：
+#   title       作品标题（默认 / 中文页显示）
+#   title_en    英文页显示的标题，省略则回退到 title
+#   status      playing(在玩) | cleared(通关) | route(单线通关) | backlog(想玩)
+#               —— 决定状态标签与配色
+#   rating      个人评分（任意文本，如 9 或 9.5），省略则不显示
+#   vndb        VNDB 条目 id（如 v27448，不是完整网址）。仅在没有 post 时用作卡片跳转目标。
+#               id 可在对应作品的 VNDB 页面右上角看到（形如 v19073）。
+#   post        关联文章的 slug（见各文 frontmatter 的 slug:）。填了就：
+#               ① 卡片优先跳到对应语言的文章；② 没填 cover 时借用文章首图作封面
+#   anchor      正文小节锚点 id（需 post）。填了卡片就跳到文章内对应小节，如 #bls-jisheng。
+#               锚点用 Markdown 标题后的 {#id} 显式指定，中英文用同一 id。
+#   cover       封面图：外链 http(s)（构建时会自动下载并自托管）或站内路径。
+#               这里用的是 VNDB 官方封面 URL —— 取法：用 VNDB API 按 id 查 image.url 字段，例如
+#               curl -H "Content-Type: application/json" \
+#                    -d '{"filters":["id","=","v27448"],"fields":"image.url"}' \
+#                    https://api.vndb.org/kana/vn
+#               （本站 Hugo 的 GetRemote 能下载图片但无法解析 JSON 响应，故封面 URL 预置于此而非构建时实时查询。）
+#
+# 封面优先级：cover > 文章首图(需 post) > 占位图
+
+- title: "ATRI -My Dear Moments-"
+  status: cleared
+  vndb: v27448
+  cover: "https://t.vndb.org/cv/12/76012.jpg"
+  post: "atri-my-dear-moments"
+
+- title: "千恋＊万花"
+  title_en: "Senren＊Banka"
+  status: route
+  vndb: v19073
+  cover: "https://t.vndb.org/cv/46/80746.jpg"
+  post: "senren-banka"
+
+- title: "終のステラ"
+  title_en: "Stella of the End"
+  status: cleared
+  vndb: v29443
+  cover: "https://t.vndb.org/cv/15/75915.jpg"
+  post: "tsui-no-stella-daughter-at-the-destination"
+
+- title: "華は短し、踊れよ乙女"
+  title_en: "Hana wa Mijikashi, Odoreyo Otome"
+  status: route
+  vndb: v36011
+  cover: "https://t.vndb.org/cv/96/89696.jpg"
+  post: "hana-wa-mijikashi-odoreyo-otome"
+
+- title: "ナガレボシ"
+  title_en: "Nagareboshi"
+  status: cleared
+  vndb: v51298
+  cover: "https://t.vndb.org/cv/89/85989.jpg"
+  post: "nagaruboshi-a-wish-star-summer-wish"
+
+# 白露社「聆花百合系列」四部，各自链接到 bailushe-love 正文对应小节。
+- title: "寄甡"
+  title_en: "Jisheng · Symbiotic Love"
+  status: cleared
+  vndb: v25521
+  cover: "https://t.vndb.org/cv/29/84329.jpg"
+  post: "bailushe-love"
+  anchor: "bls-jisheng"
+
+- title: "千面"
+  title_en: "Qianmian · Melancholy Love"
+  status: cleared
+  vndb: v27565
+  cover: "https://t.vndb.org/cv/25/84325.jpg"
+  post: "bailushe-love"
+  anchor: "bls-qianmian"
+
+- title: "夜永"
+  title_en: "Yeyong · Eternal Love"
+  status: cleared
+  vndb: v29663
+  cover: "https://t.vndb.org/cv/78/53578.jpg"
+  post: "bailushe-love"
+  anchor: "bls-yeyong"
+
+- title: "南栀"
+  title_en: "Nanzhi · Unwavering Love"
+  status: cleared
+  vndb: v49516
+  cover: "https://t.vndb.org/cv/60/73960.jpg"
+  post: "bailushe-love"
+  anchor: "bls-nanzhi"

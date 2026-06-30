@@ -55,6 +55,13 @@
             </g>
           </svg>
         </a>
+        <button class="header-action nav-menu-toggle" type="button" data-nav-menu-toggle aria-controls="mobile-nav-menu" aria-expanded="false" aria-label="{{ i18n "menuLabel" }}" title="{{ i18n "menuLabel" }}">
+          <svg class="nav-menu-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path class="nav-menu-bar nav-menu-bar-top" d="M4 7h16"></path>
+            <path class="nav-menu-bar nav-menu-bar-mid" d="M4 12h16"></path>
+            <path class="nav-menu-bar nav-menu-bar-bottom" d="M4 17h16"></path>
+          </svg>
+        </button>
       </div>
       <nav class="main-nav desktop-header-nav" aria-label="{{ i18n "mainNavigation" }}">
         {{ range site.Menus.main }}
@@ -67,7 +74,47 @@
           {{ end }}
         {{ end }}
       </nav>
+      <nav class="mobile-nav-menu" id="mobile-nav-menu" data-nav-menu aria-label="{{ i18n "mainNavigation" }}">
+        <ul class="mobile-nav-list">
+          {{ range site.Menus.main }}
+            {{ if ne .Identifier "search" }}
+              {{- $isActive := $.IsMenuCurrent "main" . -}}
+              {{- if and (eq .Identifier "posts") (in (slice "posts" "archives" "categories" "tags") $.Section) -}}
+                {{- $isActive = true -}}
+              {{- end -}}
+              <li>
+                <a class="mobile-nav-link{{ if $isActive }} active{{ end }}" href="{{ .URL }}"{{ if $isActive }} aria-current="page"{{ end }}>
+                  {{ partial "nav-icon.html" .Identifier }}
+                  <span>{{ .Name }}</span>
+                </a>
+              </li>
+            {{ end }}
+          {{ end }}
+        </ul>
+        <div class="mobile-nav-controls">
+          <button class="header-action theme-toggle" type="button" data-theme-toggle data-label-light="{{ i18n "themeToLight" }}" data-label-dark="{{ i18n "themeToDark" }}" aria-label="{{ i18n "themeToDark" }}" title="{{ i18n "themeToDark" }}">
+            <svg class="theme-toggle-moon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path d="M20 15.2A8.4 8.4 0 0 1 8.8 4 8.4 8.4 0 1 0 20 15.2Z"></path>
+            </svg>
+            <svg class="theme-toggle-sun" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <circle cx="12" cy="12" r="3.5"></circle>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"></path>
+            </svg>
+          </button>
+          <a class="header-action lang-toggle language-switcher {{ if eq site.Language.Lang "zh-cn" }}is-zh{{ else }}is-en{{ end }}" href="{{ $languageURL }}" hreflang="{{ $languageLocale }}" aria-label="{{ i18n "languageSwitcher" }}" data-language-toggle>
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <g class="lang-toggle-char lang-toggle-zh">
+                <path d="M7 8h10M12 5v3M9 10c1.2 3.8 4.3 6.8 8 8M15 10c-1.1 3.8-4.2 6.8-8 8"></path>
+              </g>
+              <g class="lang-toggle-char lang-toggle-en">
+                <path d="M7.5 18 12 6l4.5 12M9 14h6"></path>
+              </g>
+            </svg>
+          </a>
+        </div>
+      </nav>
     </div>
   </div>
 </header>
 <script src="{{ partial "asset-url.html" "js/language-toggle.js" }}" defer></script>
+<script src="{{ partial "asset-url.html" "js/nav-menu.js" }}" defer></script>

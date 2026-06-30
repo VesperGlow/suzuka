@@ -1,0 +1,52 @@
+{{- /* 单张书架卡片。入参 dict：game（一条 games.yaml 数据）、posts（文章集合） */ -}}
+{{- $game := .game -}}
+{{- $posts := .posts -}}
+{{- $status := $game.status | default "cleared" -}}
+{{- $statusLabels := dict
+    "playing" (i18n "statusPlaying")
+    "cleared" (i18n "statusCleared")
+    "route" (i18n "statusRoute")
+    "backlog" (i18n "statusBacklog") -}}
+{{- $statusLabel := index $statusLabels $status | default $status -}}
+{{- $post := false -}}
+{{- with $game.post -}}
+  {{- $slug := . -}}
+  {{- range $posts -}}{{- if eq .Slug $slug -}}{{- $post = . -}}{{- end -}}{{- end -}}
+{{- end -}}
+{{- $title := $game.title -}}
+{{- if and (eq site.Language.Lang "en") $game.title_en -}}{{- $title = $game.title_en -}}{{- end -}}
+{{- $cover := "" -}}
+{{- with $game.cover -}}
+  {{- $c := printf "%v" . -}}
+  {{- if or (hasPrefix $c "http") (hasPrefix $c "//") -}}
+    {{- $cover = partialCached "remote-image.html" $c $c -}}
+  {{- else -}}
+    {{- $cover = $c | relURL -}}
+  {{- end -}}
+{{- end -}}
+{{- if and (not $cover) $post -}}{{- $cover = partial "archive-cover-url.html" $post -}}{{- end -}}
+{{- $href := "" -}}
+{{- $external := false -}}
+{{- with $post -}}
+  {{- $href = .RelPermalink -}}
+  {{- with $game.anchor -}}{{- $href = printf "%s#%s" $post.RelPermalink . -}}{{- end -}}
+{{- end -}}
+{{- if and (not $href) $game.vndb -}}{{- $href = printf "https://vndb.org/%s" $game.vndb -}}{{- $external = true -}}{{- end -}}
+<li class="shelf-item shelf-item--{{ $status }}">
+  {{- if $href }}<a class="shelf-link" href="{{ $href }}"{{ if $external }} target="_blank" rel="noopener"{{ end }}>{{ else }}<span class="shelf-link">{{ end -}}
+    <span class="shelf-cover">
+      {{- with $cover -}}
+        <img src="{{ . }}" alt="" loading="lazy" decoding="async">
+      {{- else -}}
+        <span class="shelf-cover-fallback" aria-hidden="true">{{ substr $title 0 1 }}</span>
+      {{- end -}}
+    </span>
+    <span class="shelf-info">
+      <span class="shelf-title">{{ $title }}</span>
+      <span class="shelf-meta">
+        <span class="shelf-status shelf-status--{{ $status }}">{{ $statusLabel }}</span>
+        {{- with $game.rating }}<span class="shelf-rating">★ {{ . }}</span>{{ end -}}
+      </span>
+    </span>
+  {{- if $href }}</a>{{ else }}</span>{{ end -}}
+</li>
