@@ -14,22 +14,6 @@ other = "Latest notes"
 other = "Recently written"
 [viewAllPosts]
 other = "View all posts"
-[shelfEyebrow]
-other = "Bookshelf"
-[shelfHeading]
-other = "Suzuka's VN Shelf"
-[statusPlaying]
-other = "Playing"
-[statusCleared]
-other = "Cleared"
-[statusRoute]
-other = "One route"
-[statusBacklog]
-other = "Backlog"
-[shelfViewAll]
-other = "See the whole shelf"
-[shelfEmpty]
-other = "The shelf is still empty."
 [collectionEyebrow]
 other = "Collection"
 [indexEyebrow]

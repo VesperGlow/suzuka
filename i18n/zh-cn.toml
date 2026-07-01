@@ -14,22 +14,6 @@ other = "Latest notes"
 other = "最近写下的"
 [viewAllPosts]
 other = "查看全部文章"
-[shelfEyebrow]
-other = "Bookshelf"
-[shelfHeading]
-other = "凉花的 Gal 架"
-[statusPlaying]
-other = "在玩"
-[statusCleared]
-other = "通关"
-[statusRoute]
-other = "单线通关"
-[statusBacklog]
-other = "想玩"
-[shelfViewAll]
-other = "查看全部书架"
-[shelfEmpty]
-other = "书架还空着。"
 [collectionEyebrow]
 other = "Collection"
 [indexEyebrow]

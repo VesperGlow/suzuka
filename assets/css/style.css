@@ -1124,46 +1124,6 @@ html.archive-no-transition .archive-view-switch button { transition: none; }
   .post-discussion-action { justify-self: start; margin: 0 17px 15px; }
 }
 
-/* Galgame shelf cards (used on the /games page) */
-.shelf-list { margin: 0; padding: 0; list-style: none; }
-.shelf-item { min-width: 0; }
-.shelf-link { color: inherit; }
-.shelf-cover { position: relative; overflow: hidden; width: var(--shelf-cover-size, 64px); aspect-ratio: 3 / 4; border-radius: var(--radius-control); background: var(--placeholder-background); box-shadow: var(--soft-shadow); }
-.shelf-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.shelf-cover-fallback { display: grid; place-items: center; width: 100%; height: 100%; color: var(--accent-dark); font: 500 26px/1 var(--serif); }
-.shelf-info { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-.shelf-title { overflow: hidden; color: var(--ink); font: 500 16px/1.4 var(--serif); text-overflow: ellipsis; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; transition: color var(--duration-fast) var(--ease-standard); }
-.shelf-meta { display: flex; align-items: center; gap: 8px; }
-.shelf-status { padding: 1px 9px; border-radius: var(--radius-pill); font: 600 var(--font-size-xs)/1.7 var(--sans); letter-spacing: .04em; }
-.shelf-status--cleared { color: var(--accent-dark); background: var(--accent-soft); }
-.shelf-status--route { color: var(--accent-dark); background: transparent; box-shadow: inset 0 0 0 1px var(--accent-border); }
-.shelf-status--playing { color: var(--on-accent); background: linear-gradient(118deg, var(--accent) 0%, var(--accent-dark) 100%); }
-.shelf-status--backlog { color: var(--muted); background: var(--control-active); }
-.shelf-rating { color: var(--text-subtle); font: 600 var(--font-size-sm)/1.6 var(--sans); }
-
-/* Standalone /games page — poster wall */
-.shell.games-shell { width: min(1180px, calc(100% - clamp(32px, 4vw, 64px))); }
-.games-page { padding-bottom: 88px; }
-.page-header.games-header { padding-bottom: 14px; }
-.games-intro { margin: 0 0 36px; color: var(--muted); }
-.games-intro p { margin: 0; }
-
-.games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: clamp(24px, 2.6vw, 38px) clamp(16px, 1.6vw, 24px); }
-.games-grid .shelf-item { min-width: 0; }
-.games-grid .shelf-link { display: flex; flex-direction: column; gap: 0; align-items: stretch; padding: 0; border-radius: 0; }
-.games-grid .shelf-link:hover { background: transparent; transform: none; }
-.games-grid .shelf-cover { width: 100%; aspect-ratio: 3 / 4; border-radius: var(--radius-medium); transition: transform var(--duration-medium) var(--ease-emphasized), box-shadow var(--duration-medium) var(--ease-emphasized); }
-.games-grid a.shelf-link:hover .shelf-cover { transform: translateY(-4px); box-shadow: var(--glass-shadow); }
-.games-grid .shelf-cover-fallback { font-size: clamp(40px, 5vw, 64px); }
-.games-grid .shelf-info { gap: 7px; padding: 14px 2px 0; }
-.games-grid .shelf-title { font-size: 16px; -webkit-line-clamp: 2; }
-
-@media (max-width: 640px) {
-  .games-page { padding-bottom: 56px; }
-  .games-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 22px 14px; }
-  .games-grid .shelf-title { font-size: 15px; }
-}
-
 /* Mobile hamburger nav menu */
 .nav-menu-toggle { display: none; }
 .nav-menu-toggle svg { width: var(--nav-icon-size); height: var(--nav-icon-size); fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }

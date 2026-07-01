@@ -23,7 +23,7 @@ The one I opened was [Bailushe](https://vndb.org/p8966)'s *Jisheng*. Only later 
 
 What I did over those three days was simply read from the first word straight through to the fourth.
 
-## Jisheng · Symbiotic Love: A Seemingly Sweet Romance with Tragedy Buried Beneath {#bls-jisheng}
+## Jisheng · Symbiotic Love: A Seemingly Sweet Romance with Tragedy Buried Beneath
 
 The afternoon of 2024-02-27, the story begins in the garden of Linghua Academy.
 
@@ -59,7 +59,7 @@ Looking back at that opening embrace on the grass—"clutching that slender body
 
 Oh, and there's Qianyu, the pink-haired girl on the right of the frame. She doesn't get much screen time, but she's lively and striking, the one bright spot I took an instant liking to in this heavy work. At the time I didn't yet know this would be among the very few times I'd see her in the whole series—but that's a story for later.
 
-## Qianmian · Melancholy Love: Ten Years Later, the Sweetest of Them All {#bls-qianmian}
+## Qianmian · Melancholy Love: Ten Years Later, the Sweetest of Them All
 
 The next day, 2024-02-28, I went on to open *Qianmian*.
 
@@ -75,7 +75,7 @@ So the one Mianxue falls for is, in fact, the true self Qianxun has kept hidden 
 
 The true ending, "Thousand-Layer Snow," is a happy one: Qianxun's double identity is accidentally exposed by a prank of Mianxue's, and she finally asks to "be friends one more day"; the two at last find the courage to face their true feelings, untangle the misunderstanding, and end up together. (The other two endings, "Tuberose" and "Forget-Me-Not," lead to bad ends.) And precisely because it slowly unfolds, one by one, all those most maddeningly ticklish moments of a crush—drawing close, dodging away, words caught in the throat, and finally the confession—*Qianmian* became, in my mind, **the sweetest of the whole series**. After the tragedy of *Jisheng*, it was like being granted permission to be properly, thoroughly sweet.
 
-## Yeyong · Eternal Love: The Epiphyllum and the Cocoon, the Steady One {#bls-yeyong}
+## Yeyong · Eternal Love: The Epiphyllum and the Cocoon, the Steady One
 
 By 2024-02-29, I'd begun the series' third work, *Yeyong*.
 
@@ -85,7 +85,7 @@ It picks up **half a year after** *Qianmian*, with the lead now **Qiuling**, who
 
 *Yeyong* left the faintest impression on me of the four. Its ending isn't a knife at all—it's even quite sweet, with three generations of leads sharing the frame and a gentle mood throughout. But perhaps because it's so steady—the buildup of the two's affection isn't very vivid, and the "couple chemistry" before the ending comes a touch slowly—it couldn't seize me the way the first two did. Read all four back to back, *Yeyong* is probably the piece that bridges what comes before and after yet can't outshine its neighbors: it puts "Eternal" in its title, while the story itself feels more like a quiet interlude. That's not necessarily a flaw—it just looks unremarkable standing between two brighter installments.
 
-## Nanzhi · Unwavering Love: I Caught Up to It on the Very Day It Released {#bls-nanzhi}
+## Nanzhi · Unwavering Love: I Caught Up to It on the Very Day It Released
 
 And then came the luckiest thing of the whole journey.
 
