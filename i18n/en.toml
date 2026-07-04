@@ -292,3 +292,28 @@ other = "Words"
 other = "Reads"
 [statsReactions]
 other = "Likes"
+
+[sidebarTitle]
+other = "Contents"
+[sidebarHome]
+other = "Home"
+[sidebarArchives]
+other = "All posts"
+[sidebarTags]
+other = "Tag index"
+[sidebarToggle]
+other = "Toggle contents menu"
+[homeWikiEyebrow]
+other = "Wiki"
+[homeIntro]
+other = "Thoughts on visual novels, passing reflections, and fragments of everyday life. Pick a category, or see what's newest."
+[homeCategoriesHeading]
+other = "Categories"
+[homeRecentHeading]
+other = "Recently updated"
+[homeRecentViewAll]
+other = "View all posts →"
+[homeQuickLinksHeading]
+other = "More"
+[homeLastUpdated]
+other = "Last updated {{ .Date }}"

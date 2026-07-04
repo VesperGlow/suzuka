@@ -3,10 +3,6 @@
   {{- $h2Count := partial "heading-count.html" (dict "headings" .Fragments.Headings "level" 2) -}}
   {{- $hasToc := and $isPost (gt $h2Count 1) -}}
   <article class="article{{ if $isPost }} post-article{{ end }}{{ if $hasToc }} has-toc{{ end }}">
-    {{ if $isPost }}
-      {{ partial "article-sidebar-recent.html" . }}
-    {{ end }}
-
     <div class="article-main"{{ if $isPost }} data-pagefind-body{{ end }}>
       {{ if $isPost }}{{ with .Params.tags }}<span hidden data-pagefind-meta="tags">{{ delimit . "||" }}</span>{{ end }}{{ end }}
       {{ partial "article-header.html" (dict "page" . "isPost" $isPost) }}

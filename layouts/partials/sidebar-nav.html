@@ -1,0 +1,42 @@
+{{- $page := . -}}
+<div class="sidebar-nav-inner">
+  <a class="sidebar-brand" href="{{ site.Home.RelPermalink }}" aria-label="{{ i18n "brandHomeLabel" (dict "Title" site.Title) }}">
+    <img class="sidebar-brand-mark" src="{{ "favicon/favicon-round.webp" | relURL }}?v=2" alt="" width="26" height="26">
+    <span>{{ site.Title }}</span>
+  </a>
+
+  <a class="sidebar-link sidebar-link-top{{ if $page.IsHome }} active{{ end }}" href="{{ site.Home.RelPermalink }}"{{ if $page.IsHome }} aria-current="page"{{ end }}>{{ i18n "sidebarHome" }}</a>
+
+  <p class="sidebar-heading">{{ i18n "homeCategoriesHeading" }}</p>
+  <div class="sidebar-tree">
+    {{ range site.Taxonomies.categories.ByCount }}
+      {{- $term := .Page -}}
+      {{- $termPosts := .Pages.ByDate.Reverse -}}
+      {{- $isCurrentTerm := eq $page.RelPermalink $term.RelPermalink -}}
+      {{- $hasCurrentPost := false -}}
+      {{- range $termPosts -}}{{- if eq $page.RelPermalink .RelPermalink -}}{{- $hasCurrentPost = true -}}{{- end -}}{{- end -}}
+      <details class="sidebar-node"{{ if or $isCurrentTerm $hasCurrentPost (le (len $termPosts) 8) }} open{{ end }}>
+        <summary>
+          <a href="{{ $term.RelPermalink }}"{{ if $isCurrentTerm }} class="active" aria-current="page"{{ end }}>{{ $term.LinkTitle }}</a>
+          <span class="sidebar-count">{{ .Count }}</span>
+        </summary>
+        <ul>
+          {{ range $termPosts }}
+            <li><a href="{{ .RelPermalink }}"{{ if eq $page.RelPermalink .RelPermalink }} class="active" aria-current="page"{{ end }}>{{ .Title }}</a></li>
+          {{ end }}
+        </ul>
+      </details>
+    {{ end }}
+  </div>
+
+  <a class="sidebar-link{{ if eq $page.Section "archives" }} active{{ end }}" href="{{ relLangURL "archives/" }}">{{ i18n "sidebarArchives" }}</a>
+  <a class="sidebar-link{{ if eq $page.Data.Singular "tag" }} active{{ end }}" href="{{ relLangURL "tags/" }}">{{ i18n "sidebarTags" }}</a>
+
+  <p class="sidebar-heading">{{ i18n "homeQuickLinksHeading" }}</p>
+  {{ with site.GetPage "/pages/about" }}
+    <a class="sidebar-link{{ if eq $page.RelPermalink .RelPermalink }} active{{ end }}" href="{{ .RelPermalink }}"{{ if eq $page.RelPermalink .RelPermalink }} aria-current="page"{{ end }}>{{ i18n "aboutSuzuka" }}</a>
+  {{ end }}
+  {{ with site.GetPage "/pages/guestbook" }}
+    <a class="sidebar-link{{ if eq $page.RelPermalink .RelPermalink }} active{{ end }}" href="{{ .RelPermalink }}"{{ if eq $page.RelPermalink .RelPermalink }} aria-current="page"{{ end }}>{{ i18n "guestbookTitle" }}</a>
+  {{ end }}
+</div>

@@ -11,12 +11,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="{{ $description }}">
   <meta id="theme-color" name="theme-color" content="#f5f9fc">
-  {{ if .IsHome }}
-    {{ $hero := partial "vn-hero-image.html" . }}
-    {{ with $hero.cg }}
-      <link rel="preload" as="image" href="{{ .RelPermalink }}" {{ printf "imagesrcset=%q" $hero.srcset | safeHTMLAttr }} imagesizes="100vw" fetchpriority="high">
-    {{ end }}
-  {{ end }}
   {{ if eq .Layout "archives" }}
     <script>
       (() => {
@@ -56,13 +50,20 @@
     <script>window.location.replace({{ . | relURL | jsonify | safeJS }});</script>
   {{ end }}
 </head>
-<body data-pagefind-filter="language:{{ site.Language.Lang }}"{{ if .IsHome }} class="home-screen"{{ else if eq .Layout "archives" }} class="archives-page"{{ else if and .IsPage (eq .Section "posts") }} class="post-page"{{ end }}>
+<body data-pagefind-filter="language:{{ site.Language.Lang }}"{{ if eq .Layout "archives" }} class="archives-page"{{ else if and .IsPage (eq .Section "posts") }} class="post-page"{{ end }}>
   <a class="skip-link" href="#main-content">{{ i18n "skipToContent" }}</a>
   {{ partial "site-header.html" . }}
 
-  <main id="main-content" class="{{ if .IsHome }}home-main{{ else }}shell{{ end }}{{ if eq .Layout "archives" }} archive-shell{{ end }}{{ if and .IsPage (eq .Section "posts") }} article-shell{{ end }}{{ if .Params.characterDecoration }} short-page-character{{ end }}">
-    {{ block "main" . }}{{ end }}
-  </main>
+  <div class="docs-shell">
+    <nav class="sidebar-nav" id="sidebar-nav" data-sidebar-nav aria-label="{{ i18n "mainNavigation" }}">
+      {{ partial "sidebar-nav.html" . }}
+    </nav>
+    <div class="sidebar-backdrop" data-sidebar-backdrop></div>
+
+    <main id="main-content" class="{{ if .IsHome }}shell home-shell{{ else }}shell{{ end }}{{ if eq .Layout "archives" }} archive-shell{{ end }}{{ if eq .Layout "guestbook" }} guestbook-shell{{ end }}{{ if and .IsPage (eq .Section "posts") }} article-shell{{ end }}">
+      {{ block "main" . }}{{ end }}
+    </main>
+  </div>
 
   {{ partial "site-footer.html" . }}
   {{ partial "back-to-top.html" . }}

@@ -1,12 +1,4 @@
-<button class="back-to-top back-to-top-reading" type="button" aria-label="{{ i18n "backToTop" }}" data-back-to-top style="--reading-remainder: 100%" hidden>
-  <span class="back-to-top-hint" aria-hidden="true">↑</span>
-  <picture class="back-to-top-layer back-to-top-silhouette" aria-hidden="true">
-    <source media="(max-width: 768px)" srcset="{{ "characters/suzuka_sp.webp" | relURL }}">
-    <img src="{{ "characters/suzuka_pc.webp" | relURL }}" alt="" width="1264" height="2034" loading="lazy" decoding="async">
-  </picture>
-  <picture class="back-to-top-layer back-to-top-color">
-    <source media="(max-width: 768px)" srcset="{{ "characters/suzuka_sp.webp" | relURL }}">
-    <img src="{{ "characters/suzuka_pc.webp" | relURL }}" alt="" width="1264" height="2034" loading="lazy" decoding="async">
-  </picture>
+<button class="back-to-top" type="button" aria-label="{{ i18n "backToTop" }}" data-back-to-top hidden>
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V6M6 12l6-6 6 6"></path></svg>
 </button>
-<script type="module" src="{{ partial "asset-url.html" "js/back-to-top.js" }}"></script>
+<script src="{{ partial "asset-url.html" "js/back-to-top.js" }}" defer></script>

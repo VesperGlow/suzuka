@@ -1,54 +1,51 @@
 {{ define "main" }}
-  {{ $posts := (where site.RegularPages "Section" "posts").ByDate.Reverse }}
-  {{ $latest := index $posts 0 }}
-  <div class="home-page vn-home">
-    {{ $hero := partial "vn-hero-image.html" . }}
-    <section class="vn-title" aria-labelledby="vn-heading"{{ with $hero.placeholder }} style="{{ printf "background-image:url(%s);background-size:cover;background-position:36%% center;" . | safeCSS }}"{{ end }}>
-      {{ with $hero.cg }}
-        <img class="vn-bg" src="{{ .RelPermalink }}" srcset="{{ $hero.srcset }}" sizes="100vw"
-          alt="" width="{{ .Width }}" height="{{ .Height }}" fetchpriority="high" decoding="async">
+  {{- $posts := (where site.RegularPages "Section" "posts").ByDate.Reverse -}}
+  {{- $categories := site.Taxonomies.categories.ByCount -}}
+  <div class="home-page">
+    <header class="home-hero">
+      <p class="eyebrow">{{ i18n "homeWikiEyebrow" }}</p>
+      <h1>{{ site.Title }}</h1>
+      <p class="home-intro">{{ i18n "homeIntro" }}</p>
+      {{ with index $posts 0 }}
+        <p class="home-updated">{{ i18n "homeLastUpdated" (dict "Date" (.Date | time.Format (i18n "dateFormat"))) }}</p>
       {{ end }}
-      <div class="vn-stage">
-        <header class="vn-logo">
-          <p class="eyebrow">{{ i18n "homeEyebrow" }}</p>
-          <h1 id="vn-heading">{{ i18n "homeHeading" | safeHTML }}</h1>
-        </header>
-        <nav class="vn-menu" aria-label="{{ i18n "vnMenuLabel" }}">
-          {{ with $latest }}
-            <a class="vn-menu-item" href="{{ .RelPermalink }}">
-              <span class="vn-menu-en" aria-hidden="true">Continue</span>
-              <span class="vn-menu-cn">{{ i18n "vnMenuContinue" }}</span>
-              <span class="vn-menu-sub">{{ .Title }}</span>
+    </header>
+
+    {{ if $categories }}
+      <section class="home-section" aria-labelledby="home-categories-heading">
+        <h2 id="home-categories-heading">{{ i18n "homeCategoriesHeading" }}</h2>
+        <div class="home-category-grid">
+          {{ range $categories }}
+            <a class="home-category-card" href="{{ .Page.RelPermalink }}">
+              <span class="home-category-name">{{ .Page.LinkTitle }}</span>
+              <span class="home-category-count">{{ i18n "postCount" (dict "Count" .Count) }}</span>
             </a>
           {{ end }}
-          <a class="vn-menu-item" href="{{ relLangURL "archives/" }}">
-            <span class="vn-menu-en" aria-hidden="true">Load</span>
-            <span class="vn-menu-cn">{{ i18n "vnMenuArchive" }}</span>
-          </a>
-          {{ with site.GetPage "/pages/guestbook" }}
-            <a class="vn-menu-item" href="{{ .RelPermalink }}">
-              <span class="vn-menu-en" aria-hidden="true">Extra</span>
-              <span class="vn-menu-cn">{{ i18n "vnMenuGuestbook" }}</span>
-            </a>
-          {{ end }}
-          {{ with site.GetPage "/pages/about" }}
-            <a class="vn-menu-item" href="{{ .RelPermalink }}">
-              <span class="vn-menu-en" aria-hidden="true">About</span>
-              <span class="vn-menu-cn">{{ i18n "aboutSuzuka" }}</span>
-            </a>
-          {{ end }}
-        </nav>
-        <div class="vn-adv" data-adv>
-          <span class="vn-adv-name">{{ i18n "vnSpeaker" }}</span>
-          <p class="vn-adv-text" data-typewriter>「{{ i18n "vnAdvQuote" }}」</p>
-          <span class="vn-adv-next" aria-hidden="true"></span>
         </div>
-        <p class="vn-copyright">
-          <span>© {{ now.Year }} {{ site.Params.author }}</span>
-          <a href="https://icp.gov.moe/?keyword=20266779" target="_blank" rel="noopener noreferrer">{{ i18n "moeICP" }}</a>
-        </p>
+      </section>
+    {{ end }}
+
+    <section class="home-section" aria-labelledby="home-recent-heading">
+      <div class="section-heading">
+        <h2 id="home-recent-heading">{{ i18n "homeRecentHeading" }}</h2>
+        <a href="{{ relLangURL "archives/" }}">{{ i18n "homeRecentViewAll" }}</a>
       </div>
+      <ul class="home-recent-list">
+        {{ range first 8 $posts }}
+          <li>
+            <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date | time.Format (i18n "dateFormat") }}</time>
+            <a href="{{ .RelPermalink }}">{{ .Title }}</a>
+            {{ with .GetTerms "categories" }}{{ with index . 0 }}<a class="home-recent-category" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>{{ end }}{{ end }}
+          </li>
+        {{ else }}
+          <li class="empty">{{ i18n "archiveEmpty" }}</li>
+        {{ end }}
+      </ul>
+    </section>
+
+    <section class="home-section home-quicklinks" aria-labelledby="home-quicklinks-heading">
+      <h2 id="home-quicklinks-heading" class="sr-only">{{ i18n "homeQuickLinksHeading" }}</h2>
+      {{ partial "subscribe.html" . }}
     </section>
   </div>
-  <script src="{{ partial "asset-url.html" "js/vn-title.js" }}" defer></script>
 {{ end }}

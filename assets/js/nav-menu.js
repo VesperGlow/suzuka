@@ -1,18 +1,16 @@
 (() => {
-  const toggle = document.querySelector("[data-nav-menu-toggle]");
-  const menu = document.querySelector("[data-nav-menu]");
-  if (!toggle || !menu) return;
+  const toggle = document.querySelector("[data-sidebar-toggle]");
+  const sidebar = document.querySelector("[data-sidebar-nav]");
+  if (!toggle || !sidebar) return;
 
-  const tools = toggle.closest("[data-header-tools]");
-  const desktopQuery = window.matchMedia("(min-width: 769px)");
+  const desktopQuery = window.matchMedia("(min-width: 1025px)");
 
-  const isOpen = () => menu.classList.contains("is-open");
+  const isOpen = () => sidebar.classList.contains("is-open");
 
   const setOpen = (open) => {
-    menu.classList.toggle("is-open", open);
+    sidebar.classList.toggle("is-open", open);
+    document.body.classList.toggle("sidebar-open", open);
     toggle.setAttribute("aria-expanded", String(open));
-    // 菜单与搜索互斥，避免两个浮层同时展开。
-    if (open) tools?.classList.remove("search-active");
   };
 
   toggle.addEventListener("click", (event) => {
@@ -20,13 +18,13 @@
     setOpen(!isOpen());
   });
 
-  // 点击菜单内的链接后自动收起。
-  menu.addEventListener("click", (event) => {
-    if (event.target.closest("a.mobile-nav-link")) setOpen(false);
+  // 点击侧栏内的链接后自动收起（移动端抽屉）。
+  sidebar.addEventListener("click", (event) => {
+    if (!desktopQuery.matches && event.target.closest("a")) setOpen(false);
   });
 
   document.addEventListener("click", (event) => {
-    if (isOpen() && !menu.contains(event.target) && !toggle.contains(event.target)) {
+    if (isOpen() && !sidebar.contains(event.target) && !toggle.contains(event.target)) {
       setOpen(false);
     }
   });
@@ -38,7 +36,7 @@
     }
   });
 
-  // 切回桌面宽度时确保收起。
+  // 切回桌面宽度时确保收起抽屉状态（桌面端侧栏常驻显示，不受 is-open 影响）。
   desktopQuery.addEventListener("change", (event) => {
     if (event.matches) setOpen(false);
   });

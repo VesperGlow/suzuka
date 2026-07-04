@@ -289,3 +289,28 @@ other = "累计字数"
 other = "总阅读"
 [statsReactions]
 other = "累计喜欢"
+
+[sidebarTitle]
+other = "目录"
+[sidebarHome]
+other = "首页"
+[sidebarArchives]
+other = "全部文章"
+[sidebarTags]
+other = "标签索引"
+[sidebarToggle]
+other = "展开或收起目录"
+[homeWikiEyebrow]
+other = "Wiki"
+[homeIntro]
+other = "记录 Galgame 感想、偶尔浮现的思考，以及落下的生活碎片。挑一个分类，或者看看最近写下的东西。"
+[homeCategoriesHeading]
+other = "分类"
+[homeRecentHeading]
+other = "最近更新"
+[homeRecentViewAll]
+other = "查看全部文章 →"
+[homeQuickLinksHeading]
+other = "更多"
+[homeLastUpdated]
+other = "最后更新于 {{ .Date }}"
