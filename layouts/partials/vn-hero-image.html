@@ -1,0 +1,12 @@
+{{- $cg := resources.Get "images/vn-title-cg.webp" -}}
+{{- $srcset := slice -}}
+{{- $placeholder := "" -}}
+{{- with $cg -}}
+  {{- range slice 820 1280 -}}
+    {{- if lt . $cg.Width -}}{{- $srcset = $srcset | append (printf "%s %dw" (($cg.Resize (printf "%dx webp q82" .)).RelPermalink) .) -}}{{- end -}}
+  {{- end -}}
+  {{- $srcset = $srcset | append (printf "%s %dw" .RelPermalink .Width) -}}
+  {{- $tiny := (.Resize "28x webp q35") | images.Filter (images.GaussianBlur 3) -}}
+  {{- $placeholder = printf "data:image/webp;base64,%s" (base64Encode $tiny.Content) -}}
+{{- end -}}
+{{- return dict "cg" $cg "srcset" (delimit $srcset ", ") "placeholder" $placeholder -}}

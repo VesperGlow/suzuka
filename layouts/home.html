@@ -2,15 +2,10 @@
   {{ $posts := (where site.RegularPages "Section" "posts").ByDate.Reverse }}
   {{ $latest := index $posts 0 }}
   <div class="home-page vn-home">
-    <section class="vn-title" aria-labelledby="vn-heading">
-      {{ $cg := resources.Get "images/vn-title-cg.webp" }}
-      {{ with $cg }}
-        {{ $srcset := slice }}
-        {{ range slice 820 1280 }}
-          {{ if lt . $cg.Width }}{{ $srcset = $srcset | append (printf "%s %dw" (($cg.Resize (printf "%dx webp q82" .)).RelPermalink) .) }}{{ end }}
-        {{ end }}
-        {{ $srcset = $srcset | append (printf "%s %dw" .RelPermalink .Width) }}
-        <img class="vn-bg" src="{{ .RelPermalink }}" srcset="{{ delimit $srcset ", " }}" sizes="100vw"
+    {{ $hero := partial "vn-hero-image.html" . }}
+    <section class="vn-title" aria-labelledby="vn-heading"{{ with $hero.placeholder }} style="{{ printf "background-image:url(%s);background-size:cover;background-position:36%% center;" . | safeCSS }}"{{ end }}>
+      {{ with $hero.cg }}
+        <img class="vn-bg" src="{{ .RelPermalink }}" srcset="{{ $hero.srcset }}" sizes="100vw"
           alt="" width="{{ .Width }}" height="{{ .Height }}" fetchpriority="high" decoding="async">
       {{ end }}
       <div class="vn-stage">
@@ -45,7 +40,7 @@
         </nav>
         <div class="vn-adv" data-adv>
           <span class="vn-adv-name">{{ i18n "vnSpeaker" }}</span>
-          <p class="vn-adv-text" data-typewriter>「{{ site.Params.description }}」</p>
+          <p class="vn-adv-text" data-typewriter>「{{ i18n "vnAdvQuote" }}」</p>
           <span class="vn-adv-next" aria-hidden="true"></span>
         </div>
         <p class="vn-copyright">

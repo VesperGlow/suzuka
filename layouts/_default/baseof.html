@@ -11,6 +11,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="{{ $description }}">
   <meta id="theme-color" name="theme-color" content="#f5f9fc">
+  {{ if .IsHome }}
+    {{ $hero := partial "vn-hero-image.html" . }}
+    {{ with $hero.cg }}
+      <link rel="preload" as="image" href="{{ .RelPermalink }}" {{ printf "imagesrcset=%q" $hero.srcset | safeHTMLAttr }} imagesizes="100vw" fetchpriority="high">
+    {{ end }}
+  {{ end }}
   {{ if eq .Layout "archives" }}
     <script>
       (() => {
