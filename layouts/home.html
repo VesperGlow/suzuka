@@ -1,32 +1,59 @@
 {{ define "main" }}
   {{ $posts := (where site.RegularPages "Section" "posts").ByDate.Reverse }}
-  <div class="home-page">
-    <section class="hero home-hero">
-      <div class="hero-content">
-        <p class="eyebrow">{{ i18n "homeEyebrow" }}</p>
-        <h1>{{ i18n "homeHeading" | safeHTML }}</h1>
-        <p class="hero-copy">{{ site.Params.description }}</p>
-        <a class="hero-about-link" href="{{ relLangURL "about/" }}">
-          <svg class="hero-about-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2c.5 3.6 1.4 5.6 2.9 7.1s3.5 2.4 6.9 2.7c-3.4.3-5.4 1.2-6.9 2.7s-2.4 3.5-2.9 7.1c-.5-3.6-1.4-5.6-2.9-7.1S5.6 12.6 2.2 12.3c3.4-.3 5.4-1.2 6.9-2.7S11.5 5.8 12 2.2Z"/></svg>
-          <span class="hero-about-text">{{ i18n "aboutSuzuka" }}</span>
-          <span class="hero-about-arrow" aria-hidden="true">→</span>
-        </a>
-      </div>
-      <div class="hero-character" aria-hidden="true">
-        <img src="{{ "characters/suzuka_pc.webp" | relURL }}" alt="" width="1264" height="2034">
+  {{ $latest := index $posts 0 }}
+  <div class="home-page vn-home">
+    <section class="vn-title" aria-labelledby="vn-heading">
+      {{ $cg := resources.Get "images/vn-title-cg.webp" }}
+      {{ with $cg }}
+        {{ $srcset := slice }}
+        {{ range slice 820 1280 }}
+          {{ if lt . $cg.Width }}{{ $srcset = $srcset | append (printf "%s %dw" (($cg.Resize (printf "%dx webp q82" .)).RelPermalink) .) }}{{ end }}
+        {{ end }}
+        {{ $srcset = $srcset | append (printf "%s %dw" .RelPermalink .Width) }}
+        <img class="vn-bg" src="{{ .RelPermalink }}" srcset="{{ delimit $srcset ", " }}" sizes="100vw"
+          alt="" width="{{ .Width }}" height="{{ .Height }}" fetchpriority="high" decoding="async">
+      {{ end }}
+      <div class="vn-stage">
+        <header class="vn-logo">
+          <p class="eyebrow">{{ i18n "homeEyebrow" }}</p>
+          <h1 id="vn-heading">{{ i18n "homeHeading" | safeHTML }}</h1>
+        </header>
+        <nav class="vn-menu" aria-label="{{ i18n "vnMenuLabel" }}">
+          {{ with $latest }}
+            <a class="vn-menu-item" href="{{ .RelPermalink }}">
+              <span class="vn-menu-en" aria-hidden="true">Continue</span>
+              <span class="vn-menu-cn">{{ i18n "vnMenuContinue" }}</span>
+              <span class="vn-menu-sub">{{ .Title }}</span>
+            </a>
+          {{ end }}
+          <a class="vn-menu-item" href="{{ relLangURL "archives/" }}">
+            <span class="vn-menu-en" aria-hidden="true">Load</span>
+            <span class="vn-menu-cn">{{ i18n "vnMenuArchive" }}</span>
+          </a>
+          {{ with site.GetPage "/pages/guestbook" }}
+            <a class="vn-menu-item" href="{{ .RelPermalink }}">
+              <span class="vn-menu-en" aria-hidden="true">Extra</span>
+              <span class="vn-menu-cn">{{ i18n "vnMenuGuestbook" }}</span>
+            </a>
+          {{ end }}
+          {{ with site.GetPage "/pages/about" }}
+            <a class="vn-menu-item" href="{{ .RelPermalink }}">
+              <span class="vn-menu-en" aria-hidden="true">About</span>
+              <span class="vn-menu-cn">{{ i18n "aboutSuzuka" }}</span>
+            </a>
+          {{ end }}
+        </nav>
+        <div class="vn-adv" data-adv>
+          <span class="vn-adv-name">{{ i18n "vnSpeaker" }}</span>
+          <p class="vn-adv-text" data-typewriter>「{{ site.Params.description }}」</p>
+          <span class="vn-adv-next" aria-hidden="true"></span>
+        </div>
+        <p class="vn-copyright">
+          <span>© {{ now.Year }} {{ site.Params.author }}</span>
+          <a href="https://icp.gov.moe/?keyword=20266779" target="_blank" rel="noopener noreferrer">{{ i18n "moeICP" }}</a>
+        </p>
       </div>
     </section>
-
-    {{ partial "post-list.html" (dict
-      "context" .
-      "pages" (first 3 $posts)
-      "headingID" "home-latest-heading"
-      "eyebrow" (i18n "latestEyebrow")
-      "heading" (i18n "latestHeading")
-      "showFilters" false
-      "footerURL" (relLangURL "archives/")
-      "footerLabel" (i18n "viewAllPosts")
-      "class" "home-post-list"
-    ) }}
   </div>
+  <script src="{{ partial "asset-url.html" "js/vn-title.js" }}" defer></script>
 {{ end }}

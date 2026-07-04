@@ -8,10 +8,16 @@ other = "Welcome"
 other = "把喜欢的故事，<br><em>留在微蓝的庭院里。</em>"
 [aboutSuzuka]
 other = "关于凉花"
-[latestEyebrow]
-other = "Latest notes"
-[latestHeading]
-other = "最近写下的"
+[vnMenuLabel]
+other = "标题菜单"
+[vnMenuContinue]
+other = "继续阅读"
+[vnMenuArchive]
+other = "文章档案"
+[vnMenuGuestbook]
+other = "留言板"
+[vnSpeaker]
+other = "凉花"
 [viewAllPosts]
 other = "查看全部文章"
 [collectionEyebrow]
@@ -20,8 +26,10 @@ other = "Collection"
 other = "Index"
 [pageEyebrow]
 other = "Page"
+[aboutEyebrow]
+other = "About"
 [allPostsEyebrow]
-other = "All posts"
+other = "Load"
 [searchArticles]
 other = "搜索文章"
 [headerSearchPlaceholder]
@@ -190,7 +198,7 @@ other = "2006年01月02日"
 [guestbookTitle]
 other = "留言板"
 [guestbookEyebrow]
-other = "Guestbook"
+other = "Extra"
 [guestbookFormLabel]
 other = "留言表单"
 [guestbookCommentingOn]

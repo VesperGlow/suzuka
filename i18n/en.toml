@@ -8,10 +8,16 @@ other = "Welcome"
 other = "Keeping beloved stories<br><em>in a pale blue garden.</em>"
 [aboutSuzuka]
 other = "About Suzuka"
-[latestEyebrow]
-other = "Latest notes"
-[latestHeading]
-other = "Recently written"
+[vnMenuLabel]
+other = "Title menu"
+[vnMenuContinue]
+other = "Latest Post"
+[vnMenuArchive]
+other = "Post Archive"
+[vnMenuGuestbook]
+other = "Guestbook"
+[vnSpeaker]
+other = "Suzuka"
 [viewAllPosts]
 other = "View all posts"
 [collectionEyebrow]
@@ -20,8 +26,10 @@ other = "Collection"
 other = "Index"
 [pageEyebrow]
 other = "Page"
+[aboutEyebrow]
+other = "About"
 [allPostsEyebrow]
-other = "All posts"
+other = "Load"
 [searchArticles]
 other = "Search posts"
 [headerSearchPlaceholder]
@@ -192,7 +200,7 @@ other = "January 2, 2006"
 [guestbookTitle]
 other = "Guestbook"
 [guestbookEyebrow]
-other = "Guestbook"
+other = "Extra"
 [guestbookFormLabel]
 other = "Guestbook form"
 [guestbookCommentingOn]
