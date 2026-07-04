@@ -301,8 +301,14 @@ other = "Home"
 other = "All posts"
 [sidebarTags]
 other = "Tag index"
+[sidebarTimelineHeading]
+other = "Posts"
 [sidebarToggle]
 other = "Toggle contents menu"
+[sidebarCollapse]
+other = "Collapse sidebar"
+[sidebarExpand]
+other = "Expand sidebar"
 [homeWikiEyebrow]
 other = "Wiki"
 [homeIntro]

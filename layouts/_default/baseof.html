@@ -31,6 +31,11 @@
     </script>
   {{ end }}
   {{ with resources.Get "js/theme.js" }}<script>{{ (. | minify).Content | safeJS }}</script>{{ end }}
+  <script>
+    try {
+      if (localStorage.getItem("sidebar-collapsed") === "1") document.documentElement.classList.add("sidebar-collapsed");
+    } catch {}
+  </script>
   <title>{{ if .IsHome }}{{ site.Title }}{{ else }}{{ .Title }} · {{ site.Title }}{{ end }}</title>
   <link rel="canonical" href="{{ $canonicalURL }}">
   {{ range .AllTranslations }}<link rel="alternate" hreflang="{{ .Language.Locale }}" href="{{ .Permalink }}">{{ if eq .Language.Lang "zh-cn" }}<link rel="alternate" hreflang="x-default" href="{{ .Permalink }}">{{ end }}{{ end }}
@@ -59,6 +64,9 @@
       {{ partial "sidebar-nav.html" . }}
     </nav>
     <div class="sidebar-backdrop" data-sidebar-backdrop></div>
+    <button class="sidebar-expand-button" type="button" data-sidebar-expand aria-controls="sidebar-nav" aria-label="{{ i18n "sidebarExpand" }}" title="{{ i18n "sidebarExpand" }}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 7 5 5-5 5M13 7l5 5-5 5"></path></svg>
+    </button>
 
     <main id="main-content" class="{{ if .IsHome }}shell home-shell{{ else }}shell{{ end }}{{ if eq .Layout "archives" }} archive-shell{{ end }}{{ if eq .Layout "guestbook" }} guestbook-shell{{ end }}{{ if and .IsPage (eq .Section "posts") }} article-shell{{ end }}">
       {{ block "main" . }}{{ end }}
