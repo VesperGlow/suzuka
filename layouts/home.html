@@ -3,7 +3,6 @@
   {{- $categories := site.Taxonomies.categories.ByCount -}}
   <div class="home-page">
     <header class="home-hero">
-      <p class="eyebrow">{{ i18n "homeWikiEyebrow" }}</p>
       <h1>{{ site.Title }}</h1>
       <p class="home-intro">{{ i18n "homeIntro" }}</p>
       {{ with index $posts 0 }}
