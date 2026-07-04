@@ -40,4 +40,16 @@
   desktopQuery.addEventListener("change", (event) => {
     if (event.matches) setOpen(false);
   });
+
+  // 桌面端侧栏完全固定：滚轮悬停在侧栏上时直接滚动页面，而不是侧栏自身。
+  sidebar.addEventListener(
+    "wheel",
+    (event) => {
+      if (!desktopQuery.matches) return;
+      event.preventDefault();
+      const delta = event.deltaMode === 1 ? event.deltaY * 24 : event.deltaY;
+      window.scrollBy({ top: delta, left: 0, behavior: "instant" });
+    },
+    { passive: false }
+  );
 })();
