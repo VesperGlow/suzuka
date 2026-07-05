@@ -212,6 +212,24 @@ pub fn build(source: &Path, dest: &Path) -> Result<()> {
             },
         )?;
 
+        // 404 页
+        let notfound = notfound_ctx(&config, lang)?;
+        let notfound_out = format!("{prefix}/404.html").trim_start_matches('/').to_string();
+        render_to(
+            &env,
+            "notfound.html",
+            dest,
+            &notfound_out,
+            minijinja::context! {
+                lang => lang.code.clone(),
+                site => &site,
+                page => &notfound,
+                posts => &data.post_refs,
+                timeline => &data.timeline,
+                theme_js => &assets.theme_js,
+            },
+        )?;
+
         // 文章页 + 别名跳转页
         for (idx, page) in data.posts.iter().enumerate() {
             let out_rel = format!("{}index.html", page.rel_permalink.trim_start_matches('/'));
@@ -248,6 +266,15 @@ pub fn build(source: &Path, dest: &Path) -> Result<()> {
             }
         }
     }
+    write_file(
+        dest,
+        "robots.txt",
+        &format!(
+            "User-agent: *\nAllow: /\n\nSitemap: {}/sitemap.xml\n",
+            config.base_url
+        ),
+    )?;
+
     println!("构建完成 → {}", dest.display());
     Ok(())
 }
@@ -526,6 +553,60 @@ fn home_ctx(
     })
 }
 
+fn notfound_ctx(config: &SiteConfig, lang: &crate::config::Language) -> Result<PageCtx> {
+    let prefix = lang.url_prefix(&config.default_lang);
+    let rel = format!("{prefix}/404.html");
+    let permalink = format!("{}{rel}", config.base_url);
+
+    let all_translations = config
+        .languages
+        .iter()
+        .map(|l| {
+            let p = l.url_prefix(&config.default_lang);
+            let r = format!("{p}/404.html");
+            TranslationRef {
+                lang: l.code.clone(),
+                locale: l.locale.clone(),
+                permalink: format!("{}{r}", config.base_url),
+                rel: r,
+            }
+        })
+        .collect();
+
+    let internal_meta = internal_meta_block(&InternalMeta {
+        permalink: &permalink,
+        site_title: &lang.title,
+        // Hugo 对没有专属 content 文件的内置 404 page kind 用这个固定标题
+        title: "404 Page not found",
+        description: &lang.description,
+        locale: &lang.locale.replace('-', "_"),
+        og_type: "website",
+        section: None,
+        date_published: "",
+        date_modified: "",
+        tags: &[],
+        image: &config
+            .images
+            .first()
+            .map(|img| format!("{}/{img}", config.base_url))
+            .unwrap_or_default(),
+        word_count: None,
+        jsonld: None,
+    });
+
+    Ok(PageCtx {
+        kind: "notfound".into(),
+        title: "404 Page not found".into(),
+        description_meta: collapse_ws(&lang.description),
+        description: lang.description.clone(),
+        rel_permalink: rel,
+        permalink,
+        all_translations,
+        internal_meta,
+        ..Default::default()
+    })
+}
+
 fn translations_of(config: &SiteConfig, bundle: &PostBundle) -> Vec<TranslationRef> {
     // 按语言权重排序（zh 在前），包含自身
     let mut out = Vec::new();
@@ -640,14 +721,16 @@ fn internal_meta_block(m: &InternalMeta) -> String {
         "\t<meta itemprop=\"description\" content=\"{}\">\n",
         esc(m.description)
     ));
-    s.push_str(&format!(
-        "\t<meta itemprop=\"datePublished\" content=\"{}\">\n",
-        m.date_published
-    ));
-    s.push_str(&format!(
-        "\t<meta itemprop=\"dateModified\" content=\"{}\">\n",
-        m.date_modified
-    ));
+    if !m.date_published.is_empty() {
+        s.push_str(&format!(
+            "\t<meta itemprop=\"datePublished\" content=\"{}\">\n",
+            m.date_published
+        ));
+        s.push_str(&format!(
+            "\t<meta itemprop=\"dateModified\" content=\"{}\">\n",
+            m.date_modified
+        ));
+    }
     if let Some(wc) = m.word_count {
         s.push_str(&format!(
             "\t<meta itemprop=\"wordCount\" content=\"{wc}\">\n"

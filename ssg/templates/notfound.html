@@ -1,0 +1,9 @@
+{% extends "baseof.html" %}
+{% block main %}
+  <section class="not-found">
+    <p class="eyebrow">404</p>
+    <h1>{{ t("notFoundTitle") }}</h1>
+    <p>{{ t("notFoundDescription") }}</p>
+    <a class="soft-button" href="{{ site.home_rel | safe }}">{{ t("backHome") }}</a>
+  </section>
+{% endblock %}
