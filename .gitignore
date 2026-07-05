@@ -2,6 +2,10 @@
 /resources/_gen/
 .hugo_build.lock
 
+# ssg/hugo 对拍产物（README 里的对拍命令默认从仓库根目录跑）
+/golden/
+/public-ssg/
+
 scripts/__pycache__/
 
 AGENTS.md

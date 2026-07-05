@@ -17,6 +17,9 @@ use std::sync::Arc;
 #[derive(Serialize, Clone)]
 struct TermRef {
     title: String,
+    /// front matter 里的原始大小写（pagefind 的 data-pagefind-meta="tags" 用
+    /// 的是 .Params.tags 原文，不是 taxonomy term 的自动 .Title）
+    raw: String,
     rel: String,
 }
 
@@ -144,17 +147,21 @@ pub fn build(source: &Path, dest: &Path) -> Result<()> {
             })
         });
     }
-    env.add_filter("urlquery", |s: String| content::query_escape(&s));
+    env.add_filter("urlquery", |s: String| {
+        // Hugo 的 html/template 对 href 属性里的 URL 值会把 '+' 进一步转成
+        // 数字实体 &#43;（其余已经 %XX 百分号编码的字符不受影响），照抄这个怪癖
+        content::query_escape(&s).replace('+', "&#43;")
+    });
 
     // 每种语言的独立页 URL（sidebar / guestbook 链接用）
+    // front matter 的 url 是最终绝对路径本身（英文页已经自带 /en 前缀），
+    // 不需要再叠一层语言前缀
     let special_rel = |key: &str, lang: &str| -> String {
-        let prefix = config.language(lang).url_prefix(&config.default_lang);
         content
             .pages
             .iter()
             .find(|p| p.key == key && p.lang == lang)
             .and_then(|p| p.fm.url.clone())
-            .map(|u| format!("{prefix}{u}"))
             .unwrap_or_default()
     };
 
@@ -265,7 +272,8 @@ fn build_lang_posts(
     items.sort_by(|a, b| b.1.date.cmp(&a.1.date));
 
     let term_ref = |taxonomy: &str, name: &str| TermRef {
-        title: name.to_string(),
+        title: content::hugo_title_case(name),
+        raw: name.to_string(),
         rel: format!(
             "{prefix}/{taxonomy}/{}/",
             content::encode_path(&content::urlize(name))
@@ -337,7 +345,16 @@ fn build_lang_posts(
             .iter()
             .map(|c| term_ref("categories", c))
             .collect();
+        // article:tag / jsonld keywords 用的是 taxonomy term 的自动 .Title（每词首字母大写），
+        // 不是 front matter 里的原始大小写
+        let og_tags: Vec<String> = page
+            .fm
+            .tags
+            .iter()
+            .map(|t| content::hugo_title_case(t))
+            .collect();
 
+        // 正文里出现的第一张图（不管 front matter 有没有声明），只给 jsonld 的兜底用
         let cover_abs = rendered
             .first_image_src
             .as_ref()
@@ -346,11 +363,34 @@ fn build_lang_posts(
             .images
             .first()
             .map(|img| format!("{}/{img}", config.base_url));
+
+        // og:image / twitter:image / itemprop="image"：复刻 Hugo 内置
+        // _funcs/get-page-images.html —— 只认 front matter images（按 bundle
+        // 资源解析出正确的 /posts/slug/ 前缀），没声明就退到站点默认图。
+        // 不看正文首图（本站没有用到 get-page-images 的 cover/feature/thumbnail
+        // 那一档兜底，故未实现）。
+        let og_image = page
+            .fm
+            .images
+            .first()
+            .map(|img| resolve_bundle_image(config, bundle, &bundle_rel, img))
+            .or_else(|| fallback_img.clone());
+
+        // jsonld 的 image：复刻本项目自己的 schema-blogposting.html —— front
+        // matter images 直接绝对化、不经过 bundle 解析（Hugo 那份模板本身没调
+        // Resources.GetMatch，是个「忠实复刻」的怪癖）；没声明才退到正文首图
+        // （这一步在 archive-cover-url.html 里是有 Resources.GetMatch 的，
+        // 所以 cover_abs 的 /posts/slug/ 前缀是对的），最后才是站点默认图。
+        let jsonld_image = match page.fm.images.first() {
+            Some(img) => Some(format!("{}/{img}", config.base_url)),
+            None => cover_abs.clone().or_else(|| fallback_img.clone()),
+        };
+
         let jsonld = schema_blogposting_json(
             &page.fm.title,
             &description,
-            cover_abs.as_deref().or(fallback_img.as_deref()),
-            &page.fm.tags,
+            jsonld_image.as_deref(),
+            &og_tags,
             &permalink,
             &date_rfc,
             &config.author,
@@ -367,8 +407,8 @@ fn build_lang_posts(
             section: Some("posts"),
             date_published: &date_rfc,
             date_modified: &date_rfc,
-            tags: &page.fm.tags,
-            image: fallback_img.as_deref().unwrap_or_default(),
+            tags: &og_tags,
+            image: og_image.as_deref().unwrap_or_default(),
             word_count: Some(word_count),
             jsonld: Some(&jsonld),
         });
@@ -711,9 +751,20 @@ fn collapse_ws(s: &str) -> String {
     s.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+/// 把 front matter `images` 里的文件名解析成完整 URL：命中 bundle 内资源就
+/// 带上 /posts/slug/ 前缀，否则按 Hugo 的 else 分支当站点根路径处理
+fn resolve_bundle_image(config: &SiteConfig, bundle: &PostBundle, bundle_rel: &str, img: &str) -> String {
+    if bundle.resources.iter().any(|r| r.name == *img) {
+        format!("{}{bundle_rel}{img}", config.base_url)
+    } else {
+        format!("{}/{img}", config.base_url)
+    }
+}
+
 fn escape_attr(s: &str) -> String {
     s.replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
         .replace('"', "&#34;")
+        .replace('\'', "&#x27;")
 }

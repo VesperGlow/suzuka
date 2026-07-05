@@ -11,14 +11,14 @@
     <section class="home-section" aria-labelledby="home-recent-heading">
       <div class="section-heading">
         <h2 id="home-recent-heading">{{ t("homeRecentHeading") }}</h2>
-        <a href="{{ site.home_rel }}archives/">{{ t("homeRecentViewAll") }}</a>
+        <a href="{{ site.home_rel | safe }}archives/">{{ t("homeRecentViewAll") }}</a>
       </div>
       <ul class="home-recent-list">
         {% for p in posts[:8] %}
           <li>
             <time datetime="{{ p.date_iso }}">{{ p.date_display }}</time>
-            <a href="{{ p.rel }}">{{ p.title }}</a>
-            {% if p.category %}<a class="home-recent-category" href="{{ p.category.rel }}">{{ p.category.title }}</a>{% endif %}
+            <a href="{{ p.rel | safe }}">{{ p.title }}</a>
+            {% if p.category %}<a class="home-recent-category" href="{{ p.category.rel | safe }}">{{ p.category.title }}</a>{% endif %}
           </li>
         {% else %}
           <li class="empty">{{ t("archiveEmpty") }}</li>

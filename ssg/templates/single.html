@@ -1,7 +1,7 @@
 {% extends "baseof.html" %}
 {% block main %}<article class="article{% if page.is_post %} post-article{% endif %}{% if page.has_toc %} has-toc{% endif %}">
     <div class="article-main"{% if page.is_post %} data-pagefind-body{% endif %}>
-      {% if page.is_post and page.tags %}<span hidden data-pagefind-meta="tags">{% for tag in page.tags %}{{ tag.title }}{% if not loop.last %}||{% endif %}{% endfor %}</span>{% endif %}
+      {% if page.is_post and page.tags %}<span hidden data-pagefind-meta="tags">{% for tag in page.tags %}{{ tag.raw }}{% if not loop.last %}||{% endif %}{% endfor %}</span>{% endif %}
       {% include "partials/article-header.html" %}
 
       {% if page.spoiler %}
@@ -30,11 +30,11 @@
     {% endif %}
   </article>
 
-  {% if page.has_toc %}<script type="module" src="{{ asset("js/article-toc.js") }}"></script>{% endif %}
+  {% if page.has_toc %}<script type="module" src="{{ asset("js/article-toc.js") | safe }}"></script>{% endif %}
   {% if page.is_post %}
     {% include "partials/article-lightbox.html" %}
-    <script src="{{ asset("js/article-lightbox.js") }}" defer></script>
-    <script src="{{ asset("js/article-header-scroll.js") }}" defer></script>
-    <script src="{{ asset("js/article-engagement.js") }}" defer></script>
+    <script src="{{ asset("js/article-lightbox.js") | safe }}" defer></script>
+    <script src="{{ asset("js/article-header-scroll.js") | safe }}" defer></script>
+    <script src="{{ asset("js/article-engagement.js") | safe }}" defer></script>
   {% endif %}
 {% endblock %}

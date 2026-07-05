@@ -34,10 +34,14 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
     let events: Vec<Event> = Parser::new_ext(body, options).collect();
     let mut out: Vec<Event> = Vec::with_capacity(events.len());
     let mut toc = Vec::new();
-    let mut plain = String::new();
     let mut first_image_src = None;
     let mut used_ids: HashMap<String, usize> = HashMap::new();
     let mut in_code = false;
+    // goldmark typographer 的引号配对状态（&ldquo;/&rdquo; 开合计数）是整篇
+    // 文档共享一个 parser.Context，不按段落/标题重置——实测对拍验证过：
+    // 跨段落、跨标题、跨 blockquote 都要延续同一个计数器，否则配对会错位。
+    let mut quotes = QuoteState::default();
+    let mut prev_char: Option<char> = None;
 
     let mut i = 0;
     while i < events.len() {
@@ -49,13 +53,19 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
                 }) {
                     let inner = &events[i + 1..end];
                     if is_standalone_image(inner) {
-                        let (figure, src, alt_plain) =
-                            build_figure(inner, resources, bundle_rel);
+                        // 图片是独立 block，alt/caption 的引号状态不影响外层
+                        // 段落间共享的计数器（实测对拍验证：如果算进去，紧跟在
+                        // 图片后面的段落/blockquote 引号配对会跟着错位）
+                        let (figure, src, _alt_plain) = build_figure(
+                            inner,
+                            resources,
+                            bundle_rel,
+                            &mut None,
+                            &mut QuoteState::default(),
+                        );
                         if first_image_src.is_none() {
                             first_image_src = Some(src);
                         }
-                        plain.push_str(&alt_plain);
-                        plain.push('\n');
                         out.push(Event::Html(CowStr::from(figure)));
                         i = end + 1;
                         continue;
@@ -67,12 +77,16 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
                 // 行内图片（与文字混排）：仍走 figure hook，但保留所在段落
                 let end = find_end(&events, i, |e| matches!(e, Event::End(TagEnd::Image)))
                     .unwrap_or(i);
-                let (figure, src, alt_plain) =
-                    build_figure(&events[i..=end], resources, bundle_rel);
+                let (figure, src, _alt_plain) = build_figure(
+                    &events[i..=end],
+                    resources,
+                    bundle_rel,
+                    &mut None,
+                    &mut QuoteState::default(),
+                );
                 if first_image_src.is_none() {
                     first_image_src = Some(src);
                 }
-                plain.push_str(&alt_plain);
                 out.push(Event::InlineHtml(CowStr::from(figure)));
                 i = end + 1;
                 continue;
@@ -86,7 +100,7 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
                 let inner = &events[i + 1..end];
                 let raw_text = collect_plain(inner);
                 let id = dedupe_id(auto_heading_id(&raw_text), &mut used_ids);
-                let inner_html = render_inline(inner);
+                let inner_html = render_inline(inner, &mut prev_char, &mut quotes);
                 let level_num = heading_level_num(level);
                 if matches!(level, HeadingLevel::H2 | HeadingLevel::H3) {
                     toc.push(TocEntry {
@@ -95,8 +109,6 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
                         inner_html: inner_html.clone(),
                     });
                 }
-                plain.push_str(&raw_text);
-                plain.push('\n');
                 let tag = format!("<{level} id=\"{id}\">{inner_html}</{level}>\n");
                 out.push(Event::Html(CowStr::from(tag)));
                 i = end + 1;
@@ -127,24 +139,15 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
                 out.push(events[i].clone());
             }
             Event::Text(text) => {
-                plain.push_str(text);
                 if in_code {
                     out.push(events[i].clone());
                 } else {
-                    out.push(Event::Html(CowStr::from(typograph_escape(text))));
+                    out.push(Event::Html(CowStr::from(typograph_escape(
+                        text,
+                        &mut prev_char,
+                        &mut quotes,
+                    ))));
                 }
-            }
-            Event::Code(text) => {
-                plain.push_str(text);
-                out.push(events[i].clone());
-            }
-            Event::SoftBreak | Event::HardBreak => {
-                plain.push(' ');
-                out.push(events[i].clone());
-            }
-            Event::End(TagEnd::Paragraph) => {
-                plain.push('\n');
-                out.push(events[i].clone());
             }
             _ => out.push(events[i].clone()),
         }
@@ -153,12 +156,39 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
 
     let mut html_out = String::new();
     html::push_html(&mut html_out, out.into_iter());
+    // wordCount 与 Hugo 一致：对最终渲染出的 HTML 去标签统计（tpl.StripHTML），
+    // 而非渲染过程中手工攒的文本——这样图片 alt（属性，Hugo 不计入）与
+    // figcaption（可见文本，Hugo 计入）的取舍就自动跟 Hugo 对齐了。
+    let plain = strip_html(&html_out);
     Rendered {
         html: html_out,
         toc,
         plain,
         first_image_src,
     }
+}
+
+/// 复刻 Hugo `tpl.StripHTML`：去标签统计词数用，保留实体原样不解码。
+fn strip_html(html: &str) -> String {
+    if !html.contains('<') && !html.contains('>') {
+        return html.to_string();
+    }
+    let normalized = html
+        .replace('\n', " ")
+        .replace("</p>", "\n")
+        .replace("<br>", "\n")
+        .replace("<br />", "\n");
+    let mut out = String::with_capacity(normalized.len());
+    let mut in_tag = false;
+    for ch in normalized.chars() {
+        match ch {
+            '<' => in_tag = true,
+            '>' => in_tag = false,
+            _ if !in_tag => out.push(ch),
+            _ => {}
+        }
+    }
+    out
 }
 
 /// Hugo .TableOfContents 的 HTML 形态（两层：h2 / h3）
@@ -244,6 +274,8 @@ fn build_figure(
     image_events: &[Event],
     resources: &[Resource],
     bundle_rel: &str,
+    prev_char: &mut Option<char>,
+    quotes: &mut QuoteState,
 ) -> (String, String, String) {
     let (mut dest, mut title) = (String::new(), String::new());
     if let Some(Event::Start(Tag::Image {
@@ -257,7 +289,9 @@ fn build_figure(
     }
     let alt_events = &image_events[1..image_events.len().saturating_sub(1)];
     let alt_plain = collect_plain(alt_events);
-    let alt = typograph_escape(&alt_plain);
+    // alt/caption 的行内内容也是 goldmark 同一遍 inline parse 的一部分，
+    // 引号配对状态照样跟正文共享同一个计数器
+    let alt = typograph_escape(&alt_plain, prev_char, quotes);
 
     let resource = resources.iter().find(|r| r.name == dest);
     let title_attr = if title.is_empty() {
@@ -287,7 +321,10 @@ fn build_figure(
     let caption = if title.is_empty() {
         String::new()
     } else {
-        format!("<figcaption>{}</figcaption>", typograph_escape(&title))
+        format!(
+            "<figcaption>{}</figcaption>",
+            typograph_escape(&title, prev_char, quotes)
+        )
     };
     let figure = format!("<figure>\n  {img}\n  {caption}\n</figure>\n");
     (figure, src, alt_plain)
@@ -306,15 +343,16 @@ fn collect_plain(events: &[Event]) -> String {
 }
 
 /// 渲染标题内部的行内内容（文字走 typographer，行内代码保留 <code>）
-fn render_inline(events: &[Event]) -> String {
+fn render_inline(events: &[Event], prev_char: &mut Option<char>, quotes: &mut QuoteState) -> String {
     let mut out = String::new();
     for e in events {
         match e {
-            Event::Text(t) => out.push_str(&typograph_escape(t)),
+            Event::Text(t) => out.push_str(&typograph_escape(t, prev_char, quotes)),
             Event::Code(t) => {
                 out.push_str("<code>");
                 out.push_str(&escape_text(t));
                 out.push_str("</code>");
+                *prev_char = t.chars().last().or(*prev_char);
             }
             Event::Start(Tag::Emphasis) => out.push_str("<em>"),
             Event::End(TagEnd::Emphasis) => out.push_str("</em>"),
@@ -359,12 +397,24 @@ fn dedupe_id(id: String, used: &mut HashMap<String, usize>) -> String {
     result
 }
 
-/// 文字节点：HTML 转义 + goldmark typographer 的实体输出
-fn typograph_escape(text: &str) -> String {
+/// goldmark typographer 引号配对计数：按 block 作用域，开一个记一个、配对关一个
+#[derive(Default)]
+struct QuoteState {
+    double: i32,
+    single: i32,
+}
+
+/// 文字节点：HTML 转义 + goldmark typographer 的实体输出。
+///
+/// 引号的开/合判定复刻 goldmark `extension/typographer.go`：用 CommonMark
+/// 强调分隔符那套 left-/right-flanking 规则判断某个引号能不能当开引号、能不能
+/// 当合引号——两边都是「词」字符（比如中文不带空格的场景）时两者都成立，视为
+/// 歧义，goldmark 会原样放过，最终被当成普通文本转义成 `&quot;`。这也是为什么
+/// 中文行文里大量引号最终是 `&quot;` 而不是 `&ldquo;`/`&rdquo;` 的原因。
+fn typograph_escape(text: &str, prev_char: &mut Option<char>, quotes: &mut QuoteState) -> String {
     let mut out = String::with_capacity(text.len() + 16);
     let chars: Vec<char> = text.chars().collect();
     let mut i = 0;
-    let mut prev: Option<char> = None;
     while i < chars.len() {
         let ch = chars[i];
         match ch {
@@ -372,19 +422,43 @@ fn typograph_escape(text: &str) -> String {
             '<' => out.push_str("&lt;"),
             '>' => out.push_str("&gt;"),
             '"' => {
-                if is_open_context(prev) {
+                let after = chars.get(i + 1).copied();
+                let (can_open, can_close) = quote_flanking(*prev_char, after);
+                if can_open && !can_close {
                     out.push_str("&ldquo;");
-                } else {
+                    quotes.double += 1;
+                } else if quotes.double > 0 && can_close && !can_open {
                     out.push_str("&rdquo;");
+                    quotes.double -= 1;
+                } else {
+                    out.push_str("&quot;");
                 }
             }
             '\'' => {
-                if prev.map(|p| p.is_alphanumeric()).unwrap_or(false) {
+                let after = chars.get(i + 1).copied();
+                // don't/it's/Suzuka's：缩略或所有格，前后都是字母数字，直接当撇号
+                if prev_char.map(|p| p.is_alphanumeric()).unwrap_or(false)
+                    && after.map(|a| a.is_alphabetic()).unwrap_or(false)
+                {
                     out.push_str("&rsquo;");
-                } else if is_open_context(prev) {
-                    out.push_str("&lsquo;");
                 } else {
-                    out.push_str("&rsquo;");
+                    let (can_open, can_close) = quote_flanking(*prev_char, after);
+                    if can_open && !can_close {
+                        out.push_str("&lsquo;");
+                        quotes.single += 1;
+                    } else if after.map(|a| !a.is_ascii_digit()).unwrap_or(true) {
+                        // 复数所有格/口语缩略（Smiths'、doin'）：goldmark 这里不看
+                        // counter，只要紧跟的不是数字就当撇号处理
+                        out.push_str("&rsquo;");
+                        if quotes.single > 0 {
+                            quotes.single -= 1;
+                        }
+                    } else if quotes.single > 0 && can_close && !can_open {
+                        out.push_str("&rsquo;");
+                        quotes.single -= 1;
+                    } else {
+                        out.push_str("&#39;");
+                    }
                 }
             }
             '.' if i + 2 < chars.len() && chars[i + 1] == '.' && chars[i + 2] == '.' => {
@@ -402,16 +476,87 @@ fn typograph_escape(text: &str) -> String {
             }
             _ => out.push(ch),
         }
-        prev = Some(ch);
+        *prev_char = Some(ch);
         i += 1;
     }
     out
 }
 
-fn is_open_context(prev: Option<char>) -> bool {
-    match prev {
-        None => true,
-        Some(p) => p.is_whitespace() || matches!(p, '(' | '[' | '{' | '-' | '—'),
+/// CommonMark 强调分隔符的 left-/right-flanking 判定，套用到单个引号字符上：
+/// (can_open, can_close)。文本片段边界（before/after 缺失）按空白处理。
+fn quote_flanking(before: Option<char>, after: Option<char>) -> (bool, bool) {
+    let after_space = after.map(is_typo_space).unwrap_or(true);
+    let after_punct = after.map(is_typo_punct).unwrap_or(false);
+    let before_space = before.map(is_typo_space).unwrap_or(true);
+    let before_punct = before.map(is_typo_punct).unwrap_or(false);
+    let can_open = !after_space && (!after_punct || before_space || before_punct);
+    let can_close = !before_space && (!before_punct || after_space || after_punct);
+    (can_open, can_close)
+}
+
+fn is_typo_space(ch: char) -> bool {
+    ch.is_whitespace()
+}
+
+/// 近似 Go unicode.IsPunct（Unicode P* 类别）：ASCII 精确匹配标点类别（排除
+/// $ + < = > ^ ` | ~ 这些 Symbol 类别字符），非 ASCII 覆盖本站行文常见的
+/// CJK/全角标点。
+fn is_typo_punct(ch: char) -> bool {
+    if ch.is_ascii() {
+        matches!(
+            ch,
+            '!' | '"'
+                | '#'
+                | '%'
+                | '&'
+                | '\''
+                | '('
+                | ')'
+                | '*'
+                | ','
+                | '-'
+                | '.'
+                | '/'
+                | ':'
+                | ';'
+                | '?'
+                | '@'
+                | '['
+                | '\\'
+                | ']'
+                | '_'
+                | '{'
+                | '}'
+        )
+    } else {
+        matches!(
+            ch,
+            '。' | '，'
+                | '、'
+                | '；'
+                | '：'
+                | '？'
+                | '！'
+                | '\u{201c}'
+                | '\u{201d}'
+                | '\u{2018}'
+                | '\u{2019}'
+                | '《'
+                | '》'
+                | '（'
+                | '）'
+                | '【'
+                | '】'
+                | '「'
+                | '」'
+                | '『'
+                | '』'
+                | '—'
+                | '\u{2013}'
+                | '…'
+                | '～'
+                | '·'
+        )
     }
 }
 

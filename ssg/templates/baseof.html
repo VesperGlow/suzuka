@@ -31,16 +31,16 @@
     } catch {}
   </script>
   <title>{% if page.is_home %}{{ site.title }}{% else %}{{ page.title }} · {{ site.title }}{% endif %}</title>
-  <link rel="canonical" href="{{ page.permalink }}">
-  {% for tr in page.all_translations %}<link rel="alternate" hreflang="{{ tr.locale }}" href="{{ tr.permalink }}">{% if tr.lang == "zh-cn" %}<link rel="alternate" hreflang="x-default" href="{{ tr.permalink }}">{% endif %}{% endfor %}
+  <link rel="canonical" href="{{ page.permalink | safe }}">
+  {% for tr in page.all_translations %}<link rel="alternate" hreflang="{{ tr.locale }}" href="{{ tr.permalink | safe }}">{% if tr.lang == "zh-cn" %}<link rel="alternate" hreflang="x-default" href="{{ tr.permalink | safe }}">{% endif %}{% endfor %}
   {{ page.internal_meta | safe }}
   <link rel="icon" href="/favicon/favicon.ico?v=2" sizes="16x16 32x32 48x48">
   <link rel="icon" type="image/webp" href="/favicon/favicon-round.webp?v=2">
   <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png">
-  <link rel="stylesheet" href="{{ asset("css/style.css") }}">
-  <script src="{{ asset("js/site.js") }}" defer></script>
-  {% if page.is_home %}<link rel="alternate" type="application/rss+xml" href="{{ site.rss_rel }}" title="{{ site.title }}">{% endif %}
-  <link rel="alternate" type="application/feed+json" href="{{ site.jsonfeed_rel }}" title="{{ site.title }}">
+  <link rel="stylesheet" href="{{ asset("css/style.css") | safe }}">
+  <script src="{{ asset("js/site.js") | safe }}" defer></script>
+  {% if page.is_home %}<link rel="alternate" type="application/rss+xml" href="{{ site.rss_rel | safe }}" title="{{ site.title }}">{% endif %}
+  <link rel="alternate" type="application/feed+json" href="{{ site.jsonfeed_rel | safe }}" title="{{ site.title }}">
   {# redirectTo：首页与文章不使用 #}
 </head>
 <body data-pagefind-filter="language:{{ site.lang }}"{% if page.layout == "archives" %} class="archives-page"{% elif page.is_post %} class="post-page"{% endif %}>

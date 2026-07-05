@@ -4,13 +4,17 @@
     <span>{{ t("subscribeDescription") }}</span>
   </span>
   <span class="post-subscribe-links">
-    <a class="subscribe-link" href="{{ site.rss_rel }}">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
-      {{ t("subscribeRSS") }}
-    </a>
-    <a class="subscribe-link" href="{{ site.jsonfeed_rel }}">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H6a2 2 0 0 0-2 2v3a2 2 0 0 1-2 2 2 2 0 0 1 2 2v3a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v3a2 2 0 0 0 2 2 2 2 0 0 0-2 2v3a2 2 0 0 1-2 2h-2"/></svg>
-      {{ t("subscribeJSONFeed") }}
-    </a>
+
+      <a class="subscribe-link" href="{{ site.rss_rel | safe }}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
+        {{ t("subscribeRSS") }}
+      </a>
+
+
+      <a class="subscribe-link" href="{{ site.jsonfeed_rel | safe }}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H6a2 2 0 0 0-2 2v3a2 2 0 0 1-2 2 2 2 0 0 1 2 2v3a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v3a2 2 0 0 0 2 2 2 2 0 0 0-2 2v3a2 2 0 0 1-2 2h-2"/></svg>
+        {{ t("subscribeJSONFeed") }}
+      </a>
+
   </span>
 </aside>
