@@ -1,0 +1,40 @@
+{% extends "baseof.html" %}
+{% block main %}<article class="article{% if page.is_post %} post-article{% endif %}{% if page.has_toc %} has-toc{% endif %}">
+    <div class="article-main"{% if page.is_post %} data-pagefind-body{% endif %}>
+      {% if page.is_post and page.tags %}<span hidden data-pagefind-meta="tags">{% for tag in page.tags %}{{ tag.title }}{% if not loop.last %}||{% endif %}{% endfor %}</span>{% endif %}
+      {% include "partials/article-header.html" %}
+
+      {% if page.spoiler %}
+        <aside class="article-spoiler" role="note"><strong>{{ t("spoilerWarning") }}</strong>{{ page.spoiler }}</aside>
+      {% endif %}
+
+      {% if page.has_toc %}
+        {% include "partials/article-toc.html" %}
+      {% endif %}
+
+      <div class="prose">{{ page.content_html | safe }}</div>
+
+      {% if page.is_post %}
+        <footer class="post-footer">
+          <div class="post-actions">
+            {% include "partials/article-engagement.html" %}
+            {% include "partials/article-guestbook-link.html" %}
+          </div>
+          {% include "partials/article-navigation.html" %}
+        </footer>
+      {% endif %}
+    </div>
+
+    {% if page.has_toc %}
+      {% include "partials/article-toc-sidebar.html" %}
+    {% endif %}
+  </article>
+
+  {% if page.has_toc %}<script type="module" src="{{ asset("js/article-toc.js") }}"></script>{% endif %}
+  {% if page.is_post %}
+    {% include "partials/article-lightbox.html" %}
+    <script src="{{ asset("js/article-lightbox.js") }}" defer></script>
+    <script src="{{ asset("js/article-header-scroll.js") }}" defer></script>
+    <script src="{{ asset("js/article-engagement.js") }}" defer></script>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,38 @@
+<div class="sidebar-nav-inner">
+  <a class="sidebar-brand" href="{{ site.home_rel }}" aria-label="{{ t("brandHomeLabel", Title=site.title) }}">
+    <img class="sidebar-brand-mark" src="/favicon/favicon-round.webp?v=2" alt="" width="26" height="26">
+    <span>{{ site.title }}</span>
+  </a>
+
+  <a class="sidebar-link sidebar-link-top{% if page.is_home %} active{% endif %}" href="{{ site.home_rel }}"{% if page.is_home %} aria-current="page"{% endif %}>{{ t("sidebarHome") }}</a>
+
+  <p class="sidebar-heading">{{ t("sidebarTimelineHeading") }}</p>
+  <div class="sidebar-timeline" data-sidebar-timeline>
+    {% for group in timeline %}
+      <section class="sidebar-timeline-year">
+        <span class="sidebar-timeline-year-label">{{ group.year }}</span>
+        <ul>
+          {% for p in group.posts %}
+            <li>
+              <a href="{{ p.rel }}"{% if page.rel_permalink == p.rel %} class="active" aria-current="page"{% endif %}>
+                <time datetime="{{ p.date_iso }}">{{ p.date_mmdd }}</time>
+                <span>{{ p.title }}</span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endfor %}
+  </div>
+
+  <a class="sidebar-link{% if page.section == "archives" %} active{% endif %}" href="{{ site.home_rel }}archives/">{{ t("sidebarArchives") }}</a>
+  <a class="sidebar-link" href="{{ site.home_rel }}tags/">{{ t("sidebarTags") }}</a>
+
+  <p class="sidebar-heading">{{ t("homeQuickLinksHeading") }}</p>
+  {% if site.about_rel %}
+    <a class="sidebar-link{% if page.rel_permalink == site.about_rel %} active{% endif %}" href="{{ site.about_rel }}"{% if page.rel_permalink == site.about_rel %} aria-current="page"{% endif %}>{{ t("aboutSuzuka") }}</a>
+  {% endif %}
+  {% if site.guestbook_rel %}
+    <a class="sidebar-link{% if page.rel_permalink == site.guestbook_rel %} active{% endif %}" href="{{ site.guestbook_rel }}"{% if page.rel_permalink == site.guestbook_rel %} aria-current="page"{% endif %}>{{ t("guestbookTitle") }}</a>
+  {% endif %}
+</div>

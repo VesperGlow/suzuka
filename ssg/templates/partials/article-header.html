@@ -1,0 +1,19 @@
+<header class="article-header">
+  {% if page.is_post %}
+    <p class="article-category">
+      {% if page.categories %}<a href="{{ page.categories[0].rel }}">{{ page.categories[0].title }}</a>{% else %}{{ t("postFallback") }}{% endif %}
+    </p>
+  {% else %}
+    <p class="eyebrow">{{ t("pageEyebrow") }}</p>
+  {% endif %}
+  <h1>{{ page.title }}</h1>
+  {% if page.is_post %}
+    <p class="article-summary">{{ page.description }}</p>
+    <div class="article-meta">
+      <time datetime="{{ page.date_iso }}" data-pagefind-meta="date">{{ page.date_display }}</time>
+      <span>{{ t("readingTime", Count=page.reading_time) }}</span>
+      <span class="article-views" data-article-views data-template="{{ t("viewCount") }}" hidden></span>
+      {% for tag in page.tags %}<a class="article-meta-tag" href="{{ tag.rel }}">{{ tag.title }}</a>{% endfor %}
+    </div>
+  {% endif %}
+</header>

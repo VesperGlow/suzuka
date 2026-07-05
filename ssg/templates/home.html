@@ -1,0 +1,34 @@
+{% extends "baseof.html" %}
+{% block main %}<div class="home-page">
+    <header class="home-hero">
+      <h1>{{ site.title }}</h1>
+      <p class="home-intro">{{ t("homeIntro") }}</p>
+      {% if posts %}
+        <p class="home-updated">{{ t("homeLastUpdated", Date=posts[0].date_display) }}</p>
+      {% endif %}
+    </header>
+
+    <section class="home-section" aria-labelledby="home-recent-heading">
+      <div class="section-heading">
+        <h2 id="home-recent-heading">{{ t("homeRecentHeading") }}</h2>
+        <a href="{{ site.home_rel }}archives/">{{ t("homeRecentViewAll") }}</a>
+      </div>
+      <ul class="home-recent-list">
+        {% for p in posts[:8] %}
+          <li>
+            <time datetime="{{ p.date_iso }}">{{ p.date_display }}</time>
+            <a href="{{ p.rel }}">{{ p.title }}</a>
+            {% if p.category %}<a class="home-recent-category" href="{{ p.category.rel }}">{{ p.category.title }}</a>{% endif %}
+          </li>
+        {% else %}
+          <li class="empty">{{ t("archiveEmpty") }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="home-section home-quicklinks" aria-labelledby="home-quicklinks-heading">
+      <h2 id="home-quicklinks-heading" class="sr-only">{{ t("homeQuickLinksHeading") }}</h2>
+      {% include "partials/subscribe.html" %}
+    </section>
+  </div>
+{% endblock %}

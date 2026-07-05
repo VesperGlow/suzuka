@@ -1,0 +1,6 @@
+<aside class="article-sidebar" aria-label="{{ t("tableOfContents") }}" data-article-toc-desktop>
+  <div class="article-toc-desktop">
+    <p>{{ t("tableOfContents") }}</p>
+    {{ page.toc_html | replace('id="TableOfContents"', 'id="article-toc-sidebar" aria-label="' ~ t("sidebarToc") ~ '"') | safe }}
+  </div>
+</aside>

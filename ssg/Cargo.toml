@@ -1,0 +1,22 @@
+[package]
+name = "ssg"
+version = "0.1.0"
+edition = "2021"
+description = "suzuka-chan.moe 专用静态站点生成器：对拍 Hugo 产物，逐步替代 Hugo"
+
+[dependencies]
+anyhow = "1"
+chrono = "0.4"
+imagesize = "0.13"
+minijinja = { version = "2", features = ["loader"] }
+percent-encoding = "2"
+pulldown-cmark = { version = "0.12", default-features = false, features = ["html"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+serde_yaml = "0.9"
+sha2 = "0.10"
+toml = "0.8"
+walkdir = "2"
+
+[profile.release]
+strip = true

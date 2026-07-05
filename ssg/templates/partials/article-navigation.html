@@ -1,0 +1,10 @@
+{% if page.prev or page.next %}
+  <nav class="post-navigation" aria-label="{{ t("adjacentPosts") }}">
+    {% if page.prev %}
+      <a class="post-navigation-previous" href="{{ page.prev.rel }}"><span>{{ t("previousPost") }}</span><strong>{{ page.prev.title }}</strong></a>
+    {% else %}<span aria-hidden="true"></span>{% endif %}
+    {% if page.next %}
+      <a class="post-navigation-next" href="{{ page.next.rel }}"><span>{{ t("nextPost") }}</span><strong>{{ page.next.title }}</strong></a>
+    {% else %}<span aria-hidden="true"></span>{% endif %}
+  </nav>
+{% endif %}

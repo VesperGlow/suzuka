@@ -1,0 +1,45 @@
+name: SSG parity check
+
+# 定制 Rust 生成器（ssg/）与 Hugo 产物的对拍。仍在迁移期，故只手动触发，
+# 不随 push 跑、也不阻断现有 site-image 流水线。绿了才谈切换。
+on:
+  workflow_dispatch:
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 版本与 Containerfile 的 HUGO_VERSION 保持一致。
+      - name: Install Hugo extended
+        env:
+          HUGO_VERSION: 0.163.3
+        run: |
+          curl -fsSL -o /tmp/hugo.deb \
+            "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.deb"
+          sudo apt-get install -y /tmp/hugo.deb
+
+      # 黄金基准用「不带 --minify」的 Hugo：与 ssg 当前输出同为未压缩形态，
+      # 才能逐行对拍结构与文案。HTML 压缩是最后一步，两边都还没做。
+      - name: Build golden (Hugo, no minify)
+        run: hugo --destination golden
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ssg
+
+      - name: Build ssg
+        working-directory: ssg
+        run: cargo build --release
+
+      - name: Generate ssg output
+        run: ./ssg/target/release/ssg build --source . --dest public-ssg
+
+      - name: Diff against golden
+        run: ./ssg/target/release/ssg diff golden public-ssg

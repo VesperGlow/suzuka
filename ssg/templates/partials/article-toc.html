@@ -1,0 +1,4 @@
+<details class="article-toc article-toc-mobile">
+  <summary>{{ t("tableOfContents") }}</summary>
+  {{ page.toc_html | replace('id="TableOfContents"', 'id="article-toc-mobile" aria-label="' ~ t("tableOfContents") ~ '"') | safe }}
+</details>
