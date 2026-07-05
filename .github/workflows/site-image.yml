@@ -7,26 +7,24 @@ on:
   workflow_dispatch:
 
 jobs:
-  # 先跑 vet + 单元测试；纯 Go 驱动无需 CGO / C 工具链。
+  # 先跑单元 + 集成测试；bundled SQLite 由 cc 随构建编译，Ubuntu 自带 gcc 即可。
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.25"
-          cache-dependency-path: backend/go.sum
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
 
-      - name: Vet
-        working-directory: backend
-        run: go vet ./...
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
 
       - name: Test
         working-directory: backend
-        run: go test ./...
+        run: cargo test --locked
 
   # 静态检查作为旁路反馈：失败不阻断镜像发布（build-push 只 needs: test）。
   lint:
@@ -36,17 +34,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          go-version: "1.25"
-          cache-dependency-path: backend/go.sum
+          components: clippy, rustfmt
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v7
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
         with:
-          version: latest
-          working-directory: backend
+          workspaces: backend
+
+      - name: Clippy
+        working-directory: backend
+        run: cargo clippy --all-targets --locked -- -D warnings
+
+      - name: Format
+        working-directory: backend
+        run: cargo fmt --check
 
   build-push:
     needs: test

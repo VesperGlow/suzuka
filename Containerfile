@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
-# 单容器：前端（Hugo 静态产物 + Pagefind 索引）与后端（Go + SQLite 留言板）
-# 合并进一个 scratch 镜像，由 Go 进程同时托管静态站和 /api/guestbook/ 接口。
+# 单容器：前端（Hugo 静态产物 + Pagefind 索引）与后端（Rust + SQLite 留言板）
+# 合并进一个 scratch 镜像，由后端进程同时托管静态站和 /api/guestbook/ 接口。
 
 # ---------- 阶段 1：构建 Hugo 静态站 + Pagefind 索引 ----------
 # Hugo extended 链接 glibc/libstdc++，用 Debian 而非 alpine；版本与本地一致(0.163.3)。
@@ -27,16 +27,26 @@ RUN rm -rf public .hugo_build.lock \
  && hugo --minify \
  && pagefind --site public
 
-# ---------- 阶段 2：编译 Go 后端（纯 Go sqlite，关 CGO 出静态二进制） ----------
-FROM docker.io/library/golang:1.25-alpine AS build
+# ---------- 阶段 2：编译 Rust 后端（bundled SQLite 随 crate 静态编译进 musl 二进制） ----------
+FROM docker.io/library/rust:1-alpine AS build
+
+# bundled SQLite 是 C 代码，需要 musl 头文件与 C 编译器。
+RUN apk add --no-cache build-base
 
 WORKDIR /src
-COPY backend/go.mod backend/go.sum ./
-RUN go mod download
+# 先用空壳 crate 编译依赖，利用层缓存：源码变更时不必重编全部依赖。
+COPY backend/Cargo.toml backend/Cargo.lock ./
+RUN mkdir src \
+ && echo 'fn main() {}' > src/main.rs \
+ && touch src/lib.rs \
+ && cargo build --release --locked \
+ && rm -rf src
 
-COPY backend/ .
-RUN CGO_ENABLED=0 GOOS=linux \
-    go build -trimpath -ldflags '-s -w' -o /out/backend .
+COPY backend/src ./src
+# touch 保证 mtime 晚于空壳构建，促使 cargo 重编本 crate（依赖仍走缓存）。
+RUN touch src/main.rs src/lib.rs \
+ && cargo build --release --locked \
+ && mkdir -p /out && cp target/release/backend /out/backend
 
 # 预创建数据目录并赋给非 root 运行用户：scratch 无 shell，运行期无法 chown。
 RUN mkdir -p /data && chown 65534:65534 /data

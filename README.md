@@ -2,7 +2,7 @@
 
 [suzuka-chan.moe](https://suzuka-chan.moe/) 的源码。一个用 [Hugo](https://gohugo.io/) 搭建的双语个人站点，记录 Galgame 感想、偶尔浮现的思考，以及落下的生活碎片。
 
-主题、布局与样式全部手写，没有引入外部主题；留言板、阅读量、点赞等动态内容由仓库内一个轻量的 Go + SQLite 后端提供。
+主题、布局与样式全部手写，没有引入外部主题；留言板、阅读量、点赞等动态内容由仓库内一个轻量的 Rust + SQLite 后端提供。
 
 ## 特性
 
@@ -18,7 +18,7 @@
 - Hugo（extended，v0.163+）静态站点
 - 原生 HTML 模板 + CSS + 少量无框架 JavaScript（`assets/`、`layouts/`）
 - Pagefind 搜索索引
-- Go + `modernc.org/sqlite`（纯 Go 驱动，无需 CGO）后端，见 [`backend/`](backend/README.md)
+- Rust（axum + rusqlite，bundled SQLite 随 crate 静态编译）后端，见 [`backend/`](backend/README.md)
 
 ## 目录结构
 
@@ -29,7 +29,7 @@ assets/        CSS 与按需加载的 JS
 i18n/          中英文案
 static/        favicon、角色图等静态资源
 hugo.toml      站点配置（语言、菜单、输出格式、permalink）
-backend/       留言板 / 阅读量 / 点赞的 Go + SQLite 服务
+backend/       留言板 / 阅读量 / 点赞的 Rust + SQLite 服务
 ```
 
 ## 本地开发
@@ -54,11 +54,11 @@ hugo && npx -y pagefind --site public
 
 ## 部署
 
-前后端打进**一个容器**：Go 进程在根路径托管 Hugo 静态产物，并把留言板接口收敛到
+前后端打进**一个容器**：后端进程在根路径托管 Hugo 静态产物，并把留言板接口收敛到
 `/api/guestbook/` 前缀下（与前端 `fetch` 路径一致，由进程自身剥前缀，无需 nginx 反代）。
 
-- **自动构建**：push 到 `main` 时 GitHub Actions 跑 `go vet` + 测试，再三阶段构建
-  （Hugo + Pagefind → 编译 Go → 合进 scratch）并推镜像到 GHCR
+- **自动构建**：push 到 `main` 时 GitHub Actions 跑 `cargo test`（clippy / rustfmt 作旁路检查），
+  再三阶段构建（Hugo + Pagefind → 编译 Rust → 合进 scratch）并推镜像到 GHCR
   `ghcr.io/<owner>/suzuka:latest`（见 `.github/workflows/site-image.yml` 与根目录 `Containerfile`）。
 - **VPS 只负责跑容器**，监听 HTTP，由 Cloudflare / 反代在前面终止 TLS：
 

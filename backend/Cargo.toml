@@ -1,0 +1,36 @@
+[package]
+name = "suzuka-backend"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "suzuka_backend"
+path = "src/lib.rs"
+
+[[bin]]
+name = "backend"
+path = "src/main.rs"
+
+[dependencies]
+axum = "0.8"
+email_address = "0.2"
+mime = "0.3"
+rusqlite = { version = "0.37", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+time = { version = "0.3", features = ["formatting", "macros"] }
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "signal"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["fs", "timeout"] }
+url = "2"
+
+[dev-dependencies]
+http-body-util = "0.1"
+tempfile = "3"
+tower = { version = "0.5", features = ["util"] }
+
+# scratch 镜像里的静态二进制：去符号缩体积，LTO 收敛 bundled SQLite 的 C 代码。
+[profile.release]
+strip = true
+lto = true

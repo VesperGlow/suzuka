@@ -1,17 +1,24 @@
-# 多阶段构建：纯 Go 的 modernc.org/sqlite 无需 CGO，直接产出静态二进制塞进 scratch。
-FROM docker.io/library/golang:1.25-alpine AS build
+# 多阶段构建：rusqlite 的 bundled SQLite 随 crate 用 musl 静态编译，
+# 产出无 libc 依赖的静态二进制塞进 scratch。
+FROM docker.io/library/rust:1-alpine AS build
+
+# bundled SQLite 是 C 代码，需要 musl 头文件与 C 编译器。
+RUN apk add --no-cache build-base
 
 WORKDIR /src
 
-# 先拷依赖清单，利用层缓存。
-COPY go.mod go.sum ./
-RUN go mod download
+# 先用空壳 crate 编译依赖，利用层缓存：源码变更时不必重编全部依赖。
+COPY Cargo.toml Cargo.lock ./
+RUN mkdir src \
+ && echo 'fn main() {}' > src/main.rs \
+ && touch src/lib.rs \
+ && cargo build --release --locked \
+ && rm -rf src
 
-COPY . .
-
-# 纯 Go 编译：关掉 CGO 即得到天然静态、无 libc 依赖的二进制。
-RUN CGO_ENABLED=0 GOOS=linux \
-    go build -trimpath -ldflags '-s -w' -o /out/backend .
+COPY src ./src
+# touch 保证 mtime 晚于空壳构建，促使 cargo 重编本 crate（依赖仍走缓存）。
+RUN touch src/main.rs src/lib.rs \
+ && cargo build --release --locked
 
 # 预创建数据目录并赋给非 root 运行用户：scratch 无 shell，运行期无法 chown。
 RUN mkdir -p /data && chown 65534:65534 /data
@@ -19,7 +26,7 @@ RUN mkdir -p /data && chown 65534:65534 /data
 # 运行镜像：scratch + 仅放二进制；应用不发起外部 TLS，无需 CA 证书。
 FROM scratch
 
-COPY --from=build /out/backend /backend
+COPY --from=build /src/target/release/backend /backend
 COPY --from=build --chown=65534:65534 /data /data
 
 # 以 nobody(65534) 身份运行，降低被攻陷后的影响面。

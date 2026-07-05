@@ -5,6 +5,7 @@
 public/
 .hugo_build.lock
 backend/data/
-backend/*_test.go
+backend/target/
+backend/tests/
 node_modules/
 *.log
