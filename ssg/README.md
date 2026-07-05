@@ -1,9 +1,13 @@
 # ssg — suzuka 专用静态站点生成器
 
-为 suzuka-chan.moe **单站定制**的 Rust 生成器，目标是逐步替代 Hugo。不是通用 SSG：
-只实现本站 `content/` + `layouts/` 实际用到的功能，其余一律不做。
+为 suzuka-chan.moe **单站定制**的 Rust 生成器，已替代 Hugo 作为生产构建的静态站生成器
+（见根目录 `Containerfile` / `package.json`）。不是通用 SSG：只实现本站 `content/` +
+`layouts/` 实际用到的功能，其余一律不做。
 
 与 `backend/` 平级、**独立 crate**（不是 workspace 成员），不影响现有后端构建。
+
+Hugo 与 `layouts/`/`hugo.toml` 仍保留在仓库里，作为 `ssg-parity` 对拍的黄金基准来源，
+不再参与生产构建。
 
 ## 运行
 
@@ -27,7 +31,7 @@ cargo run --manifest-path ssg/Cargo.toml -- diff golden public-ssg
 ```
 
 CI 里有手动触发的 `ssg-parity` workflow 做同样的事（`.github/workflows/ssg-parity.yml`）。
-**只手动触发**，不随 push 跑、不阻断现有 `site-image` 流水线——绿了再谈切换。
+**只手动触发**，不随 push 跑，作为切换后改动 `content/`/模板时的回归防线。
 
 diff 的归一化规则（有意屏蔽的已知差异，见 `src/diff.rs`）：
 - 资源指纹散列 → `HASH`（ssg 暂不做 minify，散列必然不同）
@@ -45,22 +49,21 @@ diff 的归一化规则（有意屏蔽的已知差异，见 `src/diff.rs`）：
 | CJK 词数 / 阅读时长 | ✅ 首版 |
 | 别名跳转页（aliases） | ✅ 首版 |
 | 资源指纹（兼容 `backend/src/static_site.rs` 的 `.min.<hash>.ext` 判断） | ✅ 命名兼容，⚠️ 暂不真正 minify |
-| 归档页、标签/分类 term 页、分页 | ⏳ 未实现 |
-| RSS / JSON Feed / index.json / guestbook-posts.json | ⏳ 未实现 |
-| about / guestbook 独立页（自定义 layout） | ⏳ 未实现 |
+| 归档页、标签/分类 term 页 | ✅ 首版 |
+| RSS / JSON Feed / index.json / guestbook-posts.json | ✅ 首版 |
+| about / guestbook 独立页（自定义 layout） | ✅ 首版 |
+| robots.txt / 404 页 | ✅ 首版 |
 | 代码高亮（syntect → Chroma class） | ⏳ 未实现（本站文章目前无代码块） |
-| Pagefind 搜索索引 | ➖ 独立于 Hugo，切换后照旧在 `public-ssg` 上跑 |
+| 分页 | ⏳ 未实现（本站条目量下 Hugo 也未触发分页，暂无对拍样本） |
+| HTML/CSS/JS minify | ⏳ 未实现（生产此前用 `hugo --minify`；切换后产物比 Hugo 版更大，功能不受影响） |
+| Pagefind 搜索索引 | ✅ 独立于生成器，切换后照旧在 `public` 产物上跑 |
 
 ## 已知硬骨头（诚实记录）
 
 - **og / twitter / schema 三段 meta**：由 `src/build.rs::internal_meta_block` 逐字节手工
-  复刻 Hugo 内置模板的空白痕迹，**首版是近似**，需要靠 diff харness 逐行对齐。这是
-  整个迁移里最琐碎、最可能反复的地方。
-- **goldmark 排版细节**：typographer 的引号/破折号判定是启发式，长尾差异要对拍收敛。
-- **HTML minify**：生产是 `hugo --minify`。ssg 未做压缩；这是切换前的最后一步，
-  可对 ssg 产物单独跑一个 minifier，与内容生成解耦。
-
-## 尚未在本机验证
-
-本机无 Rust 工具链（构建走容器/CI）。这份代码是**未编译的首版**，几乎肯定有编译错误
-和对拍差异要迭代——请在 CI（`ssg-parity`）或容器里 `cargo build` 起步。
+  复刻 Hugo 内置模板的空白痕迹，靠 diff harness 逐行对齐收敛，已通过 113/113 对拍。
+- **goldmark 排版细节**：typographer 的引号/破折号判定是启发式，长尾差异靠对拍收敛，
+  当前 113/113 对拍通过。
+- **HTML minify**：生产此前是 `hugo --minify`；切换到 ssg 后**尚未做压缩**，产物体积比
+  Hugo 版更大（内容/结构不受影响）。要补上的话，可对 `public/` 产物单独跑一个 minifier，
+  与内容生成解耦，不需要改 `build.rs`。

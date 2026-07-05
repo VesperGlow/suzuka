@@ -1,30 +1,40 @@
 # syntax=docker/dockerfile:1
 
-# 单容器：前端（Hugo 静态产物 + Pagefind 索引）与后端（Rust + SQLite 留言板）
+# 单容器：前端（自研 ssg 静态产物 + Pagefind 索引）与后端（Rust + SQLite 留言板）
 # 合并进一个 scratch 镜像，由后端进程同时托管静态站和 /api/guestbook/ 接口。
 
-# ---------- 阶段 1：构建 Hugo 静态站 + Pagefind 索引 ----------
-# Hugo extended 链接 glibc/libstdc++，用 Debian 而非 alpine；版本与本地一致(0.163.3)。
-FROM debian:bookworm-slim AS site
+# ---------- 阶段 1：构建静态站点产物（ssg + Pagefind 索引） ----------
+# ssg 自身也是 Rust；与后端一样用 alpine/musl，产物是全静态二进制。
+FROM docker.io/library/rust:1-alpine AS site
 
-ARG HUGO_VERSION=0.163.3
 ARG PAGEFIND_VERSION=1.3.0
 
-RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates curl \
- && curl -fsSL -o /tmp/hugo.deb \
-      "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.deb" \
- && apt-get install -y --no-install-recommends /tmp/hugo.deb \
- && curl -fsSL -o /tmp/pagefind.tar.gz \
-      "https://github.com/CloudCannon/pagefind/releases/download/v${PAGEFIND_VERSION}/pagefind-v${PAGEFIND_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
- && tar -xzf /tmp/pagefind.tar.gz -C /usr/local/bin \
- && rm -rf /var/lib/apt/lists/* /tmp/*
+RUN apk add --no-cache build-base curl
 
 WORKDIR /src
+# 先用空壳 crate 编译依赖，利用层缓存：源码变更时不必重编全部依赖。
+COPY ssg/Cargo.toml ssg/Cargo.lock ./ssg/
+RUN mkdir -p ssg/src \
+ && echo 'fn main() {}' > ssg/src/main.rs \
+ && cargo build --release --locked --manifest-path ssg/Cargo.toml \
+ && rm -rf ssg/src
+
+COPY ssg/src ./ssg/src
+# touch 保证 mtime 晚于空壳构建，促使 cargo 重编本 crate（依赖仍走缓存）。
+RUN touch ssg/src/main.rs \
+ && cargo build --release --locked --manifest-path ssg/Cargo.toml
+
+# Pagefind 发行的 musl 静态二进制，版本与本地保持一致。
+RUN curl -fsSL -o /tmp/pagefind.tar.gz \
+      "https://github.com/CloudCannon/pagefind/releases/download/v${PAGEFIND_VERSION}/pagefind-v${PAGEFIND_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
+ && tar -xzf /tmp/pagefind.tar.gz -C /usr/local/bin \
+ && rm -rf /tmp/*
+
+# 站点源码（content/ assets/ static/ i18n/ hugo.toml/ ssg/templates 等）。
 COPY . .
-# 清掉可能随仓库带进来的旧产物与本地构建锁，保证干净构建。
-RUN rm -rf public .hugo_build.lock \
- && hugo --minify \
+# 清掉可能随仓库带进来的旧产物，保证干净构建。
+RUN rm -rf public public-ssg golden \
+ && ./ssg/target/release/ssg build --source . --dest public \
  && pagefind --site public
 
 # ---------- 阶段 2：编译 Rust 后端（bundled SQLite 随 crate 静态编译进 musl 二进制） ----------

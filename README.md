@@ -1,6 +1,6 @@
 # 小凉花厨的网站 · Suzuka's Garden
 
-[suzuka-chan.moe](https://suzuka-chan.moe/) 的源码。一个用 [Hugo](https://gohugo.io/) 搭建的双语个人站点，记录 Galgame 感想、偶尔浮现的思考，以及落下的生活碎片。
+[suzuka-chan.moe](https://suzuka-chan.moe/) 的源码。一个双语个人站点，记录 Galgame 感想、偶尔浮现的思考，以及落下的生活碎片。静态站由仓库内自研的 Rust 生成器（[`ssg/`](ssg/README.md)）构建，此前是 [Hugo](https://gohugo.io/) 站点迁移而来。
 
 主题、布局与样式全部手写，没有引入外部主题；留言板、阅读量、点赞等动态内容由仓库内一个轻量的 Rust + SQLite 后端提供。
 
@@ -15,8 +15,8 @@
 
 ## 技术栈
 
-- Hugo（extended，v0.163+）静态站点
-- 原生 HTML 模板 + CSS + 少量无框架 JavaScript（`assets/`、`layouts/`）
+- 自研 Rust 静态站点生成器（[`ssg/`](ssg/README.md)），单站定制，非通用 SSG
+- 原生 HTML 模板 + CSS + 少量无框架 JavaScript（`assets/`、`ssg/templates/`）
 - Pagefind 搜索索引
 - Rust（axum + rusqlite，bundled SQLite 随 crate 静态编译）后端，见 [`backend/`](backend/README.md)
 
@@ -24,21 +24,24 @@
 
 ```
 content/       文章、归档与独立页面（about / guestbook）
-layouts/       手写的模板与 partials
+ssg/           自研静态站点生成器（Rust），生产构建实际用的模板在 ssg/templates/
+layouts/       Hugo 模板，迁移期保留作为 ssg-parity 对拍的黄金基准，不参与生产构建
 assets/        CSS 与按需加载的 JS
 i18n/          中英文案
 static/        favicon、角色图等静态资源
-hugo.toml      站点配置（语言、菜单、输出格式、permalink）
+hugo.toml      站点配置（语言、菜单、输出格式、permalink），ssg 也读取这份配置
 backend/       留言板 / 阅读量 / 点赞的 Rust + SQLite 服务
 ```
 
 ## 本地开发
 
-需要 Hugo **extended** 版本。
-
 ```sh
-hugo server -D
+cargo run --manifest-path ssg/Cargo.toml -- build --source . --dest public
+npx -y pagefind --site public
 ```
+
+`ssg` 目前只有一次性 `build`，没有类似 `hugo server -D` 的热重载；改完内容后重新跑一遍
+上面的命令，用任意静态文件服务器（如 `python3 -m http.server --directory public`）预览即可。
 
 留言板、阅读量等功能需要后端在本地一并运行，见 [`backend/README.md`](backend/README.md)。
 
@@ -47,19 +50,23 @@ hugo server -D
 构建站点并生成 Pagefind 搜索索引：
 
 ```sh
-hugo && npx -y pagefind --site public
+npm run build
 ```
 
-等价于 `npm run build`。产物输出到 `public/`。
+等价于 `cargo build --release --manifest-path ssg/Cargo.toml && ./ssg/target/release/ssg build --source . --dest public && npx -y pagefind --site public`。
+产物输出到 `public/`。
 
 ## 部署
 
-前后端打进**一个容器**：后端进程在根路径托管 Hugo 静态产物，并把留言板接口收敛到
+前后端打进**一个容器**：后端进程在根路径托管 ssg 静态产物，并把留言板接口收敛到
 `/api/guestbook/` 前缀下（与前端 `fetch` 路径一致，由进程自身剥前缀，无需 nginx 反代）。
 
-- **自动构建**：push 到 `main` 时 GitHub Actions 跑 `cargo test`（clippy / rustfmt 作旁路检查），
-  再三阶段构建（Hugo + Pagefind → 编译 Rust → 合进 scratch）并推镜像到 GHCR
-  `ghcr.io/<owner>/suzuka:latest`（见 `.github/workflows/site-image.yml` 与根目录 `Containerfile`）。
+- **自动构建**：push 到 `main` 时 GitHub Actions 跑 `cargo test`（backend）与 `cargo build`
+  （ssg，编译失败会阻断镜像发布；clippy / rustfmt 两边都作旁路检查），
+  再三阶段构建（ssg 生成静态站 + Pagefind 索引 → 编译 Rust 后端 → 合进 scratch）并推镜像到
+  GHCR `ghcr.io/<owner>/suzuka:latest`（见 `.github/workflows/site-image.yml` 与根目录
+  `Containerfile`）。`ssg-parity` workflow（手动触发）用 Hugo 产物做黄金基准持续对拍，
+  作为切换后的回归防线。
 - **VPS 只负责跑容器**，监听 HTTP，由 Cloudflare / 反代在前面终止 TLS：
 
   ```sh
@@ -74,5 +81,5 @@ hugo && npx -y pagefind --site public
   外层反代必须覆盖客户端传入的 `X-Forwarded-For`，不要原样追加；留言数据位于
   `/data` 卷，应使用支持 SQLite/WAL 的方式定期备份。
 
-  Hugo 版本通过 `Containerfile` 的 `HUGO_VERSION` / `PAGEFIND_VERSION` 构建参数钉死，
-  与本地保持一致。`backend/Containerfile` 仍保留，用于只跑后端 API 的场景。
+  Pagefind 版本通过 `Containerfile` 的 `PAGEFIND_VERSION` 构建参数钉死，与本地保持一致。
+  `backend/Containerfile` 仍保留，用于只跑后端 API 的场景。

@@ -26,7 +26,27 @@ jobs:
         working-directory: backend
         run: cargo test --locked
 
-  # 静态检查作为旁路反馈：失败不阻断镜像发布（build-push 只 needs: test）。
+  # ssg（自研静态站点生成器）编译检查：产物直接进 Containerfile 镜像构建，
+  # 编译失败应阻断镜像发布，因此和 backend test 一样是 build-push 的前置依赖。
+  ssg-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ssg
+
+      - name: Build
+        working-directory: ssg
+        run: cargo build --release --locked
+
+  # 静态检查作为旁路反馈：失败不阻断镜像发布（build-push 只 needs: test / ssg-test）。
   lint:
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -52,8 +72,16 @@ jobs:
         working-directory: backend
         run: cargo fmt --check
 
+      - name: Clippy (ssg)
+        working-directory: ssg
+        run: cargo clippy --all-targets --locked -- -D warnings
+
+      - name: Format (ssg)
+        working-directory: ssg
+        run: cargo fmt --check
+
   build-push:
-    needs: test
+    needs: [test, ssg-test]
     runs-on: ubuntu-latest
     permissions:
       contents: read

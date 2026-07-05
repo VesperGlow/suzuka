@@ -1,7 +1,8 @@
 name: SSG parity check
 
-# 定制 Rust 生成器（ssg/）与 Hugo 产物的对拍。仍在迁移期，故只手动触发，
-# 不随 push 跑、也不阻断现有 site-image 流水线。绿了才谈切换。
+# 定制 Rust 生成器（ssg/）与 Hugo 产物的对拍。site-image 流水线已切换为用
+# ssg 构建生产产物；这个 workflow 现在是切换后的回归防线，手动触发，
+# 不随 push 跑、也不阻断 site-image 流水线。
 on:
   workflow_dispatch:
 

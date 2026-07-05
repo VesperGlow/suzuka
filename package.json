@@ -1,6 +1,6 @@
 {
   "private": true,
   "scripts": {
-    "build": "hugo && npx -y pagefind --site public"
+    "build": "cargo build --release --locked --manifest-path ssg/Cargo.toml && rm -rf public && ./ssg/target/release/ssg build --source . --dest public && npx -y pagefind --site public"
   }
 }

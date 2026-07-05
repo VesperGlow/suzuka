@@ -3,9 +3,12 @@
 .github
 .claude
 public/
+public-ssg/
+golden/
 .hugo_build.lock
 backend/data/
 backend/target/
 backend/tests/
+ssg/target/
 node_modules/
 *.log
