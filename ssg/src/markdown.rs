@@ -37,9 +37,11 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
     let mut first_image_src = None;
     let mut used_ids: HashMap<String, usize> = HashMap::new();
     let mut in_code = false;
-    // goldmark typographer 的引号配对状态（&ldquo;/&rdquo; 开合计数）是整篇
-    // 文档共享一个 parser.Context，不按段落/标题重置——实测对拍验证过：
-    // 跨段落、跨标题、跨 blockquote 都要延续同一个计数器，否则配对会错位。
+    // goldmark typographer 的引号配对计数器（&ldquo;/&rdquo; 开合）整篇
+    // 文档共享，不按 block 重置——包括图片的 alt/caption，也计进同一个计数
+    // 器。但 flanking 判定用的「前一个字符」是按 block 走的：段落、标题、
+    // 独立图片各自有自己的 text.Reader，开头都视为「前面是空白」，所以这几
+    // 类 block 开始处都要把 prev_char 重置成 None，quotes 计数器不受影响。
     let mut quotes = QuoteState::default();
     let mut prev_char: Option<char> = None;
 
@@ -53,15 +55,16 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
                 }) {
                     let inner = &events[i + 1..end];
                     if is_standalone_image(inner) {
-                        // 图片是独立 block，alt/caption 的引号状态不影响外层
-                        // 段落间共享的计数器（实测对拍验证：如果算进去，紧跟在
-                        // 图片后面的段落/blockquote 引号配对会跟着错位）
+                        // 图片是独立 block：flanking 用的「前一个字符」重置
+                        // （跟段落/标题一样），但引号配对计数器继续跟全文共享
+                        // ——alt/caption 的引号也会计进去，跟正文一样。
+                        prev_char = None;
                         let (figure, src, _alt_plain) = build_figure(
                             inner,
                             resources,
                             bundle_rel,
-                            &mut None,
-                            &mut QuoteState::default(),
+                            &mut prev_char,
+                            &mut quotes,
                         );
                         if first_image_src.is_none() {
                             first_image_src = Some(src);
@@ -71,18 +74,20 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
                         continue;
                     }
                 }
+                prev_char = None;
                 out.push(events[i].clone());
             }
             Event::Start(Tag::Image { .. }) => {
-                // 行内图片（与文字混排）：仍走 figure hook，但保留所在段落
+                // 行内图片（与文字混排）：仍走 figure hook，但保留所在段落，
+                // 引号状态（flanking 基准 + 配对计数器）跟周围文字连续
                 let end = find_end(&events, i, |e| matches!(e, Event::End(TagEnd::Image)))
                     .unwrap_or(i);
                 let (figure, src, _alt_plain) = build_figure(
                     &events[i..=end],
                     resources,
                     bundle_rel,
-                    &mut None,
-                    &mut QuoteState::default(),
+                    &mut prev_char,
+                    &mut quotes,
                 );
                 if first_image_src.is_none() {
                     first_image_src = Some(src);
@@ -100,6 +105,7 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
                 let inner = &events[i + 1..end];
                 let raw_text = collect_plain(inner);
                 let id = dedupe_id(auto_heading_id(&raw_text), &mut used_ids);
+                prev_char = None;
                 let inner_html = render_inline(inner, &mut prev_char, &mut quotes);
                 let level_num = heading_level_num(level);
                 if matches!(level, HeadingLevel::H2 | HeadingLevel::H3) {
@@ -422,7 +428,7 @@ fn typograph_escape(text: &str, prev_char: &mut Option<char>, quotes: &mut Quote
             '<' => out.push_str("&lt;"),
             '>' => out.push_str("&gt;"),
             '"' => {
-                let after = chars.get(i + 1).copied();
+                let after = run_end_after(&chars, i, ch);
                 let (can_open, can_close) = quote_flanking(*prev_char, after);
                 if can_open && !can_close {
                     out.push_str("&ldquo;");
@@ -435,7 +441,7 @@ fn typograph_escape(text: &str, prev_char: &mut Option<char>, quotes: &mut Quote
                 }
             }
             '\'' => {
-                let after = chars.get(i + 1).copied();
+                let after = run_end_after(&chars, i, ch);
                 // don't/it's/Suzuka's：缩略或所有格，前后都是字母数字，直接当撇号
                 if prev_char.map(|p| p.is_alphanumeric()).unwrap_or(false)
                     && after.map(|a| a.is_alphabetic()).unwrap_or(false)
@@ -480,6 +486,17 @@ fn typograph_escape(text: &str, prev_char: &mut Option<char>, quotes: &mut Quote
         i += 1;
     }
     out
+}
+
+/// goldmark `parser.ScanDelimiter` 的一个关键细节：判定 flanking 用的
+/// 「after」不是紧邻的下一个字符，而是跳过当前位置起、所有与 ch 相同的连续
+/// 字符之后的第一个不同字符——`""` 这种连续两个引号会被当一个游程扫描。
+fn run_end_after(chars: &[char], i: usize, ch: char) -> Option<char> {
+    let mut j = i + 1;
+    while j < chars.len() && chars[j] == ch {
+        j += 1;
+    }
+    chars.get(j).copied()
 }
 
 /// CommonMark 强调分隔符的 left-/right-flanking 判定，套用到单个引号字符上：
