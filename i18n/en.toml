@@ -312,9 +312,7 @@ other = "Expand sidebar"
 [homeWikiEyebrow]
 other = "Wiki"
 [homeIntro]
-other = "Thoughts on visual novels, passing reflections, and fragments of everyday life. Pick a category, or see what's newest."
-[homeCategoriesHeading]
-other = "Categories"
+other = "Thoughts on visual novels, passing reflections, and fragments of everyday life."
 [homeRecentHeading]
 other = "Recently updated"
 [homeRecentViewAll]

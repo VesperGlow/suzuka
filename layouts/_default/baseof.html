@@ -64,8 +64,10 @@
       {{ partial "sidebar-nav.html" . }}
     </nav>
     <div class="sidebar-backdrop" data-sidebar-backdrop></div>
-    <button class="sidebar-expand-button" type="button" data-sidebar-expand aria-controls="sidebar-nav" aria-label="{{ i18n "sidebarExpand" }}" title="{{ i18n "sidebarExpand" }}">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 7 5 5-5 5M13 7l5 5-5 5"></path></svg>
+    <button class="sidebar-handle" type="button" data-sidebar-collapse aria-controls="sidebar-nav" aria-expanded="true"
+      data-label-collapse="{{ i18n "sidebarCollapse" }}" data-label-expand="{{ i18n "sidebarExpand" }}"
+      aria-label="{{ i18n "sidebarCollapse" }}" title="{{ i18n "sidebarCollapse" }}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m11 7-5 5 5 5M18 7l-5 5 5 5"></path></svg>
     </button>
 
     <main id="main-content" class="{{ if .IsHome }}shell home-shell{{ else }}shell{{ end }}{{ if eq .Layout "archives" }} archive-shell{{ end }}{{ if eq .Layout "guestbook" }} guestbook-shell{{ end }}{{ if and .IsPage (eq .Section "posts") }} article-shell{{ end }}">

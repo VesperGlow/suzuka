@@ -37,9 +37,4 @@
   {{ with site.GetPage "/pages/guestbook" }}
     <a class="sidebar-link{{ if eq $page.RelPermalink .RelPermalink }} active{{ end }}" href="{{ .RelPermalink }}"{{ if eq $page.RelPermalink .RelPermalink }} aria-current="page"{{ end }}>{{ i18n "guestbookTitle" }}</a>
   {{ end }}
-
-  <button class="sidebar-collapse-button" type="button" data-sidebar-collapse aria-controls="sidebar-nav" title="{{ i18n "sidebarCollapse" }}">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m11 7-5 5 5 5M18 7l-5 5 5 5"></path></svg>
-    <span>{{ i18n "sidebarCollapse" }}</span>
-  </button>
 </div>

@@ -1,6 +1,5 @@
 {{ define "main" }}
   {{- $posts := (where site.RegularPages "Section" "posts").ByDate.Reverse -}}
-  {{- $categories := site.Taxonomies.categories.ByCount -}}
   <div class="home-page">
     <header class="home-hero">
       <h1>{{ site.Title }}</h1>
@@ -9,20 +8,6 @@
         <p class="home-updated">{{ i18n "homeLastUpdated" (dict "Date" (.Date | time.Format (i18n "dateFormat"))) }}</p>
       {{ end }}
     </header>
-
-    {{ if $categories }}
-      <section class="home-section" aria-labelledby="home-categories-heading">
-        <h2 id="home-categories-heading">{{ i18n "homeCategoriesHeading" }}</h2>
-        <div class="home-category-grid">
-          {{ range $categories }}
-            <a class="home-category-card" href="{{ .Page.RelPermalink }}">
-              <span class="home-category-name">{{ .Page.LinkTitle }}</span>
-              <span class="home-category-count">{{ i18n "postCount" (dict "Count" .Count) }}</span>
-            </a>
-          {{ end }}
-        </div>
-      </section>
-    {{ end }}
 
     <section class="home-section" aria-labelledby="home-recent-heading">
       <div class="section-heading">

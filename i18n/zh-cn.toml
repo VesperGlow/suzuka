@@ -309,9 +309,7 @@ other = "展开侧边栏"
 [homeWikiEyebrow]
 other = "Wiki"
 [homeIntro]
-other = "记录 Galgame 感想、偶尔浮现的思考，以及落下的生活碎片。挑一个分类，或者看看最近写下的东西。"
-[homeCategoriesHeading]
-other = "分类"
+other = "记录 Galgame 感想、偶尔浮现的思考，以及落下的生活碎片。"
 [homeRecentHeading]
 other = "最近更新"
 [homeRecentViewAll]
