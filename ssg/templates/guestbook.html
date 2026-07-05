@@ -1,0 +1,103 @@
+{% extends "baseof.html" %}
+{% block main %}
+  <section class="guestbook-page"><div
+      class="guestbook-app"
+      data-guestbook-app
+      data-api-url="/api/guestbook/messages"
+      data-posts-url="{{ site.home_rel | safe }}guestbook-posts.json"
+      data-i18n-posts-empty="{{ t("guestbookPostsEmpty") }}"
+      data-i18n-posts-loading="{{ t("guestbookPostsLoading") }}"
+      data-i18n-posts-unavailable="{{ t("guestbookPostsUnavailable") }}"
+      data-i18n-comment-on="{{ t("guestbookCommentOn") }}"
+      data-i18n-reference-title="{{ t("guestbookReferenceTitle", Title="{title}") }}"
+      data-i18n-count-one="{{ t("guestbookMessageCount", Count="1") }}"
+      data-i18n-count-other="{{ t("guestbookMessageCount", Count="2") }}"
+      data-i18n-messages-empty="{{ t("guestbookMessagesEmpty") }}"
+      data-i18n-messages-unavailable="{{ t("guestbookMessagesUnavailable") }}"
+      data-i18n-load-more="{{ t("guestbookLoadMore") }}"
+      data-i18n-submitting="{{ t("guestbookSubmitting") }}"
+      data-i18n-submitted="{{ t("guestbookSubmitted") }}"
+      data-i18n-submit-failed="{{ t("guestbookSubmitFailed") }}"
+      data-i18n-guest="{{ t("guestbookGuest") }}"
+    >
+      <div class="guestbook-layout">
+      <div class="guestbook-sticky-side">
+      <aside class="guestbook-rail" aria-label="{{ t("guestbookFormLabel") }}">
+      <header class="page-header guestbook-header">
+  <p class="eyebrow">{{ t("guestbookEyebrow") }}</p>
+  <h1>{{ page.title }}</h1>
+  <p>{{ page.description }}</p>
+</header>
+
+
+      <div class="guestbook-compose">
+      <form class="guestbook-form" data-guestbook-form>
+        <aside class="guestbook-reference guestbook-reference-tools" data-guestbook-reference hidden>
+          <span>{{ t("guestbookCommentingOn") }}</span>
+          <span class="guestbook-reference-target">
+            <a data-guestbook-reference-link></a>
+            <button type="button" data-guestbook-reference-clear aria-label="{{ t("guestbookClearPostLabel") }}">&times;</button>
+          </span>
+        </aside>
+
+        <div class="guestbook-field guestbook-name-field">
+          <label for="guestbook-name">{{ t("guestbookName") }}</label>
+          <input id="guestbook-name" name="name" type="text" maxlength="40" autocomplete="name" required>
+        </div>
+
+        <details class="guestbook-optional-fields">
+          <summary>{{ t("guestbookOptionalContact") }}</summary>
+          <div class="guestbook-optional-fields-inner">
+            <div class="guestbook-field">
+              <label for="guestbook-email">{{ t("guestbookEmail") }}</label>
+              <input id="guestbook-email" name="email" type="email" maxlength="120" autocomplete="email">
+            </div>
+            <div class="guestbook-field">
+              <label for="guestbook-website">{{ t("guestbookWebsite") }}</label>
+              <input id="guestbook-website" name="website" type="url" maxlength="200" autocomplete="url" placeholder="https://">
+            </div>
+          </div>
+        </details>
+
+        <div class="guestbook-field guestbook-content-field">
+          <label for="guestbook-content">{{ t("guestbookMessage") }}</label>
+          <textarea id="guestbook-content" name="content" maxlength="2000" rows="6" placeholder="{{ t("guestbookMessagePlaceholder") }}" required></textarea>
+        </div>
+
+        <div class="guestbook-form-footer">
+          <p class="guestbook-form-status" data-guestbook-form-status role="status" aria-live="polite"></p>
+          <button class="guestbook-submit" type="submit">{{ t("guestbookSubmit") }}</button>
+        </div>
+      </form>
+      </div>
+
+      <button class="guestbook-post-picker-toggle guestbook-picker-handle" type="button" data-guestbook-post-picker-toggle aria-expanded="false" aria-controls="guestbook-post-picker">{{ t("guestbookPickPost") }}</button>
+      </aside>
+
+      <div class="guestbook-picker-drawer" data-guestbook-picker-drawer>
+        <section class="guestbook-post-picker guestbook-picker-panel" id="guestbook-post-picker" data-guestbook-post-picker hidden aria-label="{{ t("guestbookPickPostLabel") }}">
+          <label for="guestbook-post-search">{{ t("guestbookSearchPosts") }}</label>
+          <input id="guestbook-post-search" type="search" data-guestbook-post-search placeholder="{{ t("guestbookSearchPostsPlaceholder") }}" autocomplete="off">
+          <p class="guestbook-post-picker-status" data-guestbook-post-picker-status role="status" aria-live="polite"></p>
+          <ul class="guestbook-post-results" data-guestbook-post-results></ul>
+        </section>
+      </div>
+      </div>
+
+      <section class="guestbook-messages guestbook-thread" aria-labelledby="guestbook-messages-title">
+        <header class="guestbook-messages-header">
+          <h2 id="guestbook-messages-title">{{ t("guestbookMessagesHeading") }}</h2>
+          <span data-guestbook-count aria-live="polite"></span>
+        </header>
+        <p class="guestbook-list-status" data-guestbook-list-status role="status">{{ t("guestbookMessagesLoading") }}</p>
+        <ol class="guestbook-message-list" data-guestbook-message-list></ol>
+        <button class="guestbook-load-more" type="button" data-guestbook-load-more hidden>{{ t("guestbookLoadMore") }}</button>
+      </section>
+      </div>
+
+      <noscript><p class="guestbook-list-status">{{ t("guestbookNoScript") }}</p></noscript>
+    </div>
+  </section>
+
+  <script type="module" src="{{ asset("js/guestbook.js") | safe }}"></script>
+{% endblock %}

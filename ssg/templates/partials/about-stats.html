@@ -1,0 +1,18 @@
+<section class="about-stats" data-about-stats data-summary-url="/api/guestbook/summary" aria-label="{{ t("statsLabel") }}">
+  <div class="about-stat">
+    <span class="about-stat-num">{{ post_count_fmt }}</span>
+    <span class="about-stat-label">{{ t("statsPosts") }}</span>
+  </div>
+  <div class="about-stat">
+    <span class="about-stat-num">{{ total_words_fmt }}</span>
+    <span class="about-stat-label">{{ t("statsWords") }}</span>
+  </div>
+  <div class="about-stat">
+    <span class="about-stat-num" data-stat-views>—</span>
+    <span class="about-stat-label">{{ t("statsViews") }}</span>
+  </div>
+  <div class="about-stat">
+    <span class="about-stat-num" data-stat-reactions>—</span>
+    <span class="about-stat-label">{{ t("statsReactions") }}</span>
+  </div>
+</section>

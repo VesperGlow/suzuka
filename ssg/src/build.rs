@@ -97,6 +97,7 @@ struct LangData {
     post_refs: Vec<PostRef>,
     timeline: Vec<YearGroup>,
     newest_date: Option<DateTime<FixedOffset>>,
+    total_words: usize,
 }
 
 pub fn build(source: &Path, dest: &Path) -> Result<()> {
@@ -230,6 +231,43 @@ pub fn build(source: &Path, dest: &Path) -> Result<()> {
             },
         )?;
 
+        // 独立页面：about / guestbook（跳过 _index 之类的 Section 页，
+        // 它们只是 Hugo 端 `build.render: never` 的列表页，没有真实 url）
+        for raw_page in content
+            .pages
+            .iter()
+            .filter(|p| p.lang == lang.code && p.kind == PageKind::Page)
+        {
+            let rendered = markdown::render(&raw_page.body, &[], "");
+            let word_count = if lang.has_cjk {
+                content::word_count_cjk(&rendered.plain)
+            } else {
+                content::word_count_latin(&rendered.plain)
+            };
+            let ctx = static_page_ctx(&config, lang, &content, raw_page, rendered.html, word_count)?;
+            let template = match raw_page.fm.layout.as_deref() {
+                Some("guestbook") => "guestbook.html",
+                _ => "about.html",
+            };
+            let out_rel = format!("{}index.html", ctx.rel_permalink.trim_start_matches('/'));
+            render_to(
+                &env,
+                template,
+                dest,
+                &out_rel,
+                minijinja::context! {
+                    lang => lang.code.clone(),
+                    site => &site,
+                    page => &ctx,
+                    posts => &data.post_refs,
+                    timeline => &data.timeline,
+                    theme_js => &assets.theme_js,
+                    post_count_fmt => format_number(data.post_refs.len()),
+                    total_words_fmt => format_number(data.total_words),
+                },
+            )?;
+        }
+
         // 文章页 + 别名跳转页
         for (idx, page) in data.posts.iter().enumerate() {
             let out_rel = format!("{}index.html", page.rel_permalink.trim_start_matches('/'));
@@ -344,6 +382,7 @@ fn build_lang_posts(
         .map(|u| format!("{}{prefix}{u}", config.base_url));
 
     let mut posts = Vec::new();
+    let mut total_words = 0usize;
     for (idx, (bundle, page)) in items.iter().enumerate() {
         let rel = format!("{prefix}/posts/{}/", content::encode_path(&bundle.slug));
         let bundle_rel = format!("/posts/{}/", content::encode_path(&bundle.slug));
@@ -353,6 +392,7 @@ fn build_lang_posts(
         } else {
             content::word_count_latin(&rendered.plain)
         };
+        total_words += word_count;
         let reading_time = if lang.has_cjk {
             (word_count + 500) / 501
         } else {
@@ -362,7 +402,7 @@ fn build_lang_posts(
         let has_toc = h2_count > 1;
         let permalink = format!("{}{rel}", config.base_url);
         let description = page.fm.description.clone().unwrap_or_default();
-        let date_rfc = gotime::format(&page.date, "2006-01-02T15:04:05Z07:00");
+        let date_rfc = gotime::format(&page.date, "2006-01-02T15:04:05-07:00");
 
         let all_translations = translations_of(config, bundle);
         let tags: Vec<TermRef> = page.fm.tags.iter().map(|t| term_ref("tags", t)).collect();
@@ -477,6 +517,7 @@ fn build_lang_posts(
         post_refs,
         timeline,
         newest_date,
+        total_words,
     })
 }
 
@@ -500,7 +541,7 @@ fn home_ctx(
         .unwrap_or_default();
     let date_rfc = data
         .newest_date
-        .map(|d| gotime::format(&d, "2006-01-02T15:04:05Z07:00"))
+        .map(|d| gotime::format(&d, "2006-01-02T15:04:05-07:00"))
         .unwrap_or_default();
 
     // 首页的语言切换目标：另一语言的首页
@@ -547,6 +588,77 @@ fn home_ctx(
         description: lang.description.clone(),
         rel_permalink: rel,
         permalink,
+        all_translations,
+        internal_meta,
+        ..Default::default()
+    })
+}
+
+/// 独立页面（about/guestbook）：og:type 固定是 article、section 固定是
+/// pages（跟 posts 的 section="posts" 对应），跟文章页共用同一套
+/// internal_meta_block，但没有 jsonld、没有 tags。
+fn static_page_ctx(
+    config: &SiteConfig,
+    lang: &crate::config::Language,
+    content: &Content,
+    page: &RawPage,
+    content_html: String,
+    word_count: usize,
+) -> Result<PageCtx> {
+    let url = page.fm.url.clone().unwrap_or_default();
+    let permalink = format!("{}{url}", config.base_url);
+    let description = page.fm.description.clone().unwrap_or_default();
+    let date_rfc = gotime::format(&page.date, "2006-01-02T15:04:05-07:00");
+    let fallback_img = config
+        .images
+        .first()
+        .map(|img| format!("{}/{img}", config.base_url))
+        .unwrap_or_default();
+
+    let all_translations = config
+        .languages
+        .iter()
+        .filter_map(|l| {
+            content
+                .pages
+                .iter()
+                .find(|p| p.key == page.key && p.lang == l.code)
+                .and_then(|p| p.fm.url.clone())
+                .map(|u| TranslationRef {
+                    lang: l.code.clone(),
+                    locale: l.locale.clone(),
+                    permalink: format!("{}{u}", config.base_url),
+                    rel: u,
+                })
+        })
+        .collect();
+
+    let internal_meta = internal_meta_block(&InternalMeta {
+        permalink: &permalink,
+        site_title: &lang.title,
+        title: &page.fm.title,
+        description: &description,
+        locale: &lang.locale.replace('-', "_"),
+        og_type: "article",
+        section: Some("pages"),
+        date_published: &date_rfc,
+        date_modified: &date_rfc,
+        tags: &[],
+        image: &fallback_img,
+        word_count: Some(word_count),
+        jsonld: None,
+    });
+
+    Ok(PageCtx {
+        kind: page.key.clone(),
+        layout: page.fm.layout.clone().unwrap_or_default(),
+        section: "pages".into(),
+        title: page.fm.title.clone(),
+        description_meta: collapse_ws(&description),
+        description,
+        rel_permalink: url,
+        permalink,
+        content_html,
         all_translations,
         internal_meta,
         ..Default::default()
@@ -732,9 +844,11 @@ fn internal_meta_block(m: &InternalMeta) -> String {
         ));
     }
     if let Some(wc) = m.word_count {
-        s.push_str(&format!(
-            "\t<meta itemprop=\"wordCount\" content=\"{wc}\">\n"
-        ));
+        if wc > 0 {
+            s.push_str(&format!(
+                "\t<meta itemprop=\"wordCount\" content=\"{wc}\">\n"
+            ));
+        }
     }
     s.push_str(&format!(
         "\t<meta itemprop=\"image\" content=\"{}\">",
@@ -828,6 +942,20 @@ fn write_file(dest: &Path, rel: &str, content: &str) -> Result<()> {
         std::fs::create_dir_all(parent)?;
     }
     std::fs::write(&path, content).with_context(|| format!("写入 {} 失败", path.display()))
+}
+
+/// 对应 Hugo `lang.FormatNumberCustom 0 n`：千位加英文逗号分隔，不带小数
+fn format_number(n: usize) -> String {
+    let digits = n.to_string();
+    let mut out = String::with_capacity(digits.len() + digits.len() / 3);
+    let len = digits.len();
+    for (i, ch) in digits.chars().enumerate() {
+        if i > 0 && (len - i) % 3 == 0 {
+            out.push(',');
+        }
+        out.push(ch);
+    }
+    out
 }
 
 fn collapse_ws(s: &str) -> String {

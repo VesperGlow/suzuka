@@ -1,0 +1,25 @@
+{% extends "baseof.html" %}
+{% block main %}
+  <article class="about-page">
+    <div class="about-copy">
+      <header class="about-header">
+        <p class="eyebrow">{{ t("aboutEyebrow") }}</p>
+        <h1>{{ page.title }}</h1>
+      </header>
+
+      <div class="prose about-prose">{{ page.content_html | safe }}</div>
+      {% include "partials/about-stats.html" %}
+      {% include "partials/subscribe.html" %}
+      <div class="about-residency-row">
+        {% include "partials/about-uptime.html" %}
+      </div>
+    </div>
+
+    <picture class="about-visual">
+      <source media="(max-width: 768px)" srcset="/characters/suzuka_sp.webp">
+      <img src="/characters/suzuka_pc.webp" alt="{{ t("aboutImageAlt") }}" width="1264" height="2034">
+    </picture>
+  </article>
+  <script type="module" src="{{ asset("js/about-uptime.js") | safe }}"></script>
+  <script src="{{ asset("js/about-stats.js") | safe }}" defer></script>
+{% endblock %}
