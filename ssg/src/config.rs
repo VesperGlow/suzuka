@@ -41,8 +41,8 @@ pub struct SiteConfig {
 
 impl SiteConfig {
     pub fn load(source: &Path) -> Result<Self> {
-        let raw = std::fs::read_to_string(source.join("site.toml"))
-            .context("读取 site.toml 失败")?;
+        let raw =
+            std::fs::read_to_string(source.join("site.toml")).context("读取 site.toml 失败")?;
         let doc: toml::Value = raw.parse().context("解析 site.toml 失败")?;
 
         let base_url = doc["baseURL"]
@@ -89,10 +89,7 @@ impl SiteConfig {
                             identifier: str_field(item, "identifier"),
                             name: str_field(item, "name"),
                             page_ref: str_field(item, "pageRef"),
-                            weight: item
-                                .get("weight")
-                                .and_then(|v| v.as_integer())
-                                .unwrap_or(0),
+                            weight: item.get("weight").and_then(|v| v.as_integer()).unwrap_or(0),
                         });
                     }
                     menus.sort_by_key(|m| m.weight);

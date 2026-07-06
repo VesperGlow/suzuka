@@ -20,17 +20,13 @@ fn main() -> Result<()> {
             build::build(&PathBuf::from(source), &PathBuf::from(dest), minify)
         }
         Some("diff") => {
-            let positional: Vec<&String> = args[1..]
-                .iter()
-                .filter(|a| !a.starts_with("--"))
-                .collect();
+            let positional: Vec<&String> =
+                args[1..].iter().filter(|a| !a.starts_with("--")).collect();
             if positional.len() != 2 {
                 bail!("用法: ssg diff <golden目录> <ssg产物目录>");
             }
-            let mismatches = diff::diff_trees(
-                &PathBuf::from(positional[0]),
-                &PathBuf::from(positional[1]),
-            )?;
+            let mismatches =
+                diff::diff_trees(&PathBuf::from(positional[0]), &PathBuf::from(positional[1]))?;
             if mismatches > 0 {
                 bail!("{mismatches} 个文件与黄金基准不一致");
             }

@@ -50,22 +50,17 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
         match &events[i] {
             Event::Start(Tag::Paragraph) => {
                 // 段落里只有一张图片时：去掉 <p> 包裹，图片按块级 figure 输出
-                if let Some(end) = find_end(&events, i, |e| {
-                    matches!(e, Event::End(TagEnd::Paragraph))
-                }) {
+                if let Some(end) =
+                    find_end(&events, i, |e| matches!(e, Event::End(TagEnd::Paragraph)))
+                {
                     let inner = &events[i + 1..end];
                     if is_standalone_image(inner) {
                         // 图片是独立 block：flanking 用的「前一个字符」重置
                         // （跟段落/标题一样），但引号配对计数器继续跟全文共享
                         // ——alt/caption 的引号也会计进去，跟正文一样。
                         prev_char = None;
-                        let (figure, src, _alt_plain) = build_figure(
-                            inner,
-                            resources,
-                            bundle_rel,
-                            &mut prev_char,
-                            &mut quotes,
-                        );
+                        let (figure, src, _alt_plain) =
+                            build_figure(inner, resources, bundle_rel, &mut prev_char, &mut quotes);
                         if first_image_src.is_none() {
                             first_image_src = Some(src);
                         }
@@ -80,8 +75,8 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
             Event::Start(Tag::Image { .. }) => {
                 // 行内图片（与文字混排）：仍走 figure hook，但保留所在段落，
                 // 引号状态（flanking 基准 + 配对计数器）跟周围文字连续
-                let end = find_end(&events, i, |e| matches!(e, Event::End(TagEnd::Image)))
-                    .unwrap_or(i);
+                let end =
+                    find_end(&events, i, |e| matches!(e, Event::End(TagEnd::Image))).unwrap_or(i);
                 let (figure, src, _alt_plain) = build_figure(
                     &events[i..=end],
                     resources,
@@ -98,10 +93,8 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
             }
             Event::Start(Tag::Heading { level, .. }) => {
                 let level = *level;
-                let end = find_end(&events, i, |e| {
-                    matches!(e, Event::End(TagEnd::Heading(_)))
-                })
-                .unwrap_or(i);
+                let end = find_end(&events, i, |e| matches!(e, Event::End(TagEnd::Heading(_))))
+                    .unwrap_or(i);
                 let inner = &events[i + 1..end];
                 let raw_text = collect_plain(inner);
                 let id = dedupe_id(auto_heading_id(&raw_text), &mut used_ids);
@@ -291,9 +284,7 @@ fn build_figure(
 ) -> (String, String, String) {
     let (mut dest, mut title) = (String::new(), String::new());
     if let Some(Event::Start(Tag::Image {
-        dest_url,
-        title: t,
-        ..
+        dest_url, title: t, ..
     })) = image_events.first()
     {
         dest = dest_url.to_string();
@@ -355,7 +346,11 @@ fn collect_plain(events: &[Event]) -> String {
 }
 
 /// 渲染标题内部的行内内容（文字走 typographer，行内代码保留 <code>）
-fn render_inline(events: &[Event], prev_char: &mut Option<char>, quotes: &mut QuoteState) -> String {
+fn render_inline(
+    events: &[Event],
+    prev_char: &mut Option<char>,
+    quotes: &mut QuoteState,
+) -> String {
     let mut out = String::new();
     for e in events {
         match e {

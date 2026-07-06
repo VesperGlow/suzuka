@@ -192,10 +192,16 @@ fn load_pages_in_dir(dir: &Path, default_lang: &str) -> Result<Vec<RawPage>> {
             Some((base, lang_part)) if lang_part.len() <= 5 && base != "_index" => {
                 (base.to_string(), lang_part.to_string(), PageKind::Page)
             }
-            Some(("_index", lang_part)) => {
-                ("_index".to_string(), lang_part.to_string(), PageKind::Section)
-            }
-            _ if stem == "_index" => ("_index".to_string(), default_lang.to_string(), PageKind::Section),
+            Some(("_index", lang_part)) => (
+                "_index".to_string(),
+                lang_part.to_string(),
+                PageKind::Section,
+            ),
+            _ if stem == "_index" => (
+                "_index".to_string(),
+                default_lang.to_string(),
+                PageKind::Section,
+            ),
             _ => (stem.to_string(), default_lang.to_string(), PageKind::Page),
         };
         if let Some(page) = parse_page(&entry.path(), &lang, kind, &key)? {
@@ -214,8 +220,8 @@ fn bundle_date(b: &PostBundle) -> DateTime<FixedOffset> {
 }
 
 fn parse_page(path: &Path, lang: &str, kind: PageKind, key: &str) -> Result<Option<RawPage>> {
-    let raw = std::fs::read_to_string(path)
-        .with_context(|| format!("读取 {} 失败", path.display()))?;
+    let raw =
+        std::fs::read_to_string(path).with_context(|| format!("读取 {} 失败", path.display()))?;
     let (fm_raw, body) = split_front_matter(&raw)
         .with_context(|| format!("{} 缺少 front matter", path.display()))?;
     let fm: FrontMatter = serde_yaml::from_str(fm_raw)
@@ -249,7 +255,9 @@ fn parse_page(path: &Path, lang: &str, kind: PageKind, key: &str) -> Result<Opti
 
 fn split_front_matter(raw: &str) -> Option<(&str, &str)> {
     let rest = raw.strip_prefix("---")?;
-    let rest = rest.strip_prefix("\r\n").or_else(|| rest.strip_prefix('\n'))?;
+    let rest = rest
+        .strip_prefix("\r\n")
+        .or_else(|| rest.strip_prefix('\n'))?;
     let end = rest.find("\n---")?;
     let fm = &rest[..end];
     let body = &rest[end + 4..];
@@ -270,11 +278,7 @@ fn parse_date(value: &serde_yaml::Value) -> Result<DateTime<FixedOffset>> {
     }
     if let Ok(d) = NaiveDate::parse_from_str(&text, "%Y-%m-%d") {
         // Hugo 对无时区的纯日期按 UTC 零点处理
-        return Ok(d
-            .and_hms_opt(0, 0, 0)
-            .unwrap()
-            .and_utc()
-            .fixed_offset());
+        return Ok(d.and_hms_opt(0, 0, 0).unwrap().and_utc().fixed_offset());
     }
     bail!("无法解析日期: {text}")
 }
@@ -313,10 +317,7 @@ fn is_allowed_path_char(chars: &[char], i: usize, r: char) -> bool {
     if r.is_alphanumeric() {
         return true;
     }
-    if matches!(
-        r,
-        '.' | '/' | '\\' | '_' | '#' | '+' | '~' | '-' | '@'
-    ) {
+    if matches!(r, '.' | '/' | '\\' | '_' | '#' | '+' | '~' | '-' | '@') {
         return true;
     }
     if r == '%'

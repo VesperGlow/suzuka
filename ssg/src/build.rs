@@ -465,7 +465,9 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
 
         // 404 页
         let notfound = notfound_ctx(&config, lang)?;
-        let notfound_out = format!("{prefix}/404.html").trim_start_matches('/').to_string();
+        let notfound_out = format!("{prefix}/404.html")
+            .trim_start_matches('/')
+            .to_string();
         render_to(
             &env,
             "notfound.html",
@@ -494,7 +496,8 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
             } else {
                 content::word_count_latin(&rendered.plain)
             };
-            let ctx = static_page_ctx(&config, lang, &content, raw_page, rendered.html, word_count)?;
+            let ctx =
+                static_page_ctx(&config, lang, &content, raw_page, rendered.html, word_count)?;
             let template = match raw_page.fm.layout.as_deref() {
                 Some("guestbook") => "guestbook.html",
                 _ => "about.html",
@@ -571,7 +574,11 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
                 &config.author,
                 chrono::Utc::now().year(),
                 None,
-                &format!("{}{}", config.base_url, ctx.rss_rel.clone().unwrap_or_default()),
+                &format!(
+                    "{}{}",
+                    config.base_url,
+                    ctx.rss_rel.clone().unwrap_or_default()
+                ),
                 &[],
                 &config.base_url,
             );
@@ -652,7 +659,11 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
                 &config.author,
                 chrono::Utc::now().year(),
                 list_last_build_date.as_deref(),
-                &format!("{}{}", config.base_url, list_ctx.rss_rel.unwrap_or_default()),
+                &format!(
+                    "{}{}",
+                    config.base_url,
+                    list_ctx.rss_rel.unwrap_or_default()
+                ),
                 &term_links
                     .iter()
                     .map(|(title, link, pub_date)| RssItem {
@@ -837,7 +848,11 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
                 &config.author,
                 chrono::Utc::now().year(),
                 last_build_date.as_deref(),
-                &format!("{}{}", config.base_url, ctx.rss_rel.clone().unwrap_or_default()),
+                &format!(
+                    "{}{}",
+                    config.base_url,
+                    ctx.rss_rel.clone().unwrap_or_default()
+                ),
                 &data
                     .cards
                     .iter()
@@ -1019,11 +1034,7 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
         for lang in &config.languages {
             let entries = &entries_by_lang[&lang.code];
             let urlset = render_sitemap_urlset(&config.base_url, entries, &alts_by_key);
-            write_file(
-                dest,
-                &format!("{}/sitemap.xml", lang.code),
-                &urlset,
-            )?;
+            write_file(dest, &format!("{}/sitemap.xml", lang.code), &urlset)?;
             if lang.code == config.default_lang {
                 let home_permalink = format!("{}/", config.base_url);
                 write_file(
@@ -1271,11 +1282,15 @@ fn build_lang_posts(
         };
         for cat in &page.fm.categories {
             let tref = term_ref("categories", cat);
-            term_agg(&mut cat_terms, cat, &tref).cards.push(card.clone());
+            term_agg(&mut cat_terms, cat, &tref)
+                .cards
+                .push(card.clone());
         }
         for tag in &page.fm.tags {
             let tref = term_ref("tags", tag);
-            term_agg(&mut tag_terms, tag, &tref).cards.push(card.clone());
+            term_agg(&mut tag_terms, tag, &tref)
+                .cards
+                .push(card.clone());
         }
         all_cards.push(card);
 
@@ -2057,8 +2072,7 @@ fn minify_html_doc(html: &str) -> Vec<u8> {
     // 就算只压 HTML/CSS，minify-html 内部仍然可能触发意外 panic；
     // catch_unwind 兜底，panic 就整页退回不压缩，不让一次异常拖垮整个构建
     let bytes = html.as_bytes();
-    std::panic::catch_unwind(|| minify_html::minify(bytes, &cfg))
-        .unwrap_or_else(|_| bytes.to_vec())
+    std::panic::catch_unwind(|| minify_html::minify(bytes, &cfg)).unwrap_or_else(|_| bytes.to_vec())
 }
 
 /// 对应 Hugo `lang.FormatNumberCustom 0 n`：千位加英文逗号分隔，不带小数
@@ -2105,7 +2119,12 @@ fn collapse_ws(s: &str) -> String {
 
 /// 把 front matter `images` 里的文件名解析成完整 URL：命中 bundle 内资源就
 /// 带上 /posts/slug/ 前缀，否则按 Hugo 的 else 分支当站点根路径处理
-fn resolve_bundle_image(config: &SiteConfig, bundle: &PostBundle, bundle_rel: &str, img: &str) -> String {
+fn resolve_bundle_image(
+    config: &SiteConfig,
+    bundle: &PostBundle,
+    bundle_rel: &str,
+    img: &str,
+) -> String {
     if bundle.resources.iter().any(|r| r.name == *img) {
         format!("{}{bundle_rel}{img}", config.base_url)
     } else {
@@ -2190,7 +2209,10 @@ fn render_rss(
     s.push_str("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\n");
     s.push_str("<rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">\n");
     s.push_str("  <channel>\n");
-    s.push_str(&format!("    <title>{}</title>\n", escape_attr(channel_title)));
+    s.push_str(&format!(
+        "    <title>{}</title>\n",
+        escape_attr(channel_title)
+    ));
     s.push_str(&format!("    <link>{channel_link}</link>\n"));
     s.push_str(&format!(
         "    <description>{}</description>\n",
@@ -2214,12 +2236,18 @@ fn render_rss(
     ));
     for item in items {
         s.push_str("    <item>\n");
-        s.push_str(&format!("      <title>{}</title>\n", escape_attr(item.title)));
+        s.push_str(&format!(
+            "      <title>{}</title>\n",
+            escape_attr(item.title)
+        ));
         s.push_str(&format!("      <link>{}</link>\n", item.link));
         s.push_str(&format!("      <pubDate>{}</pubDate>\n", item.pub_date));
         s.push_str(&format!("      <guid>{}</guid>\n", item.link));
         for cat in item.categories {
-            s.push_str(&format!("      <category>{}</category>\n", escape_attr(cat)));
+            s.push_str(&format!(
+                "      <category>{}</category>\n",
+                escape_attr(cat)
+            ));
         }
         let content = item
             .content_html
@@ -2291,7 +2319,10 @@ fn truncate_runes(s: &str, max: usize, has_cjk: bool) -> String {
         // 不需要再往前找
         max
     } else {
-        (0..max).rev().find(|&i| chars[i].is_whitespace()).unwrap_or(max)
+        (0..max)
+            .rev()
+            .find(|&i| chars[i].is_whitespace())
+            .unwrap_or(max)
     };
     let mut out: String = chars[..cut].iter().collect();
     out.push_str(" …");
@@ -2484,7 +2515,10 @@ fn feed_json(
         ("items", serde_json::json!(arr)),
         ("language", serde_json::json!(locale)),
         ("title", serde_json::json!(site_title)),
-        ("version", serde_json::json!("https://jsonfeed.org/version/1.1")),
+        (
+            "version",
+            serde_json::json!("https://jsonfeed.org/version/1.1"),
+        ),
     ]);
     json_html_escape(&serde_json::to_string_pretty(&doc).unwrap_or_default())
 }
