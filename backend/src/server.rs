@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use axum::extract::{DefaultBodyLimit, Request};
@@ -21,6 +22,9 @@ pub struct App {
     pub now: Clock,
     pub limiter: Option<RateLimiter>,
     pub counter_limiter: Option<RateLimiter>,
+    /// 单容器模式下从静态产物扫出的真实文章路径白名单（见
+    /// static_site::scan_post_paths）；None（纯 API 模式）时只做前缀校验。
+    pub allowed_paths: Option<HashSet<String>>,
 }
 
 impl App {
@@ -31,7 +35,16 @@ impl App {
             now: now.clone(),
             limiter: Some(RateLimiter::new(POST_BURST, POST_WINDOW, now.clone())),
             counter_limiter: Some(RateLimiter::new(COUNTER_BURST, COUNTER_WINDOW, now)),
+            allowed_paths: None,
         }
+    }
+
+    /// 路径是否指向一篇真实发布的文章。未配置白名单时放行（此时调用方
+    /// 已做过 /posts/ 前缀校验）。
+    pub fn post_path_allowed(&self, path: &str) -> bool {
+        self.allowed_paths
+            .as_ref()
+            .is_none_or(|paths| paths.contains(path))
     }
 
     /// 取数据库连接锁：即便某次持锁期间 panic 导致 Mutex 中毒，也照样拿到内部

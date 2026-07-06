@@ -5,7 +5,8 @@
 
 # ---------- 阶段 1：构建静态站点产物（ssg + Pagefind 索引） ----------
 # ssg 自身也是 Rust；与后端一样用 alpine/musl，产物是全静态二进制。
-FROM docker.io/library/rust:1-alpine AS site
+# Rust 版本与 rust-toolchain.toml / CI 钉在同一版本，升级时三处一起动。
+FROM docker.io/library/rust:1.96.1-alpine AS site
 
 ARG PAGEFIND_VERSION=1.3.0
 
@@ -43,7 +44,8 @@ RUN ./ssg/target/release/ssg build --source . --dest public --minify \
  && pagefind --site public
 
 # ---------- 阶段 2：编译 Rust 后端（bundled SQLite 随 crate 静态编译进 musl 二进制） ----------
-FROM docker.io/library/rust:1-alpine AS build
+# 版本钉法同阶段 1。
+FROM docker.io/library/rust:1.96.1-alpine AS build
 
 # bundled SQLite 是 C 代码，需要 musl 头文件与 C 编译器。
 RUN apk add --no-cache build-base

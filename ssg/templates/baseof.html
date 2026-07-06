@@ -43,7 +43,7 @@
   <link rel="alternate" type="application/feed+json" href="{{ site.jsonfeed_rel | safe }}" title="{{ site.title }}">
   {{ page.redirect_block | safe }}
 </head>
-<body data-pagefind-filter="language:{{ site.lang }}"{% if page.layout == "archives" %} class="archives-page"{% elif page.is_post %} class="post-page"{% endif %}>
+<body{% if page.layout == "archives" %} class="archives-page"{% elif page.is_post %} class="post-page"{% endif %}>
   <a class="skip-link" href="#main-content">{{ t("skipToContent") }}</a>
   {% include "partials/site-header.html" %}
 

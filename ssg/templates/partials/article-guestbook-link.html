@@ -1,5 +1,5 @@
 <aside class="post-discussion">
-  <a class="post-discussion-link" href="{{ site.guestbook_rel | safe }}?ref_title={{ page.title | urlquery | safe }}&amp;ref_url={{ page.rel_permalink | urlquery | safe }}" aria-labelledby="post-discussion-title post-discussion-description post-discussion-entry-label">
+  <a class="post-discussion-link" href="{{ site.guestbook_rel | safe }}?ref_title={{ page.title | urlquery | safe }}&amp;ref_url={{ page.counter_path | urlquery | safe }}" aria-labelledby="post-discussion-title post-discussion-description post-discussion-entry-label">
     <span class="post-discussion-copy">
       <strong id="post-discussion-title">{{ t("postDiscussionTitle") }}</strong>
       <span id="post-discussion-description">{{ t("postDiscussionDescription") }}</span>

@@ -64,6 +64,11 @@
   };
 
   const loadSearch = async () => {
+    // 中文没有 pagefind 分词支持（索引里 wasm 为 null，正文按空白切词，
+    // 中文词几乎搜不到），子串匹配的内置索引反而是正确率更高的那个。
+    if (!document.documentElement.lang.toLowerCase().startsWith("en")) {
+      return loadFallbackSearch();
+    }
     try {
       const response = await fetch("/pagefind/pagefind.js", { method: "HEAD" });
       const contentType = response.headers.get("content-type") || "";

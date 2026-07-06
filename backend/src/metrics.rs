@@ -18,6 +18,21 @@ use crate::server::App;
 pub const COUNTER_BURST: usize = 60;
 pub const COUNTER_WINDOW: Duration = Duration::MINUTE;
 
+/// 计数路径的字符数上限，与留言 ref_url 的限长一致；主要在未配置
+/// 白名单的纯 API 模式下兜底，防止超长垃圾路径入库。
+const MAX_COUNTER_PATH_CHARS: usize = 300;
+
+/// 计数接口共用的路径校验：/posts/ 相对路径 + 限长 + 白名单（如已配置）。
+fn validate_counter_path(app: &App, path: &str) -> Result<(), &'static str> {
+    if path.chars().count() > MAX_COUNTER_PATH_CHARS || !valid_post_url(path) {
+        return Err("path must be a relative /posts/ path");
+    }
+    if !app.post_path_allowed(path) {
+        return Err("path does not match a published post");
+    }
+    Ok(())
+}
+
 /// 阅读数 / 喜欢计数接口的统一返回体。
 #[derive(Serialize)]
 struct CounterResponse {
@@ -64,11 +79,8 @@ async fn read_counter(
         .find(|(k, _)| k == "path")
         .map(|(_, v)| v.trim().to_string())
         .unwrap_or_default();
-    if !valid_post_url(&page_path) {
-        return write_error(
-            StatusCode::BAD_REQUEST,
-            "path must be a relative /posts/ path",
-        );
+    if let Err(text) = validate_counter_path(&app, &page_path) {
+        return write_error(StatusCode::BAD_REQUEST, text);
     }
 
     let conn = app.conn();
@@ -125,11 +137,8 @@ async fn bump_counter(
     };
 
     let page_path = input.path.trim().to_string();
-    if !valid_post_url(&page_path) {
-        return write_error(
-            StatusCode::BAD_REQUEST,
-            "path must be a relative /posts/ path",
-        );
+    if let Err(text) = validate_counter_path(&app, &page_path) {
+        return write_error(StatusCode::BAD_REQUEST, text);
     }
 
     let conn = app.conn();

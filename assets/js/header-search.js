@@ -149,10 +149,11 @@ if (root) {
     openPopover();
 
     try {
+      // 不传 language filter：pagefind 本身就按页面 <html lang> 加载对应语言
+      // 的独立索引，语言隔离已经成立。此前传的 filter 因为挂在 data-pagefind-body
+      // 区域之外的 <body> 上而从未进入索引，反而让所有搜索恒为空。
       const pagefind = await loadPagefind();
-      const response = await pagefind.search(normalized, {
-        filters: { language: document.documentElement.lang.toLowerCase().startsWith("en") ? "en" : "zh-cn" },
-      });
+      const response = await pagefind.search(normalized);
       if (currentRequest !== requestId) return;
 
       if (!response.results.length) {

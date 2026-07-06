@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use suzuka_backend::db::{open_database, BoxError};
 use suzuka_backend::server::{root_handler, App};
+use suzuka_backend::static_site::scan_post_paths;
 
 #[tokio::main]
 async fn main() {
@@ -21,9 +22,23 @@ async fn run() -> Result<(), BoxError> {
     );
 
     let db = open_database(db_path.as_ref())?;
-    let app = Arc::new(App::new(db));
+    let mut app = App::new(db);
 
-    let static_dir = std::env::var("GUESTBOOK_STATIC_DIR").ok();
+    let static_dir = std::env::var("GUESTBOOK_STATIC_DIR")
+        .ok()
+        .map(|d| d.trim().to_string())
+        .filter(|d| !d.is_empty());
+    if let Some(dir) = &static_dir {
+        // 单容器模式：从静态产物扫出真实文章路径，作为计数与留言引用的白名单。
+        let paths = scan_post_paths(PathBuf::from(dir).as_path())
+            .map_err(|e| format!("scan post paths under {dir}: {e}"))?;
+        if paths.is_empty() {
+            eprintln!("warning: no post paths found under {dir}, counters will reject all paths");
+        }
+        println!("post path whitelist: {} posts", paths.len());
+        app.allowed_paths = Some(paths);
+    }
+    let app = Arc::new(app);
     let router = root_handler(app, static_dir.as_deref());
 
     let listener = tokio::net::TcpListener::bind(&addr)

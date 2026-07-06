@@ -97,6 +97,10 @@ struct PageCtx {
     description: String,
     rel_permalink: String,
     permalink: String,
+    /// 阅读数/点赞与留言板引用用的规范文章路径（恒为默认语言形态
+    /// `/posts/<slug>/`，不带语言前缀）：backend 只认这一形态，且中英文
+    /// 版本共享同一份计数。仅文章页非空。
+    counter_path: String,
     /// `<link rel="canonical">` 目标：默认等于 permalink，front matter 声明
     /// 了 redirectTo 时改成那个绝对地址（页面本身仍然照常渲染整页内容）
     canonical: String,
@@ -448,7 +452,9 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
                         .find(|v| v.lang == lang.code)
                         .or_else(|| bundle.versions.first())
                         .expect("bundle 至少有一个语言版本");
-                    let rel = format!("{prefix}/posts/{}/", content::encode_path(&bundle.slug));
+                    // 恒用默认语言形态的规范路径：backend 校验 ref_url 只认
+                    // /posts/ 开头，且留言列表全站共享，引用链接统一指向一处。
+                    let rel = format!("/posts/{}/", content::encode_path(&bundle.slug));
                     GuestbookItem {
                         title: version.fm.title.clone(),
                         rel,
@@ -1308,6 +1314,7 @@ fn build_lang_posts(
             redirect_block: String::new(),
             rss_rel: None,
             permalink,
+            counter_path: bundle_rel.clone(),
             date_iso: gotime::format(&page.date, "2006-01-02"),
             date_display: gotime::format(&page.date, &date_layout),
             reading_time,

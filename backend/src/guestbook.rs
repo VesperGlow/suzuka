@@ -90,7 +90,7 @@ pub async fn list_messages(State(app): State<Arc<App>>, RawQuery(raw): RawQuery)
     let result = if before_id > 0 {
         query_messages(
             &conn,
-            "SELECT id, name, email, website, content, ref_title, ref_url, created_at
+            "SELECT id, name, website, content, ref_title, ref_url, created_at
 FROM messages
 WHERE id < ?1
 ORDER BY id DESC
@@ -100,7 +100,7 @@ LIMIT ?2",
     } else {
         query_messages(
             &conn,
-            "SELECT id, name, email, website, content, ref_title, ref_url, created_at
+            "SELECT id, name, website, content, ref_title, ref_url, created_at
 FROM messages
 ORDER BY id DESC
 LIMIT ?1",
@@ -148,13 +148,13 @@ fn query_messages(
         Ok(Message {
             id: row.get(0)?,
             name: row.get(1)?,
-            // email 是私密字段，仅入库不外发。
+            // email 是私密字段，仅入库不外发，SELECT 里也不取。
             email: String::new(),
-            website: row.get(3)?,
-            content: row.get(4)?,
-            ref_title: row.get(5)?,
-            ref_url: row.get(6)?,
-            created_at: row.get(7)?,
+            website: row.get(2)?,
+            content: row.get(3)?,
+            ref_title: row.get(4)?,
+            ref_url: row.get(5)?,
+            created_at: row.get(6)?,
         })
     })?;
     rows.collect()
@@ -233,6 +233,12 @@ pub async fn create_message(
     };
     if let Err(text) = validate_message(&item) {
         return write_error(StatusCode::BAD_REQUEST, &text);
+    }
+    if !item.ref_url.is_empty() && !app.post_path_allowed(&item.ref_url) {
+        return write_error(
+            StatusCode::BAD_REQUEST,
+            "ref_url does not match a published post",
+        );
     }
 
     item.created_at = (app.now)()

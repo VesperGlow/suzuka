@@ -198,7 +198,7 @@ if (root) {
     const date = new Date(item.created_at);
     time.textContent = Number.isNaN(date.getTime())
       ? String(item.created_at || "")
-      : new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "short" }).format(date);
+      : new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(date);
     if (!Number.isNaN(date.getTime())) time.dateTime = date.toISOString();
     header.append(author, time);
 

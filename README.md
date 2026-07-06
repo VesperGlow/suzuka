@@ -36,7 +36,7 @@ backend/       留言板 / 阅读量 / 点赞的 Rust + SQLite 服务
 
 ```sh
 cargo run --manifest-path ssg/Cargo.toml -- build --source . --dest public
-npx -y pagefind --site public
+npx -y pagefind@1.3.0 --site public
 ```
 
 `ssg` 目前只有一次性 `build`，没有类似 `hugo server -D` 的热重载；改完内容后重新跑一遍
@@ -52,7 +52,7 @@ npx -y pagefind --site public
 npm run build
 ```
 
-等价于 `cargo build --release --locked --manifest-path ssg/Cargo.toml && rm -rf public && ./ssg/target/release/ssg build --source . --dest public --minify && npx -y pagefind --site public`。
+等价于 `cargo build --release --locked --manifest-path ssg/Cargo.toml && rm -rf public && ./ssg/target/release/ssg build --source . --dest public --minify && npx -y pagefind@1.3.0 --site public`。
 产物输出到 `public/`。
 
 ## 部署

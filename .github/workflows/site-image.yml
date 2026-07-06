@@ -6,6 +6,13 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# 快速连推两次 main 时，两个 run 的 build-push 会并行，旧 commit 的镜像可能
+# 后完成并反超新 commit 成为 latest。同组内取消进行中的旧 run，保证 latest
+# 恒为最新提交。
+concurrency:
+  group: site-image
+  cancel-in-progress: true
+
 jobs:
   # 先跑单元 + 集成测试；bundled SQLite 由 cc 随构建编译，Ubuntu 自带 gcc 即可。
   test:
@@ -26,9 +33,9 @@ jobs:
         working-directory: backend
         run: cargo test --locked
 
-  # ssg（自研静态站点生成器）编译检查：只是 cargo build，没有测试用例，
-  # 名字照实说是「编译检查」而不是「test」。产物直接进 Containerfile 镜像
-  # 构建，编译失败应阻断镜像发布，因此和 backend test 一样是 build-push
+  # ssg（自研静态站点生成器）编译 + 全站构建冒烟：内容或模板出错时在这里
+  # 就阻断，而不是等到 build-push 的镜像构建才失败（信号更早、日志更直读）。
+  # 产物直接进 Containerfile 镜像构建，因此和 backend test 一样是 build-push
   # 的前置依赖。
   ssg-build:
     runs-on: ubuntu-latest
@@ -47,6 +54,9 @@ jobs:
       - name: Build
         working-directory: ssg
         run: cargo build --release --locked
+
+      - name: Build site (smoke)
+        run: ./ssg/target/release/ssg build --source . --dest /tmp/site-out --minify
 
   # rustfmt 纯机械格式检查、backend 和 ssg 都已清干净，两边一起提升为阻断项。
   fmt:
@@ -83,7 +93,9 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: backend
+          workspaces: |
+            backend
+            ssg
 
       - name: Clippy (backend)
         working-directory: backend

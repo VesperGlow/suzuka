@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::convert::Infallible;
 use std::path::{Path, PathBuf};
 
@@ -27,7 +28,38 @@ pub fn static_router(dir: &str) -> Router {
         .layer(middleware::from_fn(static_headers))
 }
 
-/// 给静态响应补上 nosniff 与按路径计算的 Cache-Control。
+/// 扫描 ssg 静态产物里真实存在的文章路径（posts/ 下含 index.html 的目录），
+/// 作为阅读数/点赞与留言引用的白名单——不然任何以 /posts/ 开头的伪造路径
+/// 都能往数据库里无限造行。posts/ 顶层的列表页（posts/index.html 自身）
+/// 不在结果里：遍历从子目录开始。
+pub fn scan_post_paths(dir: &Path) -> std::io::Result<HashSet<String>> {
+    let mut paths = HashSet::new();
+    let posts_root = dir.join("posts");
+    collect_post_dirs(&posts_root, &posts_root, &mut paths)?;
+    Ok(paths)
+}
+
+fn collect_post_dirs(root: &Path, dir: &Path, paths: &mut HashSet<String>) -> std::io::Result<()> {
+    for entry in std::fs::read_dir(dir)? {
+        let path = entry?.path();
+        if !path.is_dir() {
+            continue;
+        }
+        if path.join("index.html").is_file() {
+            // strip_prefix 不会失败：path 由 root 逐层 read_dir 而来。
+            let rel = path
+                .strip_prefix(root)
+                .expect("directory came from walking root")
+                .to_string_lossy()
+                .replace('\\', "/");
+            paths.insert(format!("/posts/{rel}/"));
+        }
+        collect_post_dirs(root, &path, paths)?;
+    }
+    Ok(())
+}
+
+/// 给静态响应补上 nosniff / 反嵌入 / Referrer 策略与按路径计算的 Cache-Control。
 async fn static_headers(request: Request, next: Next) -> Response {
     let path = request.uri().path().to_owned();
     let mut response = next.run(request).await;
@@ -36,6 +68,11 @@ async fn static_headers(request: Request, next: Next) -> Response {
     headers.insert(
         header::X_CONTENT_TYPE_OPTIONS,
         HeaderValue::from_static("nosniff"),
+    );
+    headers.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static("DENY"));
+    headers.insert(
+        header::REFERRER_POLICY,
+        HeaderValue::from_static("strict-origin-when-cross-origin"),
     );
     // 只给成功命中的文件（含 304 / Range）声明缓存策略，404 页保持默认协商缓存。
     if status.is_success() || status.is_redirection() {
@@ -117,6 +154,31 @@ async fn serve_not_found(page: &PathBuf, is_head: bool) -> Response {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn scans_only_post_dirs_with_index() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let make_page = |rel: &str| {
+            let dir = tmp.path().join(rel);
+            std::fs::create_dir_all(&dir).unwrap();
+            std::fs::write(dir.join("index.html"), "<html></html>").unwrap();
+        };
+        make_page("posts");
+        make_page("posts/hello-world");
+        make_page("posts/nested/deep-post");
+        make_page("about");
+        // 只有图片资源、没有 index.html 的目录不算文章
+        std::fs::create_dir_all(tmp.path().join("posts/images-only")).unwrap();
+
+        let paths = scan_post_paths(tmp.path()).unwrap();
+        assert_eq!(
+            paths,
+            std::collections::HashSet::from([
+                "/posts/hello-world/".to_string(),
+                "/posts/nested/deep-post/".to_string(),
+            ])
+        );
+    }
 
     #[test]
     fn cache_policy() {

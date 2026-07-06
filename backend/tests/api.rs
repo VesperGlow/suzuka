@@ -28,6 +28,22 @@ fn test_app() -> (Router, TempDir) {
         now: clock.clone(),
         limiter: None,
         counter_limiter: Some(RateLimiter::new(COUNTER_BURST, COUNTER_WINDOW, clock)),
+        allowed_paths: None,
+    });
+    (handler(app), tmp)
+}
+
+/// 与 test_app 相同，但配置了文章路径白名单（单容器模式的形态）。
+fn test_app_with_whitelist(paths: &[&str]) -> (Router, TempDir) {
+    let tmp = TempDir::new().unwrap();
+    let db = open_database(&tmp.path().join("guestbook.db")).unwrap();
+    let clock: Clock = Arc::new(|| datetime!(2026-06-22 12:00 UTC));
+    let app = Arc::new(App {
+        db: Mutex::new(db),
+        now: clock.clone(),
+        limiter: None,
+        counter_limiter: None,
+        allowed_paths: Some(paths.iter().map(|p| p.to_string()).collect()),
     });
     (handler(app), tmp)
 }
@@ -184,6 +200,7 @@ async fn rate_limit() {
         now: clock.clone(),
         limiter: Some(RateLimiter::new(POST_BURST, POST_WINDOW, clock)),
         counter_limiter: None,
+        allowed_paths: None,
     });
     let router = handler(app);
 
@@ -388,4 +405,60 @@ fn database_schema_version() {
         .query_row("PRAGMA user_version", [], |row| row.get(0))
         .unwrap();
     assert_eq!(version, CURRENT_SCHEMA_VERSION);
+}
+
+#[tokio::test]
+async fn counters_respect_post_whitelist() {
+    let (router, _tmp) = test_app_with_whitelist(&["/posts/real-post/"]);
+
+    // 白名单内的路径正常计数。
+    let (status, response) = send(
+        &router,
+        post_json("/views", r#"{"path":"/posts/real-post/"}"#),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let counter: Counter = serde_json::from_slice(&response).unwrap();
+    assert_eq!(counter.count, 1);
+
+    // 前缀合法但不存在的文章：读写都拒绝，不产生任何库行。
+    let (status, _) = send(&router, post_json("/views", r#"{"path":"/posts/forged/"}"#)).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (status, _) = send(&router, get("/views?path=/posts/forged/")).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (status, _) = send(
+        &router,
+        post_json("/reactions", r#"{"path":"/posts/forged/"}"#),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn guestbook_ref_respects_post_whitelist() {
+    let (router, _tmp) = test_app_with_whitelist(&["/posts/real-post/"]);
+
+    let ok = r#"{"name":"Suzuka","content":"hi","ref_title":"Real","ref_url":"/posts/real-post/"}"#;
+    let (status, _) = send(&router, post_json("/messages", ok)).await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    let forged =
+        r#"{"name":"Suzuka","content":"hi","ref_title":"Fake","ref_url":"/posts/forged/"}"#;
+    let (status, _) = send(&router, post_json("/messages", forged)).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+
+    // 不带引用的留言不受白名单影响。
+    let plain = r#"{"name":"Suzuka","content":"hi"}"#;
+    let (status, _) = send(&router, post_json("/messages", plain)).await;
+    assert_eq!(status, StatusCode::CREATED);
+}
+
+#[tokio::test]
+async fn counter_path_length_is_capped() {
+    // 未配置白名单（纯 API 模式）时，超长路径也会被拒绝。
+    let (router, _tmp) = test_app();
+    let long_path = format!("/posts/{}/", "a".repeat(400));
+    let body = format!(r#"{{"path":"{long_path}"}}"#);
+    let (status, _) = send(&router, post_json("/views", &body)).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
 }
