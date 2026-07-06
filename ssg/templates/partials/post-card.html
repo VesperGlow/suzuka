@@ -1,0 +1,17 @@
+<article class="post-card" data-filter-item data-categories="{{ card.categories_attr | safe }}" data-tags="{{ card.tags_attr | safe }}">
+  <time class="post-date" datetime="{{ card.date_iso }}">
+    <strong>{{ card.date_mmdd }}</strong>
+    <span>{{ card.year }}</span>
+  </time>
+  <div class="post-card-body">
+    <div class="post-card-meta">
+      <span>{{ t("wordCount", Count=card.word_count) }}</span>
+      <span>{{ t("imageCount", Count=card.image_count) }}</span>
+    </div>
+    <h2><a href="{{ card.rel | safe }}">{{ card.title }}</a></h2>
+    <div class="post-card-summary">
+      <p>{{ card.summary }}</p>
+      <a class="read-more" href="{{ card.rel | safe }}" aria-label="{{ t("readPost", Title=card.title) }}">{{ t("readMore") }} <span aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</article>

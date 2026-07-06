@@ -1,0 +1,7 @@
+<div class="post-list">
+  {% for card in cards %}
+    {% include "partials/post-card.html" %}
+  {% else %}
+    <p class="empty">{{ empty_message | default(t("empty")) }}</p>
+  {% endfor %}
+</div>

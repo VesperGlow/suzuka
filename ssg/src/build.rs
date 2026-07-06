@@ -48,6 +48,14 @@ struct YearGroup {
     posts: Vec<PostRef>,
 }
 
+/// archives 页时间线视图专用（跟 YearGroup 分开：那个是侧栏的精简小组件，
+/// 这个要给 archive-timeline-item 用，需要完整的 PostCard 数据）
+#[derive(Serialize)]
+struct YearCards {
+    year: String,
+    cards: Vec<PostCard>,
+}
+
 #[derive(Serialize)]
 struct SiteCtx {
     title: String,
@@ -120,6 +128,11 @@ struct PostCard {
     /// data-categories / data-tags 属性用的原始大小写 JSON 数组
     categories_raw: Vec<String>,
     tags_raw: Vec<String>,
+    /// 上面两个数组序列化成 JSON 并做好 HTML 属性转义，模板里直接
+    /// `| safe` 插进 data-categories/data-tags；不能用 minijinja 的
+    /// `tojson` 过滤器，它会把结果标成"已安全"从而跳过属性转义
+    categories_attr: String,
+    tags_attr: String,
     /// RSS `<category>`：taxonomy term 的自动 .Title（首字母大写），不是原始大小写
     tags_title: Vec<String>,
     cover_url: Option<String>,
@@ -159,6 +172,17 @@ fn term_agg<'a>(terms: &'a mut Vec<TermAgg>, raw: &str, tref: &TermRef) -> &'a m
         });
         terms.last_mut().unwrap()
     }
+}
+
+/// Hugo `site.Taxonomies.<x>.ByCount`：按数量倒序，同数量按标题字母序
+/// （不区分大小写）打平
+fn sort_terms_by_count(terms: &mut [TermAgg]) {
+    terms.sort_by(|a, b| {
+        b.cards
+            .len()
+            .cmp(&a.cards.len())
+            .then_with(|| a.title.to_lowercase().cmp(&b.title.to_lowercase()))
+    });
 }
 
 struct LangData {
@@ -321,10 +345,7 @@ pub fn build(source: &Path, dest: &Path) -> Result<()> {
                 });
             }
             rss_items.sort_by(|a, b| b.date.cmp(&a.date));
-            let last_build_date = rss_items
-                .first()
-                .map(|c| c.pub_date.clone())
-                .unwrap_or_default();
+            let last_build_date = rss_items.first().map(|c| c.pub_date.clone());
 
             let rss = render_rss(
                 &lang.title,
@@ -334,7 +355,7 @@ pub fn build(source: &Path, dest: &Path) -> Result<()> {
                 &lang.locale,
                 &config.author,
                 chrono::Utc::now().year(),
-                &last_build_date,
+                last_build_date.as_deref(),
                 &format!("{}{}", config.base_url, site.rss_rel),
                 &rss_items
                     .iter()
@@ -457,6 +478,70 @@ pub fn build(source: &Path, dest: &Path) -> Result<()> {
                     post_count_fmt => format_number(data.post_refs.len()),
                     total_words_fmt => format_number(data.total_words),
                 },
+            )?;
+        }
+
+        // archives 页 + 它自己的 feed.xml（items 用 archives 页自己的
+        // RegularPages，本站底下没有内容文件，所以永远是空 feed）
+        if let Some(raw_page) = content.archives.iter().find(|p| p.lang == lang.code) {
+            let rendered = markdown::render(&raw_page.body, &[], "");
+            let ctx = archives_ctx(&config, lang, &content, raw_page, rendered.html)?;
+            let out_rel = format!("{}index.html", ctx.rel_permalink.trim_start_matches('/'));
+
+            let mut archive_years: Vec<YearCards> = Vec::new();
+            for card in &data.cards {
+                match archive_years.last_mut() {
+                    Some(group) if group.year == card.year => group.cards.push(card.clone()),
+                    _ => archive_years.push(YearCards {
+                        year: card.year.clone(),
+                        cards: vec![card.clone()],
+                    }),
+                }
+            }
+            let mut categories_by_count = data.categories.clone();
+            sort_terms_by_count(&mut categories_by_count);
+            let mut tags_by_count = data.tags.clone();
+            sort_terms_by_count(&mut tags_by_count);
+
+            render_to(
+                &env,
+                "archives.html",
+                dest,
+                &out_rel,
+                minijinja::context! {
+                    lang => lang.code.clone(),
+                    site => &site,
+                    page => &ctx,
+                    posts => &data.post_refs,
+                    timeline => &data.timeline,
+                    theme_js => &assets.theme_js,
+                    archive_cards => &data.cards,
+                    archive_years => &archive_years,
+                    categories_by_count => &categories_by_count,
+                    tags_by_count => &tags_by_count,
+                    total_posts => data.cards.len(),
+                    all_active => true,
+                    active_category_rel => Option::<String>::None,
+                },
+            )?;
+
+            let rss = render_rss(
+                &channel_title(&ctx.title, &lang.title),
+                &ctx.permalink,
+                &ctx.description,
+                &lang.title,
+                &lang.locale,
+                &config.author,
+                chrono::Utc::now().year(),
+                None,
+                &format!("{}{}", config.base_url, ctx.rss_rel.clone().unwrap_or_default()),
+                &[],
+                &config.base_url,
+            );
+            write_file(
+                dest,
+                format!("{prefix}/archives/feed.xml").trim_start_matches('/'),
+                &rss,
             )?;
         }
 
@@ -677,13 +762,11 @@ fn build_lang_posts(
             jsonld: Some(&jsonld),
         });
 
-        let cover_url = page
-            .fm
-            .images
-            .first()
-            .filter(|img| bundle.resources.iter().any(|r| &r.name == *img))
-            .map(|img| format!("{bundle_rel}{img}"))
-            .or_else(|| rendered.first_image_src.clone());
+        // archive-cover-url.html 只看 Params.cover/image/featured_image
+        // （本站都没用），从不看 front matter 的 images——所以归档卡片封面
+        // 永远是正文里第一张图，跟 og:image 的解析逻辑（会优先用 front
+        // matter images）是两条不同的路径，故意不共用
+        let cover_url = rendered.first_image_src.clone();
         let card = PostCard {
             title: page.fm.title.clone(),
             rel: rel.clone(),
@@ -696,6 +779,8 @@ fn build_lang_posts(
             word_count,
             image_count: rendered.html.matches("<img").count(),
             summary: description.clone(),
+            categories_attr: json_attr(&page.fm.categories),
+            tags_attr: json_attr(&page.fm.tags),
             categories_raw: page.fm.categories.clone(),
             tags_raw: page.fm.tags.clone(),
             tags_title: og_tags.clone(),
@@ -915,6 +1000,88 @@ fn static_page_ctx(
         rel_permalink: url,
         canonical,
         redirect_block,
+        permalink,
+        content_html,
+        all_translations,
+        internal_meta,
+        ..Default::default()
+    })
+}
+
+/// archives 页：og:type 固定 website（跟 home 一样，section 页而非 article），
+/// 没有 jsonld、没有 tags；URL 是算出来的（content/archives/_index.md 没有
+/// 自己的 url 字段，不像 about/guestbook）
+fn archives_ctx(
+    config: &SiteConfig,
+    lang: &crate::config::Language,
+    content: &Content,
+    page: &RawPage,
+    content_html: String,
+) -> Result<PageCtx> {
+    let prefix = lang.url_prefix(&config.default_lang);
+    let rel = format!("{prefix}/archives/");
+    let permalink = format!("{}{rel}", config.base_url);
+    let description = page.fm.description.clone().unwrap_or_default();
+    let date_rfc = if page.date.timestamp() == 0 {
+        String::new()
+    } else {
+        gotime::format(&page.date, "2006-01-02T15:04:05-07:00")
+    };
+    let fallback_img = config
+        .images
+        .first()
+        .map(|img| format!("{}/{img}", config.base_url))
+        .unwrap_or_default();
+
+    let all_translations = config
+        .languages
+        .iter()
+        .filter_map(|l| {
+            content.archives.iter().find(|p| p.lang == l.code)?;
+            let p = l.url_prefix(&config.default_lang);
+            let r = format!("{p}/archives/");
+            Some(TranslationRef {
+                lang: l.code.clone(),
+                locale: l.locale.clone(),
+                permalink: format!("{}{r}", config.base_url),
+                rel: r,
+            })
+        })
+        .collect();
+
+    let internal_meta = internal_meta_block(&InternalMeta {
+        permalink: &permalink,
+        site_title: &lang.title,
+        title: &page.fm.title,
+        description: &description,
+        locale: &lang.locale.replace('-', "_"),
+        og_type: "website",
+        section: None,
+        date_published: &date_rfc,
+        date_modified: &date_rfc,
+        tags: &[],
+        image: &fallback_img,
+        word_count: None,
+        jsonld: None,
+    });
+
+    let (canonical, redirect_block) = match redirect_fields(config, page.fm.redirect_to.as_deref())
+    {
+        Some((c, b)) => (c, b),
+        None => (permalink.clone(), String::new()),
+    };
+
+    Ok(PageCtx {
+        kind: "archives".into(),
+        layout: "archives".into(),
+        section: "archives".into(),
+        title: page.fm.title.clone(),
+        description_meta: collapse_ws(&description),
+        description,
+        rel_permalink: rel,
+        canonical,
+        redirect_block,
+        rss_rel: Some(format!("{prefix}/archives/feed.xml")),
         permalink,
         content_html,
         all_translations,
@@ -1271,6 +1438,12 @@ fn escape_attr(s: &str) -> String {
         .replace('\'', "&#x27;")
 }
 
+/// `data-categories`/`data-tags` 属性：`{{ $slice | jsonify }}` 落进一个
+/// HTML 属性值，要走属性转义，不能像 `<script>` 里那样原样插入
+fn json_attr(items: &[String]) -> String {
+    escape_attr(&serde_json::to_string(items).unwrap_or_default())
+}
+
 /// RSS item：标题/链接/标签是普通文章卡片
 struct RssItem<'a> {
     title: &'a str,
@@ -1308,7 +1481,7 @@ fn render_rss(
     locale: &str,
     author: &str,
     current_year: i32,
-    last_build_date: &str,
+    last_build_date: Option<&str>,
     self_link: &str,
     items: &[RssItem],
     base_url: &str,
@@ -1333,9 +1506,9 @@ fn render_rss(
     s.push_str(&format!(
         "    <copyright>© {current_year} {author}</copyright>\n"
     ));
-    s.push_str(&format!(
-        "    <lastBuildDate>{last_build_date}</lastBuildDate>\n"
-    ));
+    if let Some(lbd) = last_build_date {
+        s.push_str(&format!("    <lastBuildDate>{lbd}</lastBuildDate>\n"));
+    }
     s.push_str(&format!(
         "    <atom:link href=\"{self_link}\" rel=\"self\" type=\"application/rss+xml\" />\n"
     ));

@@ -1,0 +1,17 @@
+<div class="archive-filters" data-post-filter-controls>
+  {% include "partials/category-filter.html" %}
+  <section class="archive-tag-filter" aria-labelledby="archive-tag-heading">
+    <h2 id="archive-tag-heading">{{ t("browseByTag") }}</h2>
+    <button class="archive-tag-toggle" type="button" aria-expanded="false" aria-controls="archive-tag-list">
+      <span>{{ t("browseByTag") }}</span>
+      <span class="archive-tag-toggle-icon" aria-hidden="true"></span>
+    </button>
+    <div class="archive-tag-panel is-collapsible" id="archive-tag-list">
+      <nav class="tag-filter-list" aria-label="{{ t("filterByTag") }}">
+        {% for tag in tags_by_count %}
+          <button type="button" data-filter-type="tags" data-filter-value="{{ tag.title }}" aria-pressed="false">{{ tag.title }} <span>· {{ tag.cards | length }}</span></button>
+        {% endfor %}
+      </nav>
+    </div>
+  </section>
+</div>

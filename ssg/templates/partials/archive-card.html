@@ -1,0 +1,26 @@
+<article class="archive-card" data-filter-item data-categories="{{ card.categories_attr | safe }}" data-tags="{{ card.tags_attr | safe }}">
+  <a class="archive-card-cover" href="{{ card.rel | safe }}" aria-label="{{ t("readPost", Title=card.title) }}">
+    {% if card.cover_url %}
+      <img src="{{ card.cover_url | safe }}" alt="" loading="lazy" decoding="async">
+    {% else %}
+      <span class="archive-card-placeholder" aria-hidden="true"></span>
+    {% endif %}
+  </a>
+  <div class="archive-card-body">
+    <div class="archive-card-meta">
+      <time datetime="{{ card.date_iso }}">{{ card.date_display }}</time>
+      <span>{{ t("wordCount", Count=card.word_count) }}</span>
+      <span>{{ t("imageCount", Count=card.image_count) }}</span>
+    </div>
+    <h2><a href="{{ card.rel | safe }}">{{ card.title }}</a></h2>
+    <p class="archive-card-summary">{{ card.summary }}</p>
+    <div class="archive-card-footer">
+      <div class="archive-card-tags" aria-label="{{ t("postTags") }}">
+        {% for tag in card.tags_raw %}
+          <button type="button" data-filter-type="tags" data-filter-value="{{ tag }}" aria-pressed="false">#{{ tag }}</button>
+        {% endfor %}
+      </div>
+      <a class="read-more" href="{{ card.rel | safe }}" aria-label="{{ t("readPost", Title=card.title) }}">{{ t("readMore") }} <span aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</article>

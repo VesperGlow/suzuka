@@ -1,0 +1,17 @@
+<article class="archive-timeline-item" data-filter-item data-categories="{{ card.categories_attr | safe }}" data-tags="{{ card.tags_attr | safe }}">
+  <time datetime="{{ card.date_iso }}">{{ card.date_mmdd }}</time>
+  <div class="archive-timeline-body">
+    <h3><a href="{{ card.rel | safe }}">{{ card.title }}</a></h3>
+    <p>{{ card.summary }}</p>
+    <div class="archive-timeline-meta">
+      {% for cat in card.categories_raw %}
+        <button type="button" data-filter-type="categories" data-filter-value="{{ cat }}" aria-pressed="false">{{ cat }}</button>
+      {% endfor %}
+      {% for tag in card.tags_raw %}
+        <button type="button" data-filter-type="tags" data-filter-value="{{ tag }}" aria-pressed="false">#{{ tag }}</button>
+      {% endfor %}
+      <span>{{ t("wordCount", Count=card.word_count) }}</span>
+      <span>{{ t("imageCount", Count=card.image_count) }}</span>
+    </div>
+  </div>
+</article>

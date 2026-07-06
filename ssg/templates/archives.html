@@ -1,0 +1,49 @@
+{% extends "baseof.html" %}
+{% block main -%}
+  <div class="archive-layout" data-post-filter-scope>
+    <aside class="archive-sidebar">
+      <div class="archive-sidebar-inner">
+        <header class="archive-intro">
+          <p class="eyebrow">{{ t("allPostsEyebrow") }}</p>
+          <h1>{{ page.title }}</h1>
+          <p class="archive-view-description">
+            <span>{{ t("archiveViewDescriptionBefore") }}</span>
+            <span class="archive-view-switch" role="group" aria-label="{{ t("archiveViewLabel") }}">
+              <button type="button" class="active" data-archive-view="cards" aria-pressed="true">{{ t("archiveCardView") }}</button>
+              <button type="button" data-archive-view="timeline" aria-pressed="false">{{ t("archiveTimelineView") }}</button>
+            </span>
+            <span>{{ t("archiveViewDescriptionAfter") }}</span>
+          </p>
+        </header>
+
+        {% include "partials/archive-filters.html" %}
+      </div>
+    </aside>
+
+    <div class="archive-content">
+      <section class="archive-card-list" data-archive-view-panel="cards" aria-label="{{ t("archiveCardListLabel") }}">
+        {% for card in archive_cards %}
+          {% include "partials/archive-card.html" %}
+        {% else %}
+          <p class="empty">{{ t("archiveEmpty") }}</p>
+        {% endfor %}
+      </section>
+
+      <section class="archive-timeline-list" data-archive-view-panel="timeline" aria-label="{{ t("archiveTimelineListLabel") }}" hidden>
+        {% for group in archive_years %}
+          <section class="archive-timeline-year" data-filter-group>
+            <h2>{{ group.year }}</h2>
+            <div class="archive-timeline-items">
+              {% for card in group.cards %}
+                {% include "partials/archive-timeline-item.html" %}
+              {% endfor %}
+            </div>
+          </section>
+        {% endfor %}
+      </section>
+
+      <p class="empty filter-empty" data-filter-empty aria-live="polite" hidden>{{ t("archiveFilterEmpty") }}</p>
+    </div>
+  </div>
+  <script type="module" src="{{ asset("js/post-filter.js") | safe }}"></script>
+{% endblock %}
