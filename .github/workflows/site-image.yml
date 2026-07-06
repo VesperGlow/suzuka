@@ -48,10 +48,7 @@ jobs:
         working-directory: ssg
         run: cargo build --release --locked
 
-  # backend 的 rustfmt 纯机械格式检查、当前零误报，提升为阻断项。
-  # ssg 暂时没有跟进：ssg/src 目前有一批预先存在、与本次改动无关的历史
-  # 格式漂移（不是这次改动引入的），贸然把 ssg 也拉进阻断项会让下一次
-  # 推送在无关代码上直接挂掉——留到专门整理 ssg 格式那次再一起提升。
+  # rustfmt 纯机械格式检查、backend 和 ssg 都已清干净，两边一起提升为阻断项。
   fmt:
     runs-on: ubuntu-latest
     steps:
@@ -67,9 +64,12 @@ jobs:
         working-directory: backend
         run: cargo fmt --check
 
-  # 静态检查作为旁路反馈：失败不阻断镜像发布（build-push 不 needs 这个 job）。
-  # clippy 随工具链版本可能新增误报性较强的 pedantic 分支，暂不提升为阻断项；
-  # ssg 的 fmt 检查也放在这里，直到历史格式漂移清理完为止。
+      - name: Format (ssg)
+        working-directory: ssg
+        run: cargo fmt --check
+
+  # clippy 作为旁路反馈：失败不阻断镜像发布（build-push 不 needs 这个 job）。
+  # 随工具链版本可能新增误报性较强的 pedantic 分支，暂不提升为阻断项。
   lint:
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -80,7 +80,7 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy, rustfmt
+          components: clippy
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
@@ -94,10 +94,6 @@ jobs:
       - name: Clippy (ssg)
         working-directory: ssg
         run: cargo clippy --all-targets --locked -- -D warnings
-
-      - name: Format (ssg)
-        working-directory: ssg
-        run: cargo fmt --check
 
   build-push:
     needs: [test, ssg-build, fmt]
