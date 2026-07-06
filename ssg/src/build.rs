@@ -159,6 +159,9 @@ struct PostCard {
     /// 排序/跟 about、guestbook 混排用；不需要序列化给模板
     #[serde(skip)]
     date: DateTime<FixedOffset>,
+    /// front matter `sitemap.disable`：sitemap.xml 构建时过滤用，不需要序列化给模板
+    #[serde(skip)]
+    sitemap_disable: bool,
 }
 
 /// 一个 taxonomy term（单个分类/标签）聚合出的页面数据
@@ -921,8 +924,8 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
                     .map(|d| gotime::format(&d, "2006-01-02T15:04:05-07:00")),
             });
 
-            // 文章
-            for card in &data.cards {
+            // 文章（frontmatter 声明 sitemap.disable 的除外）
+            for card in data.cards.iter().filter(|c| !c.sitemap_disable) {
                 entries.push(SitemapEntry {
                     match_key: strip(&card.rel),
                     rel: card.rel.clone(),
@@ -931,11 +934,9 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
             }
 
             // about / guestbook
-            for raw_page in content
-                .pages
-                .iter()
-                .filter(|p| p.lang == lang.code && p.kind == PageKind::Page)
-            {
+            for raw_page in content.pages.iter().filter(|p| {
+                p.lang == lang.code && p.kind == PageKind::Page && !p.fm.sitemap.disable
+            }) {
                 let Some(url) = raw_page.fm.url.clone() else {
                     continue;
                 };
@@ -952,7 +953,11 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
             }
 
             // archives
-            if content.archives.iter().any(|p| p.lang == lang.code) {
+            if content
+                .archives
+                .iter()
+                .any(|p| p.lang == lang.code && !p.fm.sitemap.disable)
+            {
                 let rel = format!("{prefix}/archives/");
                 entries.push(SitemapEntry {
                     match_key: strip(&rel),
@@ -1143,7 +1148,13 @@ fn build_lang_posts(
         let h2_count = rendered.toc.iter().filter(|t| t.level == 2).count();
         let has_toc = h2_count > 1;
         let permalink = format!("{}{rel}", config.base_url);
-        let description = page.fm.description.clone().unwrap_or_default();
+        // 没写 description 时兜底用正文摘要，而不是留空——home/archives 已经有
+        // 站点级兜底（lang.description），单篇文章一直没有，导致 meta
+        // description/og/twitter 描述整块留空
+        let description =
+            page.fm.description.clone().unwrap_or_else(|| {
+                plain_summary(&rendered.plain, config.summary_length, lang.has_cjk)
+            });
         let date_rfc = gotime::format(&page.date, "2006-01-02T15:04:05-07:00");
 
         let all_translations = translations_of(config, bundle);
@@ -1256,6 +1267,7 @@ fn build_lang_posts(
                 .first()
                 .map(|img| format!("{}/{img}", config.base_url)),
             date: page.date,
+            sitemap_disable: page.fm.sitemap.disable,
         };
         for cat in &page.fm.categories {
             let tref = term_ref("categories", cat);
@@ -2106,7 +2118,10 @@ fn resolve_bundle_image(config: &SiteConfig, bundle: &PostBundle, bundle_rel: &s
 /// redirect_to 本身已经是带语言前缀的根相对路径，relURL 等价于原样返回
 fn redirect_fields(config: &SiteConfig, redirect_to: Option<&str>) -> Option<(String, String)> {
     let target = redirect_to?;
-    let abs = format!("{}{target}", config.base_url);
+    // canonical 和 meta-refresh 都把 target 插进 HTML 属性，必须一样转义；
+    // 之前只转义了 redirect 块，canonical 原样拼接，target 里带 "/& 之类
+    // 字符会撑破 <link> 标签。
+    let abs = format!("{}{}", config.base_url, escape_attr(target));
     let js = serde_json::to_string(target).unwrap_or_default();
     let block = format!(
         "\n    <meta http-equiv=\"refresh\" content=\"0; url={}\">\n    <script>window.location.replace({js});</script>\n  ",
@@ -2245,6 +2260,27 @@ fn channel_title(page_title: &str, site_title: &str) -> String {
 ///   引号（见 escape_attr 调用处）多出来的字节数误导过，以为是内容本身
 ///   变长了。
 /// 截断后补 " …"（空格 + 省略号）。
+/// 文章没写 description 时的兜底摘要：从正文纯文本截取前 `max_words` 个词
+/// （config.toml `summaryLength`，语义对齐 Hugo `.Summary`，默认 70）——
+/// CJK 语言没有空白分词，按字符数截；拉丁语系按空白分词，避免切碎单词。
+fn plain_summary(plain: &str, max_words: usize, has_cjk: bool) -> String {
+    let trimmed = plain.trim();
+    if has_cjk {
+        let chars: Vec<char> = trimmed.chars().collect();
+        if chars.len() <= max_words {
+            return trimmed.to_string();
+        }
+        let excerpt: String = chars[..max_words].iter().collect();
+        format!("{excerpt}…")
+    } else {
+        let words: Vec<&str> = trimmed.split_whitespace().collect();
+        if words.len() <= max_words {
+            return trimmed.to_string();
+        }
+        format!("{}…", words[..max_words].join(" "))
+    }
+}
+
 fn truncate_runes(s: &str, max: usize, has_cjk: bool) -> String {
     let chars: Vec<char> = s.chars().collect();
     if chars.len() <= max {

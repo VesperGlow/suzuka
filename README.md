@@ -52,7 +52,7 @@ npx -y pagefind --site public
 npm run build
 ```
 
-等价于 `cargo build --release --manifest-path ssg/Cargo.toml && ./ssg/target/release/ssg build --source . --dest public && npx -y pagefind --site public`。
+等价于 `cargo build --release --locked --manifest-path ssg/Cargo.toml && rm -rf public && ./ssg/target/release/ssg build --source . --dest public --minify && npx -y pagefind --site public`。
 产物输出到 `public/`。
 
 ## 部署

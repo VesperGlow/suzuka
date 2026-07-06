@@ -83,15 +83,24 @@ if (root) {
     const alreadyLiked = readStorage(likedKey) === "1";
     if (alreadyLiked) markReacted();
 
-    try {
-      const data = await requestJSON(`${reactionsURL}?path=${encodeURIComponent(path)}`, {
+    const fetchCount = () =>
+      requestJSON(`${reactionsURL}?path=${encodeURIComponent(path)}`, {
         headers: { Accept: "application/json" },
       });
-      showReactions(data.count);
-      root.hidden = false;
+
+    try {
+      showReactions((await fetchCount()).count);
     } catch {
-      return;
+      // 初次读取失败重试一次（可能是瞬时网络抖动）；两次都失败也照样把按钮
+      // 挂上——只是数字读不到，不代表点赞本身也应该在本次访问里失效。
+      try {
+        await new Promise((resolve) => window.setTimeout(resolve, 1000));
+        showReactions((await fetchCount()).count);
+      } catch {
+        /* 计数留空，点赞按钮照常可用 */
+      }
     }
+    root.hidden = false;
 
     reactionButton.addEventListener("click", async () => {
       if (reactionButton.disabled) return;

@@ -9,10 +9,21 @@
 
   const isOpen = () => sidebar.classList.contains("is-open");
 
+  // 移动端抽屉打开时，用 inert 关掉背后被遮住的区域（正文、页脚、回到
+  // 顶部按钮）——header 本身在抽屉之上，仍可操作；避免键盘 Tab 穿透到
+  // 视觉上完全看不见的内容。
+  const obscured = [
+    document.getElementById("main-content"),
+    document.querySelector(".site-footer"),
+    document.querySelector("[data-back-to-top]"),
+  ].filter(Boolean);
+
   const setOpen = (open) => {
     sidebar.classList.toggle("is-open", open);
     document.body.classList.toggle("sidebar-open", open);
     toggle.setAttribute("aria-expanded", String(open));
+    const trapping = open && !desktopQuery.matches;
+    for (const el of obscured) el.toggleAttribute("inert", trapping);
   };
 
   const syncCollapseToggle = () => {

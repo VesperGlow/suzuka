@@ -13,12 +13,18 @@ if (root) {
   const messages = root.dataset;
   if (form && input && clearButton && popover && status && results && loadMore) {
   const mobileQuery = window.matchMedia("(max-width: 768px)");
+  // 中日文没有空白分词，一个字就能构成有意义的查询（比如单字标题「蝉」），
+  // 拉丁语系维持 2 个字符的门槛，避免每敲一个字母就发起一次搜索。
+  const CJK_CHAR = /[぀-ヿ㐀-䶿一-鿿豈-﫿]/u;
   const minimumLength = 2;
   const pageSize = 10;
   let debounceTimer;
   let requestId = 0;
-  let suppressFocusOpen = false;
   let activeSearch = null;
+
+  function meetsMinimumLength(query) {
+    return query.length >= minimumLength || (query.length === 1 && CJK_CHAR.test(query));
+  }
 
   const loadPagefind = () => {
     if (typeof window.suzukaLoadPagefind !== "function") {
@@ -131,7 +137,7 @@ if (root) {
 
   async function runSearch(query) {
     const normalized = query.trim();
-    if (normalized.length < minimumLength) {
+    if (!meetsMinimumLength(normalized)) {
       resetResults();
       return;
     }
@@ -171,9 +177,8 @@ if (root) {
 
   input.addEventListener("focus", () => {
     loadPagefind().catch(() => {});
-    if (suppressFocusOpen) return;
     const query = input.value.trim();
-    if (query.length >= minimumLength && (results.children.length || status.textContent)) {
+    if (meetsMinimumLength(query) && (results.children.length || status.textContent)) {
       openPopover();
     }
   });
@@ -193,7 +198,7 @@ if (root) {
     clearButton.hidden = !input.value;
     window.clearTimeout(debounceTimer);
 
-    if (query.length < minimumLength) {
+    if (!meetsMinimumLength(query)) {
       resetResults();
       return;
     }
@@ -226,10 +231,8 @@ if (root) {
     if (event.key === "Escape") {
       closePopover();
       setSearchActive(false);
-      suppressFocusOpen = true;
       if (toggle && !mobileQuery.matches) toggle.focus();
       else input.blur();
-      suppressFocusOpen = false;
     }
   });
   }

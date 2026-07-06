@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use rusqlite::Connection;
 
-pub const CURRENT_SCHEMA_VERSION: i64 = 1;
+pub const CURRENT_SCHEMA_VERSION: i64 = 2;
 
 const SCHEMA_V1: &str = "
 CREATE TABLE IF NOT EXISTS messages (
@@ -29,6 +29,10 @@ CREATE TABLE IF NOT EXISTS reactions (
     path TEXT PRIMARY KEY,
     count INTEGER NOT NULL DEFAULT 0
 );";
+
+// 留言分页实际按 id（INTEGER PRIMARY KEY，rowid 别名，SQLite 自带隐式索引）
+// 排序，从没用上按 created_at 排序的 idx_messages_created_at，纯粹是死索引。
+const SCHEMA_V2: &str = "DROP INDEX IF EXISTS idx_messages_created_at;";
 
 pub type BoxError = Box<dyn Error + Send + Sync>;
 
@@ -70,6 +74,10 @@ fn migrate_database(conn: &mut Connection) -> Result<(), BoxError> {
     if version < 1 {
         tx.execute_batch(SCHEMA_V1)?;
         tx.execute_batch("PRAGMA user_version = 1;")?;
+    }
+    if version < 2 {
+        tx.execute_batch(SCHEMA_V2)?;
+        tx.execute_batch("PRAGMA user_version = 2;")?;
     }
 
     tx.commit()?;

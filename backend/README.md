@@ -21,7 +21,19 @@ GUESTBOOK_DB_PATH=/var/lib/suzuka/backend.db \
 ./target/release/backend
 ```
 
-nginx strips `/api/guestbook` before proxying, so the service itself exposes:
+`GUESTBOOK_STATIC_DIR` picks between two routing modes (see `src/server.rs`):
+
+- **Unset** (pure API, e.g. local development against a separately-served
+  frontend): routes are exposed directly at the paths below, e.g.
+  `GET /messages`.
+- **Set to a directory** (single-container production mode, as run by the
+  root `Containerfile`): the backend also serves that directory's static
+  files at `/`, and the same routes are nested under `/api/guestbook/`
+  (e.g. `GET /api/guestbook/messages`). The crate strips that prefix itself
+  via axum's `.nest()` — no nginx (or any reverse proxy) rewrite is involved.
+
+Routes (shown without the `/api/guestbook` prefix; add it back in
+single-container mode):
 
 - `GET|POST /messages` — guestbook. `GET` supports cursor pagination with
   `?limit=50&before_id=<id>` and returns `messages`, `next_before_id`, and

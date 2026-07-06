@@ -37,7 +37,9 @@ impl App {
     /// 取数据库连接锁：即便某次持锁期间 panic 导致 Mutex 中毒，也照样拿到内部
     /// 连接继续服务，不让单次请求的意外 panic 演变成后续所有请求永久 500。
     pub fn conn(&self) -> MutexGuard<'_, Connection> {
-        self.db.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+        self.db
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 }
 

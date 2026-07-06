@@ -166,6 +166,8 @@ other = "小站存活时间"
 other = "凉花已常驻许久"
 [uptimeFormat]
 other = "凉花已常驻 {days}d {hours}h {minutes}m {seconds}s"
+[uptimeMobileFormat]
+other = "凉花已常驻 {days}d {hours}h {minutes}m {seconds}s"
 [aboutImageAlt]
 other = "凉花"
 [termsDescription]

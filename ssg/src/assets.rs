@@ -10,13 +10,19 @@ use std::collections::HashMap;
 use std::path::Path;
 use walkdir::WalkDir;
 
-/// 用 lightningcss 压缩一份 CSS；解析/压缩失败就原样返回，不让构建失败
-fn minify_css(source: &str) -> String {
+/// 用 lightningcss 压缩一份 CSS；解析/压缩失败就原样返回，不让构建失败，
+/// 但会打警告——不然一次 CSS 语法错误会静默发布未压缩版本，没有任何信号。
+fn minify_css(rel: &str, source: &str) -> String {
     use lightningcss::stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, StyleSheet};
-    let Ok(mut sheet) = StyleSheet::parse(source, ParserOptions::default()) else {
-        return source.to_string();
+    let mut sheet = match StyleSheet::parse(source, ParserOptions::default()) {
+        Ok(sheet) => sheet,
+        Err(err) => {
+            eprintln!("警告: {rel} 压缩失败（解析），改用未压缩版本: {err}");
+            return source.to_string();
+        }
     };
-    if sheet.minify(MinifyOptions::default()).is_err() {
+    if let Err(err) = sheet.minify(MinifyOptions::default()) {
+        eprintln!("警告: {rel} 压缩失败（minify），改用未压缩版本: {err}");
         return source.to_string();
     }
     let opts = PrinterOptions {
@@ -25,7 +31,10 @@ fn minify_css(source: &str) -> String {
     };
     match sheet.to_css(opts) {
         Ok(res) => res.code,
-        Err(_) => source.to_string(),
+        Err(err) => {
+            eprintln!("警告: {rel} 压缩失败（输出），改用未压缩版本: {err}");
+            source.to_string()
+        }
     }
 }
 
@@ -68,7 +77,7 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<Assets> {
         let raw = std::fs::read_to_string(entry.path())
             .with_context(|| format!("读取 {} 失败", entry.path().display()))?;
         let content = if minify && ext == "css" {
-            minify_css(&raw)
+            minify_css(&rel, &raw)
         } else {
             raw
         };

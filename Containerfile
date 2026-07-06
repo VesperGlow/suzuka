@@ -30,11 +30,16 @@ RUN curl -fsSL -o /tmp/pagefind.tar.gz \
  && tar -xzf /tmp/pagefind.tar.gz -C /usr/local/bin \
  && rm -rf /tmp/*
 
-# 站点源码（content/ assets/ static/ i18n/ site.toml/ ssg/templates 等）。
-COPY . .
-# 清掉可能随仓库带进来的旧产物，保证干净构建。
-RUN rm -rf public public-ssg golden \
- && ./ssg/target/release/ssg build --source . --dest public --minify \
+# 站点源码：只拷贝 ssg build 真正会读的路径，backend/ 或文档变更不会
+# 让这一层（以及下面的 ssg build + pagefind 索引）缓存失效。
+COPY content ./content
+COPY assets ./assets
+COPY static ./static
+COPY i18n ./i18n
+COPY site.toml ./site.toml
+COPY ssg/templates ./ssg/templates
+
+RUN ./ssg/target/release/ssg build --source . --dest public --minify \
  && pagefind --site public
 
 # ---------- 阶段 2：编译 Rust 后端（bundled SQLite 随 crate 静态编译进 musl 二进制） ----------

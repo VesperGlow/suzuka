@@ -26,9 +26,11 @@ jobs:
         working-directory: backend
         run: cargo test --locked
 
-  # ssg（自研静态站点生成器）编译检查：产物直接进 Containerfile 镜像构建，
-  # 编译失败应阻断镜像发布，因此和 backend test 一样是 build-push 的前置依赖。
-  ssg-test:
+  # ssg（自研静态站点生成器）编译检查：只是 cargo build，没有测试用例，
+  # 名字照实说是「编译检查」而不是「test」。产物直接进 Containerfile 镜像
+  # 构建，编译失败应阻断镜像发布，因此和 backend test 一样是 build-push
+  # 的前置依赖。
+  ssg-build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -46,7 +48,28 @@ jobs:
         working-directory: ssg
         run: cargo build --release --locked
 
-  # 静态检查作为旁路反馈：失败不阻断镜像发布（build-push 只 needs: test / ssg-test）。
+  # backend 的 rustfmt 纯机械格式检查、当前零误报，提升为阻断项。
+  # ssg 暂时没有跟进：ssg/src 目前有一批预先存在、与本次改动无关的历史
+  # 格式漂移（不是这次改动引入的），贸然把 ssg 也拉进阻断项会让下一次
+  # 推送在无关代码上直接挂掉——留到专门整理 ssg 格式那次再一起提升。
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Format (backend)
+        working-directory: backend
+        run: cargo fmt --check
+
+  # 静态检查作为旁路反馈：失败不阻断镜像发布（build-push 不 needs 这个 job）。
+  # clippy 随工具链版本可能新增误报性较强的 pedantic 分支，暂不提升为阻断项；
+  # ssg 的 fmt 检查也放在这里，直到历史格式漂移清理完为止。
   lint:
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -68,10 +91,6 @@ jobs:
         working-directory: backend
         run: cargo clippy --all-targets --locked -- -D warnings
 
-      - name: Format
-        working-directory: backend
-        run: cargo fmt --check
-
       - name: Clippy (ssg)
         working-directory: ssg
         run: cargo clippy --all-targets --locked -- -D warnings
@@ -81,7 +100,7 @@ jobs:
         run: cargo fmt --check
 
   build-push:
-    needs: [test, ssg-test]
+    needs: [test, ssg-build, fmt]
     runs-on: ubuntu-latest
     permissions:
       contents: read
