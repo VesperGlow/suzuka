@@ -6,7 +6,7 @@
 
 ## 特性
 
-- **双语**：中文（默认）与 English，独立的菜单与文案（`i18n/`、`hugo.toml`）。
+- **双语**：中文（默认）与 English，独立的菜单与文案（`i18n/`、`site.toml`）。
 - **离线全文搜索**：构建期由 [Pagefind](https://pagefind.app/) 生成索引，无需后端即可搜索。
 - **明暗主题**：跟随系统并可手动切换，配色用 CSS `light-dark()` 收敛。
 - **动态交互**（依赖后端）：留言板、按文章统计的阅读量与点赞、关于页的站点总览与运行时长。
@@ -28,8 +28,7 @@ ssg/           自研静态站点生成器（Rust），模板在 ssg/templates/
 assets/        CSS 与按需加载的 JS
 i18n/          中英文案
 static/        favicon、角色图等静态资源
-hugo.toml      站点配置（语言、菜单、输出格式、permalink）——文件名是历史遗留，
-               内容已经是 ssg 自己在读的配置格式，跟 Hugo 无关
+site.toml     站点配置（语言、菜单、输出格式、permalink），ssg 自己在读的配置格式
 backend/       留言板 / 阅读量 / 点赞的 Rust + SQLite 服务
 ```
 

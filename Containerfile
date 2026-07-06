@@ -30,7 +30,7 @@ RUN curl -fsSL -o /tmp/pagefind.tar.gz \
  && tar -xzf /tmp/pagefind.tar.gz -C /usr/local/bin \
  && rm -rf /tmp/*
 
-# 站点源码（content/ assets/ static/ i18n/ hugo.toml/ ssg/templates 等）。
+# 站点源码（content/ assets/ static/ i18n/ site.toml/ ssg/templates 等）。
 COPY . .
 # 清掉可能随仓库带进来的旧产物，保证干净构建。
 RUN rm -rf public public-ssg golden \

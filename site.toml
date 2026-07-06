@@ -3,7 +3,6 @@ defaultContentLanguage = 'zh-cn'
 defaultContentLanguageInSubdir = false
 enableRobotsTXT = true
 summaryLength = 90
-disableHugoGeneratorInject = true
 
 [pagination]
   pagerSize = 6

@@ -9,7 +9,7 @@ pub struct MenuItem {
 }
 
 pub struct Language {
-    /// hugo.toml 里的语言键，如 "zh-cn"、"en"
+    /// site.toml 里的语言键，如 "zh-cn"、"en"
     pub code: String,
     pub locale: String,
     pub title: String,
@@ -41,13 +41,13 @@ pub struct SiteConfig {
 
 impl SiteConfig {
     pub fn load(source: &Path) -> Result<Self> {
-        let raw = std::fs::read_to_string(source.join("hugo.toml"))
-            .context("读取 hugo.toml 失败")?;
-        let doc: toml::Value = raw.parse().context("解析 hugo.toml 失败")?;
+        let raw = std::fs::read_to_string(source.join("site.toml"))
+            .context("读取 site.toml 失败")?;
+        let doc: toml::Value = raw.parse().context("解析 site.toml 失败")?;
 
         let base_url = doc["baseURL"]
             .as_str()
-            .context("hugo.toml 缺少 baseURL")?
+            .context("site.toml 缺少 baseURL")?
             .trim_end_matches('/')
             .to_string();
         let default_lang = doc["defaultContentLanguage"]
