@@ -209,12 +209,19 @@ struct LangData {
     cards: Vec<PostCard>,
 }
 
-pub fn build(source: &Path, dest: &Path) -> Result<()> {
+// 单进程单次构建，没有并发需求：用 thread_local 存 minify 开关，
+// 免得给 17 处 write_file / 9 处 render_to 调用点都加一个参数
+thread_local! {
+    static MINIFY: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
+    MINIFY.with(|m| m.set(minify));
     let config = SiteConfig::load(source)?;
     let lang_codes: Vec<String> = config.languages.iter().map(|l| l.code.clone()).collect();
     let i18n = Arc::new(I18n::load(source, &lang_codes)?);
     let content = content::load(source, &config.default_lang)?;
-    let assets = crate::assets::build(source, dest)?;
+    let assets = crate::assets::build(source, dest, minify)?;
 
     // 文章 bundle 的图片资源只按默认语言路径发布一份（与 Hugo 行为一致）
     for bundle in &content.posts {
@@ -2020,7 +2027,28 @@ fn write_file(dest: &Path, rel: &str, content: &str) -> Result<()> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    std::fs::write(&path, content).with_context(|| format!("写入 {} 失败", path.display()))
+    let should_minify = rel.ends_with(".html") && MINIFY.with(|m| m.get());
+    let bytes: std::borrow::Cow<[u8]> = if should_minify {
+        std::borrow::Cow::Owned(minify_html_doc(content))
+    } else {
+        std::borrow::Cow::Borrowed(content.as_bytes())
+    };
+    std::fs::write(&path, bytes).with_context(|| format!("写入 {} 失败", path.display()))
+}
+
+/// 对应 Hugo `--minify`：压缩 HTML，顺带压缩 `<style>`/`style=` 里的 CSS 和
+/// `<script>`（无 type 或 text/javascript/module）里的 JS——具体压缩结果
+/// 跟 Hugo 用的 tdewolff/minify 逐字节不同，对拍时已经归一化掉这类差异
+fn minify_html_doc(html: &str) -> Vec<u8> {
+    let mut cfg = minify_html::Cfg::new();
+    cfg.minify_css = true;
+    cfg.minify_js = true;
+    // minify-html 内部靠 minify-js 压 <script>；minify-js 对个别合法写法
+    // （比如三元表达式两支返回类型不对称）会内部断言 panic，不是普通
+    // Result::Err，用 catch_unwind 兜底，panic 就整页退回不压缩
+    let bytes = html.as_bytes();
+    std::panic::catch_unwind(|| minify_html::minify(bytes, &cfg))
+        .unwrap_or_else(|_| bytes.to_vec())
 }
 
 /// 对应 Hugo `lang.FormatNumberCustom 0 n`：千位加英文逗号分隔，不带小数

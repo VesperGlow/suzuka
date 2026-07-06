@@ -16,7 +16,8 @@ fn main() -> Result<()> {
         Some("build") => {
             let source = flag_value(&args, "--source").unwrap_or_else(|| ".".into());
             let dest = flag_value(&args, "--dest").unwrap_or_else(|| "public-ssg".into());
-            build::build(&PathBuf::from(source), &PathBuf::from(dest))
+            let minify = args.iter().any(|a| a == "--minify");
+            build::build(&PathBuf::from(source), &PathBuf::from(dest), minify)
         }
         Some("diff") => {
             let positional: Vec<&String> = args[1..]
@@ -36,7 +37,9 @@ fn main() -> Result<()> {
             println!("对拍通过：产物与黄金基准一致（含已声明的归一化规则）");
             Ok(())
         }
-        _ => bail!("用法: ssg build [--source 目录] [--dest 目录] | ssg diff <golden> <ours>"),
+        _ => bail!(
+            "用法: ssg build [--source 目录] [--dest 目录] [--minify] | ssg diff <golden> <ours>"
+        ),
     }
 }
 

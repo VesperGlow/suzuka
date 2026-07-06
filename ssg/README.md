@@ -14,6 +14,8 @@ Hugo 与 `layouts/`/`hugo.toml` 仍保留在仓库里，作为 `ssg-parity` 对�
 ```sh
 # 在仓库根目录
 cargo run --manifest-path ssg/Cargo.toml -- build --source . --dest public-ssg
+# 生产构建加 --minify（压缩 HTML/CSS/JS），package.json / Containerfile 都这么用
+cargo run --manifest-path ssg/Cargo.toml -- build --source . --dest public --minify
 ```
 
 ## 对拍（迁移期的核心手段）
@@ -34,9 +36,19 @@ CI 里有手动触发的 `ssg-parity` workflow 做同样的事（`.github/workfl
 **只手动触发**，不随 push 跑，作为切换后改动 `content/`/模板时的回归防线。
 
 diff 的归一化规则（有意屏蔽的已知差异，见 `src/diff.rs`）：
-- 资源指纹散列 → `HASH`（ssg 暂不做 minify，散列必然不同）
+- 资源指纹散列 → `HASH`（跟 Hugo 用的不是同一个 minifier，压缩结果逐字节不同，
+  散列必然不同）
 - 无 `src` 的内联 `<script>` 内容 → 占位符（minify 器不同）
 - HTML 实体等价形、行尾空白、连续空行
+
+**对拍故意只比较未压缩产物**：`ssg build`（不加 `--minify`）对应 `hugo`（不加
+`--minify`）；两边都不压缩才能逐行对拍出内容/结构级别的差异。`--minify` 的正确性
+是另外验证的——不同 minifier 对同一段 HTML/CSS/JS 会做出不同但都合法的压缩选择
+（属性间距、实体是否转成字面字符、引号风格……），逐字节对拍两个 minify 之后的产物
+没有意义，只会制造大量噪音。验证方法：`--minify` 前后的产物剥掉标签、把已知的
+安全实体替换（`&quot;`/`&#x27;`/`&rsquo;`/`&times;` 等）之后转成纯文本比较，
+应该逐字节相同——这样能验证压缩没有误删/误改内容，而不要求跟 Hugo 用同一个
+minifier。
 
 ## 当前覆盖范围
 
@@ -48,7 +60,7 @@ diff 的归一化规则（有意屏蔽的已知差异，见 `src/diff.rs`）：
 | Markdown：typographer、标题自动 ID、图片 figure hook、外链 hook、TOC | ✅ 首版 |
 | CJK 词数 / 阅读时长 | ✅ 首版 |
 | 别名跳转页（aliases） | ✅ 首版 |
-| 资源指纹（兼容 `backend/src/static_site.rs` 的 `.min.<hash>.ext` 判断） | ✅ 命名兼容，⚠️ 暂不真正 minify |
+| 资源指纹（兼容 `backend/src/static_site.rs` 的 `.min.<hash>.ext` 判断） | ✅ 命名兼容，散列基于压缩后内容 |
 | about / guestbook 独立页（自定义 layout） | ✅ 首版 |
 | robots.txt / 404 页 | ✅ 首版 |
 | 首页 RSS（feed.xml）/ JSON Feed（feed.json）/ index.json / guestbook-posts.json | ✅ 首版（index.json 的 `content` 截断边界跟 Hugo `strings.Truncate` 有极小尾差，见下） |
@@ -58,12 +70,13 @@ diff 的归一化规则（有意屏蔽的已知差异，见 `src/diff.rs`）：
 | 分页（`/p/2/` 等） | ✅ 首版——`/en/posts/` 是本站唯一真的会分页的地方（7 篇 > pagerSize 6），其余 term 页条目数都不够，只在 `/p/1/` 出跳转桩 |
 | sitemap.xml（根 sitemapindex + 各语言 urlset，含默认语言的 `/zh-cn/` 重定向桩） | ✅ 首版，URL 集合对拍通过（同 lastmod 并列顺序跟黄金基准不完全一致，见下） |
 | 代码高亮（syntect → Chroma class） | ⏳ 未实现（本站文章目前无代码块） |
-| HTML/CSS/JS minify | ⏳ 未实现（生产此前用 `hugo --minify`；切换后产物比 Hugo 版更大，功能不受影响） |
+| HTML/CSS/JS minify（`--minify` 参数，`lightningcss` + `minify-js` + `minify-html`） | ✅ 首版，内容完整性已验证（见下），跟 Hugo 用的 minifier 不同，不追求逐字节一致 |
 | Pagefind 搜索索引 | ✅ 独立于生成器，切换后照旧在 `public` 产物上跑 |
 
-**当前状态：产物与 Hugo 黄金基准文件数完全一致（242/242），内容/结构对拍通过。**
-仅存的已知差异都是不影响功能的细节（见下面"已知硬骨头"）：HTML 未压缩（体积更大）、
-两处同时间戳条目的并列顺序、index.json 一个字段的截断边界。
+**当前状态：不压缩的产物与 Hugo 黄金基准文件数完全一致（242/242），内容/结构对拍
+通过；`--minify` 压缩也已实现并验证内容无损。** 仅存的已知差异都是不影响功能的
+细节（见下面"已知硬骨头"）：两处同时间戳条目的并列顺序、index.json 一个字段的
+截断边界、minify 的具体压缩选择跟 Hugo 不同（都合法，只是字节不同）。
 
 ## 已知硬骨头（诚实记录）
 
@@ -71,9 +84,14 @@ diff 的归一化规则（有意屏蔽的已知差异，见 `src/diff.rs`）：
   复刻 Hugo 内置模板的空白痕迹，靠 diff harness 逐行对齐收敛，已通过 113/113 对拍。
 - **goldmark 排版细节**：typographer 的引号/破折号判定是启发式，长尾差异靠对拍收敛，
   当前 113/113 对拍通过。
-- **HTML minify**：生产此前是 `hugo --minify`；切换到 ssg 后**尚未做压缩**，产物体积比
-  Hugo 版更大（内容/结构不受影响）。要补上的话，可对 `public/` 产物单独跑一个 minifier，
-  与内容生成解耦，不需要改 `build.rs`。
+- **`minify-js` 对个别合法写法会内部断言 panic**（不是普通 `Result::Err`）：三元表达式
+  两支返回类型不对称之类的写法就会踩到，本站的 `site.js`/`theme.js` 恰好命中，
+  压缩不了、静默退回原文件。用 `std::panic::catch_unwind` 包一层兜底——单个文件/页面
+  压缩失败就整个退回不压缩，不让一次 panic 拖垮整个构建。`--minify` 开着的时候这些
+  panic 消息会打到 stderr，是已知的、无害的噪音，不代表构建失败。
+- **`--minify` 用一个进程内的 `thread_local` 开关，没有到处传参数**：`write_file`/
+  `assets::build` 内部读同一个 `Cell<bool>`，`build()` 一开始设一次。构建单进程单次跑，
+  没有并发场景，图省事没有把这个参数穿透 17 处 `write_file` 调用点。
 - **对拍工具本身只查 ssg 侧存在的文件**：`ssg diff` 的设计是"迁移期产物是黄金基准的
   子集"，golden 里多出来、ssg 还没实现的文件不算失败——这意味着"对拍全绿"不等于
   "功能完整"，只代表"已经生成的文件都对得上"。判断真实覆盖率要看文件总数

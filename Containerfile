@@ -34,7 +34,7 @@ RUN curl -fsSL -o /tmp/pagefind.tar.gz \
 COPY . .
 # 清掉可能随仓库带进来的旧产物，保证干净构建。
 RUN rm -rf public public-ssg golden \
- && ./ssg/target/release/ssg build --source . --dest public \
+ && ./ssg/target/release/ssg build --source . --dest public --minify \
  && pagefind --site public
 
 # ---------- 阶段 2：编译 Rust 后端（bundled SQLite 随 crate 静态编译进 musl 二进制） ----------

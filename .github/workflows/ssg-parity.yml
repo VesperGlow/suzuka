@@ -22,8 +22,10 @@ jobs:
             "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.deb"
           sudo apt-get install -y /tmp/hugo.deb
 
-      # 黄金基准用「不带 --minify」的 Hugo：与 ssg 当前输出同为未压缩形态，
-      # 才能逐行对拍结构与文案。HTML 压缩是最后一步，两边都还没做。
+      # 黄金基准用「不带 --minify」的 Hugo，ssg 这边也不加 --minify：两边都不
+      # 压缩才能逐行对拍出内容/结构级别的差异——minify 之后不同 minifier 的
+      # 压缩选择本来就不会逐字节一致，对拍没有意义（minify 正确性另外验证，
+      # 见 ssg/README.md）。
       - name: Build golden (Hugo, no minify)
         run: hugo --destination golden
 
