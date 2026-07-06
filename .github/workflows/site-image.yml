@@ -68,12 +68,9 @@ jobs:
         working-directory: ssg
         run: cargo fmt --check
 
-  # backend 的 clippy 暂时还是旁路反馈：失败不阻断镜像发布（build-push 不
-  # needs 这个 job）。ssg 那份已经清干净并在下面的 ssg-lint job 里提升为
-  # 阻断项，backend 这边还没有跟进。
+  # clippy：backend 和 ssg 都已清干净，跟 fmt 一样两边一起提升为阻断项。
   lint:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -88,34 +85,16 @@ jobs:
         with:
           workspaces: backend
 
-      - name: Clippy
+      - name: Clippy (backend)
         working-directory: backend
         run: cargo clippy --all-targets --locked -- -D warnings
-
-  # ssg 的 clippy 已清零报错，跟 fmt 一样提升为阻断项，是 build-push 的
-  # 前置依赖。
-  ssg-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@1.96.1
-        with:
-          components: clippy
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: ssg
 
       - name: Clippy (ssg)
         working-directory: ssg
         run: cargo clippy --all-targets --locked -- -D warnings
 
   build-push:
-    needs: [test, ssg-build, fmt, ssg-lint]
+    needs: [test, ssg-build, fmt, lint]
     runs-on: ubuntu-latest
     permissions:
       contents: read
