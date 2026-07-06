@@ -56,6 +56,13 @@ struct YearCards {
     cards: Vec<PostCard>,
 }
 
+/// pagination-nav.html 的页码格子
+#[derive(Serialize)]
+struct PagerPage {
+    number: usize,
+    url: String,
+}
+
 #[derive(Serialize)]
 struct SiteCtx {
     title: String,
@@ -754,6 +761,98 @@ pub fn build(source: &Path, dest: &Path) -> Result<()> {
             }
         }
 
+        // posts 这个 section 的隐式列表页（只有 build.render 没被关掉的
+        // 语言才渲染——本站只有英文）；7 篇 > pagerSize 6，真的会分页
+        if let Some(raw_page) = content
+            .posts_section
+            .iter()
+            .find(|p| p.lang == lang.code && p.fm.build.render.as_deref() != Some("never"))
+        {
+            const PAGE_SIZE: usize = 6;
+            let rel = format!("{prefix}/posts/");
+            let total_pages = data.cards.len().div_ceil(PAGE_SIZE).max(1);
+            let page_url = |n: usize| -> String {
+                if n <= 1 {
+                    rel.clone()
+                } else {
+                    format!("{rel}p/{n}/")
+                }
+            };
+            let ctx = posts_section_ctx(&config, lang, raw_page, rel.clone(), data.newest_date)?;
+            let pager_pages: Vec<PagerPage> = (1..=total_pages)
+                .map(|n| PagerPage {
+                    number: n,
+                    url: page_url(n),
+                })
+                .collect();
+
+            for (idx, chunk) in data.cards.chunks(PAGE_SIZE).enumerate() {
+                let n = idx + 1;
+                let out_rel = format!("{}index.html", page_url(n).trim_start_matches('/'));
+                render_to(
+                    &env,
+                    "posts-list.html",
+                    dest,
+                    &out_rel,
+                    minijinja::context! {
+                        lang => lang.code.clone(),
+                        site => &site,
+                        page => &ctx,
+                        posts => &data.post_refs,
+                        timeline => &data.timeline,
+                        theme_js => &assets.theme_js,
+                        cards => chunk,
+                        pager_current => n,
+                        pager_total => total_pages,
+                        pager_first_url => page_url(1),
+                        pager_prev_url => if n > 1 { Some(page_url(n - 1)) } else { None },
+                        pager_next_url => if n < total_pages { Some(page_url(n + 1)) } else { None },
+                        pager_last_url => page_url(total_pages),
+                        pager_pages => &pager_pages,
+                    },
+                )?;
+            }
+            // /p/1/：分页器页 1 的冗余跳转桩，同term页
+            write_file(
+                dest,
+                format!("{prefix}/posts/p/1/index.html").trim_start_matches('/'),
+                &alias_html(&lang.locale, &ctx.permalink),
+            )?;
+
+            // 这个 section 自己的 feed.xml：全部文章，不分页
+            let last_build_date = data
+                .newest_date
+                .map(|d| gotime::format(&d, "Mon, 02 Jan 2006 15:04:05 -0700"));
+            let rss = render_rss(
+                &channel_title(&ctx.title, &lang.title),
+                &ctx.permalink,
+                &ctx.description,
+                &lang.title,
+                &lang.locale,
+                &config.author,
+                chrono::Utc::now().year(),
+                last_build_date.as_deref(),
+                &format!("{}{}", config.base_url, ctx.rss_rel.clone().unwrap_or_default()),
+                &data
+                    .cards
+                    .iter()
+                    .map(|c| RssItem {
+                        title: &c.title,
+                        link: &c.permalink,
+                        pub_date: &c.pub_date,
+                        categories: &c.tags_title,
+                        content_html: Some(&c.content_html),
+                    })
+                    .collect::<Vec<_>>(),
+                &config.base_url,
+            );
+            write_file(
+                dest,
+                format!("{prefix}/posts/feed.xml").trim_start_matches('/'),
+                &rss,
+            )?;
+        }
+
         // 文章页 + 别名跳转页
         for (idx, page) in data.posts.iter().enumerate() {
             let out_rel = format!("{}index.html", page.rel_permalink.trim_start_matches('/'));
@@ -1425,6 +1524,75 @@ fn terms_list_ctx(
     })
 }
 
+/// posts 这个 section 的隐式列表页（本站只有英文端会真的渲染：中文端
+/// content/posts/_index.md 有 build.render: never 关掉了）；带
+/// redirectTo（canonical 到 /en/archives/，同时注入 meta-refresh 跳转），
+/// 7 篇 > pagerSize 6，是本站唯一真的会分页的地方
+fn posts_section_ctx(
+    config: &SiteConfig,
+    lang: &crate::config::Language,
+    page: &RawPage,
+    rel: String,
+    newest_date: Option<DateTime<FixedOffset>>,
+) -> Result<PageCtx> {
+    let permalink = format!("{}{rel}", config.base_url);
+    let description = page.fm.description.clone().unwrap_or_default();
+    let date_rfc = newest_date
+        .map(|d| gotime::format(&d, "2006-01-02T15:04:05-07:00"))
+        .unwrap_or_default();
+    let fallback_img = config
+        .images
+        .first()
+        .map(|img| format!("{}/{img}", config.base_url))
+        .unwrap_or_default();
+
+    let internal_meta = internal_meta_block(&InternalMeta {
+        permalink: &permalink,
+        site_title: &lang.title,
+        title: &page.fm.title,
+        description: &description,
+        locale: &lang.locale.replace('-', "_"),
+        og_type: "website",
+        section: None,
+        date_published: &date_rfc,
+        date_modified: &date_rfc,
+        tags: &[],
+        image: &fallback_img,
+        word_count: None,
+        jsonld: None,
+    });
+
+    let (canonical, redirect_block) = match redirect_fields(config, page.fm.redirect_to.as_deref())
+    {
+        Some((c, b)) => (c, b),
+        None => (permalink.clone(), String::new()),
+    };
+
+    // 中文端 build.render: never 关掉了，这个 section 只有自己这一个语言
+    // 版本，AllTranslations 里只有它自己
+    let all_translations = vec![TranslationRef {
+        lang: lang.code.clone(),
+        locale: lang.locale.clone(),
+        permalink: permalink.clone(),
+        rel: rel.clone(),
+    }];
+
+    Ok(PageCtx {
+        kind: "posts-section".into(),
+        title: page.fm.title.clone(),
+        description_meta: collapse_ws(&description),
+        description,
+        rel_permalink: rel.clone(),
+        canonical,
+        redirect_block,
+        rss_rel: Some(format!("{rel}feed.xml")),
+        permalink,
+        all_translations,
+        internal_meta,
+        ..Default::default()
+    })
+}
+
 fn notfound_ctx(config: &SiteConfig, lang: &crate::config::Language) -> Result<PageCtx> {
     let prefix = lang.url_prefix(&config.default_lang);
     let rel = format!("{prefix}/404.html");
@@ -1759,7 +1927,7 @@ fn redirect_fields(config: &SiteConfig, redirect_to: Option<&str>) -> Option<(St
     let abs = format!("{}{target}", config.base_url);
     let js = serde_json::to_string(target).unwrap_or_default();
     let block = format!(
-        "<meta http-equiv=\"refresh\" content=\"0; url={}\">\n  <script>window.location.replace({js});</script>\n  ",
+        "\n    <meta http-equiv=\"refresh\" content=\"0; url={}\">\n    <script>window.location.replace({js});</script>\n  ",
         escape_attr(target)
     );
     Some((abs, block))

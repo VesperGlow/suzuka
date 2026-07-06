@@ -54,8 +54,9 @@ diff 的归一化规则（有意屏蔽的已知差异，见 `src/diff.rs`）：
 | 首页 RSS（feed.xml）/ JSON Feed（feed.json）/ index.json / guestbook-posts.json | ✅ 首版（index.json 的 `content` 截断边界跟 Hugo `strings.Truncate` 有极小尾差，见下） |
 | 归档页（archives，双视图 + 分类/标签过滤器 + 自己的 feed.xml） | ✅ 首版，对拍通过 |
 | 标签/分类列表页与 term 页（各自的 feed.xml、term 页冗余的 `/p/1/` 跳转桩） | ✅ 首版，对拍通过（列表页 feed.xml 里 term 条目同日期的先后顺序跟黄金基准不完全一致，见下） |
-| `/posts/` 隐式 section 列表页（英文有、中文因 `build.render: never` 被关掉）、sitemap.xml | ⏳ 未实现（目前对拍缺口的全部：`en/posts/*` 一组 + 三份 sitemap.xml） |
-| 分页（`/p/2/` 等） | ⏳ 未实现（只有 `/en/posts/` 这一个 section 因为 7 篇 > pagerSize 6 真的会分页，其余 term 页条目数都不够） |
+| `/posts/` 隐式 section 列表页（英文有、中文因 `build.render: never` 被关掉，含 redirectTo 的 canonical 覆盖） | ✅ 首版，对拍通过 |
+| 分页（`/p/2/` 等） | ✅ 首版——`/en/posts/` 是本站唯一真的会分页的地方（7 篇 > pagerSize 6），其余 term 页条目数都不够，只在 `/p/1/` 出跳转桩 |
+| sitemap.xml | ⏳ 未实现（目前对拍缺口的全部） |
 | 代码高亮（syntect → Chroma class） | ⏳ 未实现（本站文章目前无代码块） |
 | HTML/CSS/JS minify | ⏳ 未实现（生产此前用 `hugo --minify`；切换后产物比 Hugo 版更大，功能不受影响） |
 | Pagefind 搜索索引 | ✅ 独立于生成器，切换后照旧在 `public` 产物上跑 |
@@ -102,3 +103,9 @@ diff 的归一化规则（有意屏蔽的已知差异，见 `src/diff.rs`）：
 - **归档卡片的封面图逻辑跟 og:image 是两条完全不同的路径**：archive-cover-url.html
   只认 `Params.cover`/`image`/`featured_image`，从来不看 front matter 的 `images`
   （那是 og:image/JSON-LD 用的），永远退到正文里第一张图。
+- **redirectTo 的 meta-refresh 块前后各有一个空行**（`</head>` 前的固定空行 + 块自己
+  的收尾空行），比表面看起来更"贵"——两侧都要留空行，不能只加一侧，否则后面所有
+  内容整体错位一行（`/en/posts/` 这组页面踩过）。
+- **pagination-nav 的 for/if 全部要用 `{%-` 左裁剪**：跟 category-filter 循环体一样，
+  Hugo 原模板里 `{{- if -}}...{{- else -}}...{{- end }}` 是逐个都裁剪的，模仿时漏一个
+  裁剪标记就会在页码之间插入不该有的空行。

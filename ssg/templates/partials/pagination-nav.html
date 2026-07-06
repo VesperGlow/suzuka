@@ -1,0 +1,39 @@
+{%- if pager_total > 1 %}
+  <nav class="pagination" aria-label="{{ t("pagination") }}">
+    <div class="pagination-edge">
+      {%- if pager_current != 1 %}
+        <a href="{{ pager_first_url | safe }}" aria-label="{{ t("firstPageLabel") }}">{{ t("firstPage") }}</a>
+      {%- else %}
+        <span class="is-disabled" aria-disabled="true">{{ t("firstPage") }}</span>
+      {%- endif %}
+      {%- if pager_prev_url %}
+        <a href="{{ pager_prev_url | safe }}" rel="prev">{{ t("previousPage") }}</a>
+      {%- else %}
+        <span class="is-disabled" aria-disabled="true">{{ t("previousPage") }}</span>
+      {%- endif %}
+    </div>
+
+    <div class="pagination-pages" aria-label="{{ t("pageNumbers") }}">
+      {%- for p in pager_pages %}
+        {%- if p.number == pager_current %}
+            <span class="is-current" aria-current="page" aria-label="{{ t("currentPageLabel", Number=p.number) }}">{{ p.number }}</span>
+        {%- else %}
+            <a href="{{ p.url | safe }}" aria-label="{{ t("goToPageLabel", Number=p.number) }}">{{ p.number }}</a>
+        {%- endif %}
+      {%- endfor %}
+    </div>
+
+    <div class="pagination-edge pagination-edge-next">
+      {%- if pager_next_url %}
+        <a href="{{ pager_next_url | safe }}" rel="next">{{ t("nextPage") }}</a>
+      {%- else %}
+        <span class="is-disabled" aria-disabled="true">{{ t("nextPage") }}</span>
+      {%- endif %}
+      {%- if pager_current != pager_total %}
+        <a href="{{ pager_last_url | safe }}" aria-label="{{ t("lastPageLabel") }}">{{ t("lastPage") }}</a>
+      {%- else %}
+        <span class="is-disabled" aria-disabled="true">{{ t("lastPage") }}</span>
+      {%- endif %}
+    </div>
+  </nav>
+{%- endif %}
