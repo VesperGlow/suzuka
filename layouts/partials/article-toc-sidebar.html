@@ -1,6 +1,0 @@
-<aside class="article-sidebar" aria-label="{{ i18n "tableOfContents" }}" data-article-toc-desktop>
-  <div class="article-toc-desktop">
-    <p>{{ i18n "tableOfContents" }}</p>
-    {{ replace .TableOfContents `id="TableOfContents"` (printf `id="article-toc-sidebar" aria-label="%s"` (i18n "sidebarToc")) | safeHTML }}
-  </div>
-</aside>

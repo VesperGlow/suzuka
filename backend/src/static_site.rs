@@ -10,9 +10,9 @@ use axum::Router;
 use tower::service_fn;
 use tower_http::services::ServeDir;
 
-/// 在根路径托管 Hugo 产物。ServeDir 自带目录 index.html 回退与
+/// 在根路径托管 ssg 产物。ServeDir 自带目录 index.html 回退与
 /// Last-Modified / Range / 条件请求；MIME 表由 mime_guess 内置，
-/// 不依赖运行镜像里的 /etc/mime.types。未命中时返回 Hugo 的 404.html。
+/// 不依赖运行镜像里的 /etc/mime.types。未命中时返回 ssg 的 404.html。
 pub fn static_router(dir: &str) -> Router {
     let not_found_page = Path::new(dir).join("404.html");
     let fallback = service_fn(move |request: Request<Body>| {
@@ -71,12 +71,12 @@ fn cache_control_for(url_path: &str) -> Option<&'static str> {
         return Some(REVALIDATE_CACHE);
     }
 
-    // Hugo 生成的搜索回退索引：固定名，每次发布都变。
+    // ssg 生成的搜索回退索引：固定名，每次发布都变。
     if base == "index.json" {
         return Some(REVALIDATE_CACHE);
     }
 
-    // Hugo 指纹资源（name.min.<hash>.ext）：改了内容即换名字，可 immutable。
+    // ssg 指纹资源（name.min.<hash>.ext）：改了内容即换名字，可 immutable。
     if is_fingerprinted(base) {
         return Some(IMMUTABLE_CACHE);
     }
@@ -85,7 +85,7 @@ fn cache_control_for(url_path: &str) -> Option<&'static str> {
     None
 }
 
-/// 判断是否为 Hugo 指纹文件：倒数第二段为一段长十六进制内容散列。
+/// 判断是否为 ssg 指纹文件：倒数第二段为一段长十六进制内容散列。
 fn is_fingerprinted(base: &str) -> bool {
     let parts: Vec<&str> = base.split('.').collect();
     if parts.len() < 3 {

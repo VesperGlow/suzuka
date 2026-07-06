@@ -1,13 +1,18 @@
 # ssg — suzuka 专用静态站点生成器
 
-为 suzuka-chan.moe **单站定制**的 Rust 生成器，已替代 Hugo 作为生产构建的静态站生成器
-（见根目录 `Containerfile` / `package.json`）。不是通用 SSG：只实现本站 `content/` +
-`layouts/` 实际用到的功能，其余一律不做。
+为 suzuka-chan.moe **单站定制**的 Rust 生成器，是本站唯一的静态站生成器（见根目录
+`Containerfile` / `package.json`）。不是通用 SSG：只实现本站 `content/` 实际用到的
+功能，其余一律不做。
 
 与 `backend/` 平级、**独立 crate**（不是 workspace 成员），不影响现有后端构建。
 
-Hugo 与 `layouts/`/`hugo.toml` 仍保留在仓库里，作为 `ssg-parity` 对拍的黄金基准来源，
-不再参与生产构建。
+这份生成器最初是逐页对拍 Hugo 产物、照着 Hugo 模板（`layouts/`）手工移植出来的——
+迁移验证完成后 Hugo 本身、`layouts/` 和当时用来跑对拍的 `ssg-parity` CI workflow
+都已经从仓库里删掉了。仓库根目录的 `hugo.toml` 保留了下来，但现在是 ssg **自己**在读
+的配置文件，文件名只是历史遗留，跟 Hugo 已经没有关系。下面"对拍"一节记录的是当时
+用来验证迁移正确性的方法论，留着是为了让后面改动 `ssg/` 的人知道这些 `已知硬骨头`
+条目是怎么查出来的；里面提到的 `hugo --destination golden` 命令本身已经跑不通了
+（没有 `layouts/` 可渲染）。
 
 ## 运行
 
@@ -18,10 +23,10 @@ cargo run --manifest-path ssg/Cargo.toml -- build --source . --dest public-ssg
 cargo run --manifest-path ssg/Cargo.toml -- build --source . --dest public --minify
 ```
 
-## 对拍（迁移期的核心手段）
+## 对拍（迁移期用过的方法论，Hugo 已经不在仓库里了）
 
-策略：拿现在的 Hugo 产物当**黄金基准**，逐文件 diff，把差异一次性收敛在构建期，
-而不是切换上线后才零散发现。
+当时的策略：拿 Hugo 产物当**黄金基准**，逐文件 diff，把差异一次性收敛在构建期，
+而不是切换上线后才零散发现。命令形式大致是：
 
 ```sh
 # 1) 用「不带 --minify」的 Hugo 生成基准（与 ssg 当前输出同为未压缩形态）
@@ -32,8 +37,9 @@ cargo run --manifest-path ssg/Cargo.toml -- build --source . --dest public-ssg
 cargo run --manifest-path ssg/Cargo.toml -- diff golden public-ssg
 ```
 
-CI 里有手动触发的 `ssg-parity` workflow 做同样的事（`.github/workflows/ssg-parity.yml`）。
-**只手动触发**，不随 push 跑，作为切换后改动 `content/`/模板时的回归防线。
+第 1 步现在跑不了了（`layouts/` 已删除，本地也不再要求装 Hugo）；`diff` 子命令
+本身还在（`ssg/src/diff.rs`），如果以后需要比较任意两份产物目录，仍然可以用。
+当时 CI 里有个手动触发的 `ssg-parity` workflow 做同样的事，迁移验证完成后已删除。
 
 diff 的归一化规则（有意屏蔽的已知差异，见 `src/diff.rs`）：
 - 资源指纹散列 → `HASH`（跟 Hugo 用的不是同一个 minifier，压缩结果逐字节不同，

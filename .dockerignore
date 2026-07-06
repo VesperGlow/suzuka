@@ -4,8 +4,6 @@
 .claude
 public/
 public-ssg/
-golden/
-.hugo_build.lock
 backend/data/
 backend/target/
 backend/tests/

@@ -2,7 +2,7 @@
 name = "ssg"
 version = "0.1.0"
 edition = "2021"
-description = "suzuka-chan.moe 专用静态站点生成器：对拍 Hugo 产物，逐步替代 Hugo"
+description = "suzuka-chan.moe 专用静态站点生成器"
 
 [dependencies]
 anyhow = "1"

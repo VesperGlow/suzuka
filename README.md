@@ -24,12 +24,12 @@
 
 ```
 content/       文章、归档与独立页面（about / guestbook）
-ssg/           自研静态站点生成器（Rust），生产构建实际用的模板在 ssg/templates/
-layouts/       Hugo 模板，迁移期保留作为 ssg-parity 对拍的黄金基准，不参与生产构建
+ssg/           自研静态站点生成器（Rust），模板在 ssg/templates/
 assets/        CSS 与按需加载的 JS
 i18n/          中英文案
 static/        favicon、角色图等静态资源
-hugo.toml      站点配置（语言、菜单、输出格式、permalink），ssg 也读取这份配置
+hugo.toml      站点配置（语言、菜单、输出格式、permalink）——文件名是历史遗留，
+               内容已经是 ssg 自己在读的配置格式，跟 Hugo 无关
 backend/       留言板 / 阅读量 / 点赞的 Rust + SQLite 服务
 ```
 
@@ -65,8 +65,7 @@ npm run build
   （ssg，编译失败会阻断镜像发布；clippy / rustfmt 两边都作旁路检查），
   再三阶段构建（ssg 生成静态站 + Pagefind 索引 → 编译 Rust 后端 → 合进 scratch）并推镜像到
   GHCR `ghcr.io/<owner>/suzuka:latest`（见 `.github/workflows/site-image.yml` 与根目录
-  `Containerfile`）。`ssg-parity` workflow（手动触发）用 Hugo 产物做黄金基准持续对拍，
-  作为切换后的回归防线。
+  `Containerfile`）。
 - **VPS 只负责跑容器**，监听 HTTP，由 Cloudflare / 反代在前面终止 TLS：
 
   ```sh
@@ -82,4 +81,4 @@ npm run build
   `/data` 卷，应使用支持 SQLite/WAL 的方式定期备份。
 
   Pagefind 版本通过 `Containerfile` 的 `PAGEFIND_VERSION` 构建参数钉死，与本地保持一致。
-  `backend/Containerfile` 仍保留，用于只跑后端 API 的场景。
+  前后端已经合并进同一个容器，不再单独提供只跑后端 API 的 Containerfile。

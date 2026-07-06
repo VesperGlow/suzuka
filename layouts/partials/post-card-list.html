@@ -1,7 +1,0 @@
-<div class="post-list">
-  {{ range .pages }}
-    {{ partial "post-card.html" . }}
-  {{ else }}
-    <p class="empty">{{ .emptyMessage | default (i18n "empty") }}</p>
-  {{ end }}
-</div>

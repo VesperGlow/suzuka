@@ -1,6 +1,0 @@
-{{ define "main" }}
-  {{ partial "page-hero.html" (dict "page" . "eyebrow" (i18n "collectionEyebrow") "description" .Description) }}
-
-  {{ partial "post-card-list.html" (dict "pages" .Paginator.Pages) }}
-  {{ partial "pagination.html" . }}
-{{ end }}
