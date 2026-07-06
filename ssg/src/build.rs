@@ -386,7 +386,7 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
                     content_html: rendered.html,
                 });
             }
-            rss_items.sort_by(|a, b| b.date.cmp(&a.date));
+            rss_items.sort_by_key(|b| std::cmp::Reverse(b.date));
             let last_build_date = rss_items.first().map(|c| c.pub_date.clone());
 
             let rss = render_rss(
@@ -1087,7 +1087,7 @@ fn build_lang_posts(
             items.push((bundle, v));
         }
     }
-    items.sort_by(|a, b| b.1.date.cmp(&a.1.date));
+    items.sort_by_key(|b| std::cmp::Reverse(b.1.date));
 
     let term_ref = |taxonomy: &str, name: &str| TermRef {
         title: content::hugo_title_case(name),
@@ -1152,9 +1152,9 @@ fn build_lang_posts(
         };
         total_words += word_count;
         let reading_time = if lang.has_cjk {
-            (word_count + 500) / 501
+            word_count.div_ceil(501)
         } else {
-            (word_count + 212) / 213
+            word_count.div_ceil(213)
         };
         let h2_count = rendered.toc.iter().filter(|t| t.level == 2).count();
         let has_toc = h2_count > 1;
@@ -2081,7 +2081,7 @@ fn format_number(n: usize) -> String {
     let mut out = String::with_capacity(digits.len() + digits.len() / 3);
     let len = digits.len();
     for (i, ch) in digits.chars().enumerate() {
-        if i > 0 && (len - i) % 3 == 0 {
+        if i > 0 && (len - i).is_multiple_of(3) {
             out.push(',');
         }
         out.push(ch);
@@ -2287,6 +2287,7 @@ fn channel_title(page_title: &str, site_title: &str) -> String {
 ///   扫到下一个空白"，中间调试时被 `strings.Truncate` 返回值里重新转义
 ///   引号（见 escape_attr 调用处）多出来的字节数误导过，以为是内容本身
 ///   变长了。
+///
 /// 截断后补 " …"（空格 + 省略号）。
 /// 文章没写 description 时的兜底摘要：从正文纯文本截取前 `max_words` 个词
 /// （config.toml `summaryLength`，语义对齐 Hugo `.Summary`，默认 70）——

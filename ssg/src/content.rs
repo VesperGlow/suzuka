@@ -82,7 +82,6 @@ pub enum PageKind {
 }
 
 pub struct PostBundle {
-    pub key: String,
     /// URL 路径段（slug 优先，否则目录名）
     pub slug: String,
     pub resources: Vec<Resource>,
@@ -153,14 +152,13 @@ pub fn load(source: &Path, default_lang: &str) -> Result<Content> {
             .and_then(|v| v.fm.slug.clone())
             .unwrap_or_else(|| key.clone());
         posts.push(PostBundle {
-            key,
             slug,
             resources,
             versions,
         });
     }
     // 站内的默认排序：日期倒序（新→旧）
-    posts.sort_by(|a, b| bundle_date(b).cmp(&bundle_date(a)));
+    posts.sort_by_key(|b| std::cmp::Reverse(bundle_date(b)));
 
     let pages = load_pages_in_dir(&source.join("content").join("pages"), default_lang)?;
     let archives = load_pages_in_dir(&source.join("content").join("archives"), default_lang)?;

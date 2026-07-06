@@ -1,13 +1,6 @@
 use anyhow::{Context, Result};
 use std::path::Path;
 
-pub struct MenuItem {
-    pub identifier: String,
-    pub name: String,
-    pub page_ref: String,
-    pub weight: i64,
-}
-
 pub struct Language {
     /// site.toml 里的语言键，如 "zh-cn"、"en"
     pub code: String,
@@ -16,7 +9,6 @@ pub struct Language {
     pub description: String,
     pub weight: i64,
     pub has_cjk: bool,
-    pub menus: Vec<MenuItem>,
 }
 
 impl Language {
@@ -78,22 +70,6 @@ impl SiteConfig {
         if let Some(langs) = doc.get("languages").and_then(|v| v.as_table()) {
             for (code, lang) in langs {
                 let lang_params = lang.get("params");
-                let mut menus = Vec::new();
-                if let Some(items) = lang
-                    .get("menus")
-                    .and_then(|m| m.get("main"))
-                    .and_then(|v| v.as_array())
-                {
-                    for item in items {
-                        menus.push(MenuItem {
-                            identifier: str_field(item, "identifier"),
-                            name: str_field(item, "name"),
-                            page_ref: str_field(item, "pageRef"),
-                            weight: item.get("weight").and_then(|v| v.as_integer()).unwrap_or(0),
-                        });
-                    }
-                    menus.sort_by_key(|m| m.weight);
-                }
                 languages.push(Language {
                     code: code.clone(),
                     locale: str_field(lang, "locale"),
@@ -106,7 +82,6 @@ impl SiteConfig {
                         .get("hasCJKLanguage")
                         .and_then(|v| v.as_bool())
                         .unwrap_or(false),
-                    menus,
                 });
             }
         }
