@@ -1,0 +1,16 @@
+{% extends "baseof.html" %}
+{% block main %}
+  <header class="page-header">
+  <p class="eyebrow">{{ t("indexEyebrow") }}</p>
+  <h1>{{ page.title }}</h1>
+  <p>{{ t("termsDescription") }}</p>
+</header>
+
+  <div class="term-cloud">
+    {% for term in terms %}
+      <a href="{{ term.rel | safe }}"><span>{{ term.title }}</span><small>{{ term.cards | length }}</small></a>
+    {% else %}
+      <p class="empty">{{ t("empty") }}</p>
+    {% endfor %}
+  </div>
+{% endblock %}

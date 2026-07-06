@@ -1,0 +1,18 @@
+{% extends "baseof.html" %}
+{% block main %}
+  <header class="page-header term-page-header">
+    <p class="eyebrow">{{ t("collectionEyebrow") }}</p>
+    <h1>{{ page.title }}</h1>
+    <div class="term-page-meta">
+      <span>{{ t("postCount", Count=cards | length) }}</span>
+      <a class="text-link" href="{{ site.home_rel | safe }}archives/">{{ t("allPosts") }} <span aria-hidden="true">→</span></a>
+    </div>
+  </header>
+
+  {% include "partials/post-card-list.html" %}
+  {% if is_category %}
+    <div class="collection-footer category-footer">
+      <a class="text-link" href="{{ site.home_rel | safe }}archives/">{{ t("viewAllPosts") }} <span aria-hidden="true">→</span></a>
+    </div>
+  {% endif %}
+{% endblock %}

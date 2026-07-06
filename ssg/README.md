@@ -53,7 +53,8 @@ diff 的归一化规则（有意屏蔽的已知差异，见 `src/diff.rs`）：
 | robots.txt / 404 页 | ✅ 首版 |
 | 首页 RSS（feed.xml）/ JSON Feed（feed.json）/ index.json / guestbook-posts.json | ✅ 首版（index.json 的 `content` 截断边界跟 Hugo `strings.Truncate` 有极小尾差，见下） |
 | 归档页（archives，双视图 + 分类/标签过滤器 + 自己的 feed.xml） | ✅ 首版，对拍通过 |
-| 标签/分类列表页与 term 页、`/posts/` 隐式 section 列表页、sitemap.xml | ⏳ 未实现（目前对拍缺口的大头） |
+| 标签/分类列表页与 term 页（各自的 feed.xml、term 页冗余的 `/p/1/` 跳转桩） | ✅ 首版，对拍通过（列表页 feed.xml 里 term 条目同日期的先后顺序跟黄金基准不完全一致，见下） |
+| `/posts/` 隐式 section 列表页（英文有、中文因 `build.render: never` 被关掉）、sitemap.xml | ⏳ 未实现（目前对拍缺口的全部：`en/posts/*` 一组 + 三份 sitemap.xml） |
 | 分页（`/p/2/` 等） | ⏳ 未实现（只有 `/en/posts/` 这一个 section 因为 7 篇 > pagerSize 6 真的会分页，其余 term 页条目数都不够） |
 | 代码高亮（syntect → Chroma class） | ⏳ 未实现（本站文章目前无代码块） |
 | HTML/CSS/JS minify | ⏳ 未实现（生产此前用 `hugo --minify`；切换后产物比 Hugo 版更大，功能不受影响） |
@@ -87,3 +88,17 @@ diff 的归一化规则（有意屏蔽的已知差异，见 `src/diff.rs`）：
   "缩进多一层"这类纯空白差异（archives 页开发时踩过两次：`{% block main %}` 后要用
   `-%}` 去掉紧跟的空行；分类过滤器循环体的换行要放在 `{% for %}` 标签所在行的末尾，
   不能放在下一行开头，否则每次迭代都会重复插入一次缩进/空行）。
+- **URL 的百分号编码路径 ≠ 文件系统路径**：taxonomy term 的 slug 可能是中日文
+  （如"视觉小说"），`content::encode_path` 编码后的形式只能用在 href/canonical 这些
+  文本里，磁盘上的目录名必须用 `TermAgg.slug` 原始（未编码）的 UTF-8 字符——文章
+  slug 因为本来就是纯 ASCII，这个区别之前一直没露出来，加 term 页时才第一次真正踩到。
+- **hreflang alternate 的顺序固定按 `config.languages` 的顺序（zh 在前）**，跟"当前
+  渲染的是哪个语言"无关；一开始写成"自己排第一、另一个语言排第二"，在渲染英文页时
+  顺序就反了——sitemap.xml 和这里的 term/list 页面都要注意。
+- **taxonomy 列表页的 feed.xml 和页面上的 term 云用的不是同一个排序**：页面上是
+  `site.Taxonomies.*.ByCount`（数量倒序，同数量按标题字母序），但列表页自己的
+  `feed.xml` 条目是`.Pages`默认序，实测更接近"这个 term 最新一篇成员文章的日期倒序"，
+  同日期的并列顺序没有再深究（跟 sitemap.xml 的并列顺序一样，认为是可接受的已知差异）。
+- **归档卡片的封面图逻辑跟 og:image 是两条完全不同的路径**：archive-cover-url.html
+  只认 `Params.cover`/`image`/`featured_image`，从来不看 front matter 的 `images`
+  （那是 og:image/JSON-LD 用的），永远退到正文里第一张图。

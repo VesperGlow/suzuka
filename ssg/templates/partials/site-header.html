@@ -2,6 +2,7 @@
 {%- for tr in page.all_translations -%}
   {%- if tr.lang != site.lang -%}{% set ns.url = tr.rel %}{% set ns.locale = tr.locale %}{%- endif -%}
 {%- endfor -%}
+{%- if ns.url == "" -%}{% set ns.url = site.other_lang_home_rel %}{% set ns.locale = site.other_lang_locale %}{%- endif -%}
 <header class="site-header">
   <div class="header-inner">
     <button class="header-action sidebar-toggle" type="button" data-sidebar-toggle aria-controls="sidebar-nav" aria-expanded="false" aria-label="{{ t("sidebarToggle") }}" title="{{ t("sidebarToggle") }}">

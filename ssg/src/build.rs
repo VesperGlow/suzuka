@@ -70,6 +70,12 @@ struct SiteCtx {
     jsonfeed_rel: String,
     about_rel: String,
     guestbook_rel: String,
+    /// 语言切换按钮的兜底目标：当前页在另一语言没有对应翻译时（比如没有
+    /// 对应内容的 taxonomy term 页），退回那个语言的首页——跟
+    /// `page.all_translations`（决定 `<head>` 里真正的 hreflang alternate，
+    /// 没有翻译就不输出）是两条独立的逻辑
+    other_lang_home_rel: String,
+    other_lang_locale: String,
 }
 
 #[derive(Serialize, Default, Clone)]
@@ -290,6 +296,25 @@ pub fn build(source: &Path, dest: &Path) -> Result<()> {
             jsonfeed_rel: format!("{prefix}/feed.json"),
             about_rel: special_rel("about", &lang.code),
             guestbook_rel: special_rel("guestbook", &lang.code),
+            other_lang_home_rel: config
+                .languages
+                .iter()
+                .find(|l| l.code != lang.code)
+                .map(|l| {
+                    let p = l.url_prefix(&config.default_lang);
+                    if p.is_empty() {
+                        "/".to_string()
+                    } else {
+                        format!("{p}/")
+                    }
+                })
+                .unwrap_or_default(),
+            other_lang_locale: config
+                .languages
+                .iter()
+                .find(|l| l.code != lang.code)
+                .map(|l| l.locale.clone())
+                .unwrap_or_default(),
         };
 
         // 首页
@@ -543,6 +568,190 @@ pub fn build(source: &Path, dest: &Path) -> Result<()> {
                 format!("{prefix}/archives/feed.xml").trim_start_matches('/'),
                 &rss,
             )?;
+        }
+
+        // 分类/标签：列表页 + term 页（各自带 feed.xml；term 页还有一份
+        // 冗余的 /p/1/ 副本——本站条目量下没有真正触发分页，但 Hugo 对
+        // 分页页 1 本来就会同时出 index.html 和 p/1/index.html 两份）
+        for (taxonomy, singular, list_title, terms) in [
+            ("categories", "category", "Categories", &data.categories),
+            ("tags", "tag", "Tags", &data.tags),
+        ] {
+            let list_rel = format!("{prefix}/{taxonomy}/");
+            let mut sorted_terms = terms.clone();
+            sort_terms_by_count(&mut sorted_terms);
+
+            let list_ctx = terms_list_ctx(
+                &config,
+                lang,
+                taxonomy,
+                singular,
+                list_title,
+                data.newest_date,
+            )?;
+            render_to(
+                &env,
+                "taxonomy-list.html",
+                dest,
+                &format!("{}index.html", list_rel.trim_start_matches('/')),
+                minijinja::context! {
+                    lang => lang.code.clone(),
+                    site => &site,
+                    page => &list_ctx,
+                    posts => &data.post_refs,
+                    timeline => &data.timeline,
+                    theme_js => &assets.theme_js,
+                    terms => &sorted_terms,
+                },
+            )?;
+
+            // 列表页自己的 feed.xml：条目是子 term 页本身（不是文章），顺序
+            // 是 term 自己最新一篇成员文章的日期倒序——跟页面上 term 云
+            // 用的 .ByCount（数量倒序、同数量按标题字母序）是两条不同的排序
+            let mut terms_by_date = terms.to_vec();
+            terms_by_date.sort_by(|a, b| {
+                let da = a.cards.iter().map(|c| c.date).max();
+                let db = b.cards.iter().map(|c| c.date).max();
+                db.cmp(&da)
+            });
+            let term_links: Vec<(String, String, String)> = terms_by_date
+                .iter()
+                .map(|t| {
+                    let link = format!("{}{}", config.base_url, t.rel);
+                    let pub_date = t
+                        .cards
+                        .iter()
+                        .map(|c| c.date)
+                        .max()
+                        .map(|d| gotime::format(&d, "Mon, 02 Jan 2006 15:04:05 -0700"))
+                        .unwrap_or_default();
+                    (t.title.clone(), link, pub_date)
+                })
+                .collect();
+            let list_last_build_date = data
+                .newest_date
+                .map(|d| gotime::format(&d, "Mon, 02 Jan 2006 15:04:05 -0700"));
+            let list_rss = render_rss(
+                &channel_title(&list_ctx.title, &lang.title),
+                &list_ctx.permalink,
+                &list_ctx.description,
+                &lang.title,
+                &lang.locale,
+                &config.author,
+                chrono::Utc::now().year(),
+                list_last_build_date.as_deref(),
+                &format!("{}{}", config.base_url, list_ctx.rss_rel.unwrap_or_default()),
+                &term_links
+                    .iter()
+                    .map(|(title, link, pub_date)| RssItem {
+                        title,
+                        link,
+                        pub_date,
+                        categories: &[],
+                        content_html: None,
+                    })
+                    .collect::<Vec<_>>(),
+                &config.base_url,
+            );
+            write_file(
+                dest,
+                format!("{prefix}/{taxonomy}/feed.xml").trim_start_matches('/'),
+                &list_rss,
+            )?;
+
+            // term 页
+            for term in &sorted_terms {
+                // 按 config.languages 的固定顺序（zh 在前）列出这个 term
+                // 在每种语言下的对应页——不管当前渲染的是哪个语言，顺序都一样
+                let all_translations: Vec<TranslationRef> = config
+                    .languages
+                    .iter()
+                    .filter_map(|l| {
+                        let r = if l.code == lang.code {
+                            term.rel.clone()
+                        } else {
+                            let other_terms = if taxonomy == "categories" {
+                                &lang_data[&l.code].categories
+                            } else {
+                                &lang_data[&l.code].tags
+                            };
+                            let other_term = other_terms.iter().find(|t| t.slug == term.slug)?;
+                            let p = l.url_prefix(&config.default_lang);
+                            format!("{p}/{taxonomy}/{}/", content::encode_path(&other_term.slug))
+                        };
+                        Some(TranslationRef {
+                            lang: l.code.clone(),
+                            locale: l.locale.clone(),
+                            permalink: format!("{}{r}", config.base_url),
+                            rel: r,
+                        })
+                    })
+                    .collect();
+
+                let term_ctx_val = term_ctx(&config, lang, singular, term, all_translations)?;
+                // 文件系统路径要用没编码过的原始 slug（磁盘目录名就是真实的
+                // UTF-8 字符），不能用 term.rel——那个是给 href/canonical 用的
+                // 百分号编码形式，两者只在纯 ASCII slug（文章 slug）时恰好相同
+                let disk_dir = format!("{prefix}/{taxonomy}/{}/", term.slug)
+                    .trim_start_matches('/')
+                    .to_string();
+                let out_rel = format!("{disk_dir}index.html");
+                let ctx_value = minijinja::context! {
+                    lang => lang.code.clone(),
+                    site => &site,
+                    page => &term_ctx_val,
+                    posts => &data.post_refs,
+                    timeline => &data.timeline,
+                    theme_js => &assets.theme_js,
+                    cards => &term.cards,
+                    is_category => taxonomy == "categories",
+                };
+                render_to(&env, "taxonomy-term.html", dest, &out_rel, ctx_value)?;
+                // /p/1/：分页器页 1 的冗余副本，Hugo 对它输出的不是完整
+                // 页面，是跳回规范 URL 的 meta-refresh 跳转桩（跟别名跳转页
+                // 同一种模板）
+                let p1_rel = format!("{disk_dir}p/1/index.html");
+                write_file(
+                    dest,
+                    &p1_rel,
+                    &alias_html(&lang.locale, &term_ctx_val.permalink),
+                )?;
+
+                let term_last_build_date = term
+                    .cards
+                    .iter()
+                    .map(|c| c.date)
+                    .max()
+                    .map(|d| gotime::format(&d, "Mon, 02 Jan 2006 15:04:05 -0700"));
+                let term_rss = render_rss(
+                    &channel_title(&term_ctx_val.title, &lang.title),
+                    &term_ctx_val.permalink,
+                    &term_ctx_val.description,
+                    &lang.title,
+                    &lang.locale,
+                    &config.author,
+                    chrono::Utc::now().year(),
+                    term_last_build_date.as_deref(),
+                    &format!(
+                        "{}{}",
+                        config.base_url,
+                        term_ctx_val.rss_rel.unwrap_or_default()
+                    ),
+                    &term
+                        .cards
+                        .iter()
+                        .map(|c| RssItem {
+                            title: &c.title,
+                            link: &c.permalink,
+                            pub_date: &c.pub_date,
+                            categories: &c.tags_title,
+                            content_html: Some(&c.content_html),
+                        })
+                        .collect::<Vec<_>>(),
+                    &config.base_url,
+                );
+                write_file(dest, &format!("{disk_dir}feed.xml"), &term_rss)?;
+            }
         }
 
         // 文章页 + 别名跳转页
@@ -1084,6 +1293,132 @@ fn archives_ctx(
         rss_rel: Some(format!("{prefix}/archives/feed.xml")),
         permalink,
         content_html,
+        all_translations,
+        internal_meta,
+        ..Default::default()
+    })
+}
+
+/// 单个 term 页（如 /tags/atri/、/categories/游戏感想/）：og:type=website，
+/// 没有专属内容，标题/描述都是自动生成的（标题 = term 的自动 title，
+/// 描述退到站点描述），日期取这个 term 下最新一篇文章的日期
+fn term_ctx(
+    config: &SiteConfig,
+    lang: &crate::config::Language,
+    taxonomy_singular: &str,
+    term: &TermAgg,
+    all_translations: Vec<TranslationRef>,
+) -> Result<PageCtx> {
+    let permalink = format!("{}{}", config.base_url, term.rel);
+    let description = lang.description.clone();
+    let newest = term.cards.iter().map(|c| c.date).max();
+    let date_rfc = newest
+        .map(|d| gotime::format(&d, "2006-01-02T15:04:05-07:00"))
+        .unwrap_or_default();
+    let fallback_img = config
+        .images
+        .first()
+        .map(|img| format!("{}/{img}", config.base_url))
+        .unwrap_or_default();
+
+    let internal_meta = internal_meta_block(&InternalMeta {
+        permalink: &permalink,
+        site_title: &lang.title,
+        title: &term.title,
+        description: &description,
+        locale: &lang.locale.replace('-', "_"),
+        og_type: "website",
+        section: None,
+        date_published: &date_rfc,
+        date_modified: &date_rfc,
+        tags: &[],
+        image: &fallback_img,
+        word_count: None,
+        jsonld: None,
+    });
+
+    Ok(PageCtx {
+        kind: "term".into(),
+        section: taxonomy_singular.into(),
+        title: term.title.clone(),
+        description_meta: collapse_ws(&description),
+        description,
+        rel_permalink: term.rel.clone(),
+        canonical: permalink.clone(),
+        rss_rel: Some(format!("{}feed.xml", term.rel)),
+        permalink,
+        all_translations,
+        internal_meta,
+        ..Default::default()
+    })
+}
+
+/// taxonomy 列表页（/categories/、/tags/）：标题固定是 Hugo 对
+/// taxonomies.<key> 自动生成的英文复数（不走 i18n，两种语言都一样）
+fn terms_list_ctx(
+    config: &SiteConfig,
+    lang: &crate::config::Language,
+    taxonomy: &str,
+    taxonomy_singular: &str,
+    title: &str,
+    newest_date: Option<DateTime<FixedOffset>>,
+) -> Result<PageCtx> {
+    let prefix = lang.url_prefix(&config.default_lang);
+    let rel = format!("{prefix}/{taxonomy}/");
+    let permalink = format!("{}{rel}", config.base_url);
+    let description = lang.description.clone();
+    let date_rfc = newest_date
+        .map(|d| gotime::format(&d, "2006-01-02T15:04:05-07:00"))
+        .unwrap_or_default();
+    let fallback_img = config
+        .images
+        .first()
+        .map(|img| format!("{}/{img}", config.base_url))
+        .unwrap_or_default();
+
+    // 每种语言各自独立算 rel（不能拿当前语言已经拼好前缀的 rel 去给
+    // 别的语言复用），按 config.languages 的固定顺序排列
+    let all_translations = config
+        .languages
+        .iter()
+        .map(|l| {
+            let p = l.url_prefix(&config.default_lang);
+            let r = format!("{p}/{taxonomy}/");
+            TranslationRef {
+                lang: l.code.clone(),
+                locale: l.locale.clone(),
+                permalink: format!("{}{r}", config.base_url),
+                rel: r,
+            }
+        })
+        .collect();
+
+    let internal_meta = internal_meta_block(&InternalMeta {
+        permalink: &permalink,
+        site_title: &lang.title,
+        title,
+        description: &description,
+        locale: &lang.locale.replace('-', "_"),
+        og_type: "website",
+        section: None,
+        date_published: &date_rfc,
+        date_modified: &date_rfc,
+        tags: &[],
+        image: &fallback_img,
+        word_count: None,
+        jsonld: None,
+    });
+
+    Ok(PageCtx {
+        kind: "terms".into(),
+        section: taxonomy_singular.into(),
+        title: title.into(),
+        description_meta: collapse_ws(&description),
+        description,
+        canonical: permalink.clone(),
+        rss_rel: Some(format!("{rel}feed.xml")),
+        rel_permalink: rel,
+        permalink,
         all_translations,
         internal_meta,
         ..Default::default()
