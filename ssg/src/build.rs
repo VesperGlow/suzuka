@@ -432,7 +432,7 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
             write_file(
                 dest,
                 format!("{prefix}/index.json").trim_start_matches('/'),
-                &index_json(&card_refs),
+                &index_json(&card_refs, lang.has_cjk),
             )?;
 
             let default_bundle_cards: Vec<GuestbookItem> = content
@@ -2068,11 +2068,13 @@ fn format_number(n: usize) -> String {
     out
 }
 
-/// Hugo `htmlUnescape` 只在 index.json 的 `.Plain` 上用了一次；实测行为是
-/// 排版实体（弯引号/破折号/省略号，都是"配对成功"才产生的）会解码回真实字符，
-/// 但 typographer 遇到无法判断开合的直引号、原样转义成的 `&quot;`/`&#34;`
-/// 反而不会被解开——所以这里故意不处理 quot/#34/#39/apos，让它保持实体文本，
-/// 跟 diff.rs 里 `&#34;`/`&quot;` 的归一化规则对上
+/// Hugo `htmlUnescape`：把 `.Plain` 里残留的 HTML 实体（不管是排版实体
+/// 弯引号/破折号/省略号，还是 typographer 判不清开合、原样转义出来的
+/// `&quot;`/`&#34;`）**全部**解码回真实字符——不区分种类。之前以为
+/// `&quot;`/`&#34;` 不会被解开，是因为看错了对象：那份 &#34; 其实是
+/// `strings.Truncate`（返回值类型是 template.HTML）截断之后自己重新转义
+/// 出来的，不是 htmlUnescape 漏掉没解码；`.Plain | htmlUnescape` 这一步
+/// 本身对所有实体一视同仁，通过对照 Hugo 直接跑模板验证过。
 fn html_unescape_typographic(s: &str) -> String {
     s.replace("&ldquo;", "\u{201c}")
         .replace("&rdquo;", "\u{201d}")
@@ -2081,6 +2083,10 @@ fn html_unescape_typographic(s: &str) -> String {
         .replace("&hellip;", "\u{2026}")
         .replace("&mdash;", "\u{2014}")
         .replace("&ndash;", "\u{2013}")
+        .replace("&quot;", "\"")
+        .replace("&#34;", "\"")
+        .replace("&#39;", "'")
+        .replace("&apos;", "'")
         .replace("&lt;", "<")
         .replace("&gt;", ">")
         .replace("&amp;", "&")
@@ -2232,18 +2238,30 @@ fn channel_title(page_title: &str, site_title: &str) -> String {
     }
 }
 
-/// Hugo `strings.Truncate <max>`：按字符数截断，避免切在词中间——是往前
-/// 扫到下一个空白（而不是回退到上一个），所以结果常常比 max 更长；
-/// 截断时补 " …"（空格 + 省略号）
-fn truncate_runes(s: &str, max: usize) -> String {
+/// Hugo `strings.Truncate <max>`：按脚本类型分两种行为，直接拿 Hugo 本地
+/// 实测验证过（把同一段 `.Plain | htmlUnescape | ...` 文本喂给 `hugo` 和
+/// ssg 逐字符比对，对着黄金基准的 index.json 一条条核对出来的）——
+/// - CJK：硬切在第 max 个字符，不做任何词边界调整（连续汉字之间本来就
+///   没有空格分词，切哪都一样）。
+/// - 非 CJK（空格分词的语言，如英文）：先看第 max 个字符本身是不是空白——
+///   如果是，说明这个切点已经在词与词之间，直接切；如果不是（切在词中间），
+///   才往前找最近的空白字符，切在那里，丢掉被切开的半个单词。不是"往后
+///   扫到下一个空白"，中间调试时被 `strings.Truncate` 返回值里重新转义
+///   引号（见 escape_attr 调用处）多出来的字节数误导过，以为是内容本身
+///   变长了。
+/// 截断后补 " …"（空格 + 省略号）。
+fn truncate_runes(s: &str, max: usize, has_cjk: bool) -> String {
     let chars: Vec<char> = s.chars().collect();
     if chars.len() <= max {
         return s.to_string();
     }
-    let mut cut = max;
-    while cut < chars.len() && !chars[cut].is_whitespace() {
-        cut += 1;
-    }
+    let cut = if has_cjk || chars[max].is_whitespace() {
+        // 第 max 个字符本身已经是空白，说明这个位置已经在词与词之间，
+        // 不需要再往前找
+        max
+    } else {
+        (0..max).rev().find(|&i| chars[i].is_whitespace()).unwrap_or(max)
+    };
     let mut out: String = chars[..cut].iter().collect();
     out.push_str(" …");
     out
@@ -2344,12 +2362,15 @@ fn json_html_escape(s: &str) -> String {
 }
 
 /// layouts/index.json：全部文章的极简摘要列表（url/title/date/tags/content）
-fn index_json(items: &[&PostCard]) -> String {
+fn index_json(items: &[&PostCard], has_cjk: bool) -> String {
     let arr: Vec<serde_json::Value> = items
         .iter()
         .map(|c| {
             ordered_json(vec![
-                ("content", serde_json::json!(truncate_runes(&c.plain, 800))),
+                (
+                    "content",
+                    serde_json::json!(escape_attr(&truncate_runes(&c.plain, 800, has_cjk))),
+                ),
                 ("date", serde_json::json!(c.date_display)),
                 ("tags", serde_json::json!(c.tags_raw)),
                 ("title", serde_json::json!(c.title)),

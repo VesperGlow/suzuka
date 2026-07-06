@@ -63,7 +63,7 @@ minifier。
 | 资源指纹（兼容 `backend/src/static_site.rs` 的 `.min.<hash>.ext` 判断） | ✅ 命名兼容，散列基于压缩后内容 |
 | about / guestbook 独立页（自定义 layout） | ✅ 首版 |
 | robots.txt / 404 页 | ✅ 首版 |
-| 首页 RSS（feed.xml）/ JSON Feed（feed.json）/ index.json / guestbook-posts.json | ✅ 首版（index.json 的 `content` 截断边界跟 Hugo `strings.Truncate` 有极小尾差，见下） |
+| 首页 RSS（feed.xml）/ JSON Feed（feed.json）/ index.json / guestbook-posts.json | ✅ 首版，对拍通过（含 index.json 的 `content` 截断，见下的 `strings.Truncate` 说明） |
 | 归档页（archives，双视图 + 分类/标签过滤器 + 自己的 feed.xml） | ✅ 首版，对拍通过 |
 | 标签/分类列表页与 term 页（各自的 feed.xml、term 页冗余的 `/p/1/` 跳转桩） | ✅ 首版，对拍通过（列表页 feed.xml 里 term 条目同日期的先后顺序跟黄金基准不完全一致，见下） |
 | `/posts/` 隐式 section 列表页（英文有、中文因 `build.render: never` 被关掉，含 redirectTo 的 canonical 覆盖） | ✅ 首版，对拍通过 |
@@ -74,9 +74,9 @@ minifier。
 | Pagefind 搜索索引 | ✅ 独立于生成器，切换后照旧在 `public` 产物上跑 |
 
 **当前状态：不压缩的产物与 Hugo 黄金基准文件数完全一致（242/242），内容/结构对拍
-通过；`--minify` 压缩也已实现并验证内容无损。** 仅存的已知差异都是不影响功能的
-细节（见下面"已知硬骨头"）：两处同时间戳条目的并列顺序、index.json 一个字段的
-截断边界、minify 的具体压缩选择跟 Hugo 不同（都合法，只是字节不同）。
+通过，index.json 的截断也已经逐条核对到位；`--minify` 压缩也已实现并验证内容
+无损。** 仅存的已知差异都是不影响功能的细节（见下面"已知硬骨头"）：两处同时间戳
+条目的并列顺序、minify 的具体压缩选择跟 Hugo 不同（都合法，只是字节不同）。
 
 ## 已知硬骨头（诚实记录）
 
@@ -106,11 +106,23 @@ minifier。
   "功能完整"，只代表"已经生成的文件都对得上"。判断真实覆盖率要看文件总数
   （`find golden -type f | wc -l` vs `find <产物目录> -type f | wc -l`），不能只看
   `ssg diff` 的退出码。
-- **index.json 的 `content` 截断**：复刻 Hugo `strings.Truncate 800`（到达目标长度后，
-  往后扫到下一个词边界再切，避免断词，所以结果常比 800 字符更长）本身没问题，但个别
-  文章的截断位置跟黄金基准差几十到一百多字符，怀疑是 `.Plain`/`rendered.plain` 在被
-  去掉的 `<a>` 标签周围空白处理跟 Hugo 有细微出入，导致第 800 个字符的位置本身就对
-  不上。这个字段目前只是一份很少被用到的纯文本预览，没有继续深挖。
+- **index.json 的 `content` 截断——之前的分析是错的，已经用 Hugo 本地实测重新查清楚**：
+  最早以为是 `.Plain`/`rendered.plain` 在 `<a>` 标签周围的空白处理跟 Hugo 有出入；
+  实际验证下来两边的纯文本**逐字节完全相同**，问题全在 `htmlUnescape` 和
+  `strings.Truncate` 本身的行为上，之前都理解错了：
+  1. `htmlUnescape` 对所有实体一视同仁地解码，不分排版实体还是 `&quot;`/`&#34;`——
+     之前以为 `&quot;`/`&#34;` 解不开，是把 `strings.Truncate` 截断之后**自己重新
+     转义引号**（它的返回类型是 `template.HTML`）的产物，误当成了 htmlUnescape
+     漏解码。
+  2. `strings.Truncate` 本身按脚本类型分两种截断行为，**不是"统一往后扫到下一个
+     词边界"**：CJK 硬切在第 N 个字符，不做任何调整；非 CJK（空格分词的语言）
+     则是——如果第 N 个字符本身已经是空白就直接切，否则往前（不是往后）找最近的
+     空白，丢掉被切开的半个单词。两种脚本的真实行为几乎是镜像对称的，而不是同一
+     套逻辑套用在不同文本上恰好表现不同。
+  排查方法：往 `content/`/`hugo.toml` 之外单独起一份临时 Hugo 站点副本，加一个自定义
+  `PLAIN` output format 把 `.Plain | htmlUnescape | ...` 和 `strings.Truncate 800 ...`
+  的中间结果都吐出来，跟 ssg 同一段文本的处理结果逐字符比对——比靠读黄金基准的最终
+  产物猜测靠谱得多。现在两种语言全部 14 篇文章的 index.json 条目都逐字节一致。
 - **minijinja 的 `tojson` 会把结果标成"已安全"**：本意是方便塞进 `<script>` 里，但用
   在 HTML 属性值（如 `data-categories`）里就会跳过属性转义，输出裸引号把属性截断。
   `data-categories`/`data-tags` 因此改成 Rust 侧用 `json_attr()`（`serde_json` 序列化后
