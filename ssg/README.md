@@ -56,10 +56,14 @@ diff 的归一化规则（有意屏蔽的已知差异，见 `src/diff.rs`）：
 | 标签/分类列表页与 term 页（各自的 feed.xml、term 页冗余的 `/p/1/` 跳转桩） | ✅ 首版，对拍通过（列表页 feed.xml 里 term 条目同日期的先后顺序跟黄金基准不完全一致，见下） |
 | `/posts/` 隐式 section 列表页（英文有、中文因 `build.render: never` 被关掉，含 redirectTo 的 canonical 覆盖） | ✅ 首版，对拍通过 |
 | 分页（`/p/2/` 等） | ✅ 首版——`/en/posts/` 是本站唯一真的会分页的地方（7 篇 > pagerSize 6），其余 term 页条目数都不够，只在 `/p/1/` 出跳转桩 |
-| sitemap.xml | ⏳ 未实现（目前对拍缺口的全部） |
+| sitemap.xml（根 sitemapindex + 各语言 urlset，含默认语言的 `/zh-cn/` 重定向桩） | ✅ 首版，URL 集合对拍通过（同 lastmod 并列顺序跟黄金基准不完全一致，见下） |
 | 代码高亮（syntect → Chroma class） | ⏳ 未实现（本站文章目前无代码块） |
 | HTML/CSS/JS minify | ⏳ 未实现（生产此前用 `hugo --minify`；切换后产物比 Hugo 版更大，功能不受影响） |
 | Pagefind 搜索索引 | ✅ 独立于生成器，切换后照旧在 `public` 产物上跑 |
+
+**当前状态：产物与 Hugo 黄金基准文件数完全一致（242/242），内容/结构对拍通过。**
+仅存的已知差异都是不影响功能的细节（见下面"已知硬骨头"）：HTML 未压缩（体积更大）、
+两处同时间戳条目的并列顺序、index.json 一个字段的截断边界。
 
 ## 已知硬骨头（诚实记录）
 
@@ -109,3 +113,10 @@ diff 的归一化规则（有意屏蔽的已知差异，见 `src/diff.rs`）：
 - **pagination-nav 的 for/if 全部要用 `{%-` 左裁剪**：跟 category-filter 循环体一样，
   Hugo 原模板里 `{{- if -}}...{{- else -}}...{{- end }}` 是逐个都裁剪的，模仿时漏一个
   裁剪标记就会在页码之间插入不该有的空行。
+- **sitemap.xml 每种语言固定挂在 `/<语言 code>/sitemap.xml`**（如 `/zh-cn/sitemap.xml`），
+  不是这门语言真实的 URL 前缀——默认语言真实 URL 没有前缀，但 sitemap 命名空间仍然
+  用语言 code，同时 Hugo 还会在这个语言 code 路径下放一个跳回真实首页的重定向桩
+  （`/zh-cn/index.html` → `/`）。
+- **sitemap `<url>` 块之间没有空行也没有缩进**：第一个 `<url>` 紧跟在 `<urlset>` 开
+  标签换行后有 2 格缩进，但后面每个 `<url>` 都是直接跟上一个 `</url>` 贴在一起
+  （`</url><url>`），不能对每个条目都用同一套"2 格缩进 + 换行"模板。
