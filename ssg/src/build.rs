@@ -443,12 +443,7 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
                         .versions
                         .iter()
                         .find(|v| v.lang == lang.code)
-                        .or_else(|| {
-                            bundle
-                                .versions
-                                .iter()
-                                .find(|v| v.lang == config.default_lang)
-                        })
+                        .or_else(|| bundle.versions.first())
                         .expect("bundle 至少有一个语言版本");
                     let rel = format!("{prefix}/posts/{}/", content::encode_path(&bundle.slug));
                     GuestbookItem {

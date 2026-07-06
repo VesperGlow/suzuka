@@ -39,7 +39,12 @@ pub fn client_ip(peer: Option<SocketAddr>, headers: &HeaderMap) -> String {
 
     if remote.is_loopback() || is_private(remote) {
         if let Some(forwarded) = headers.get("x-forwarded-for").and_then(|v| v.to_str().ok()) {
-            for value in forwarded.split(',') {
+            // 只信任直连反代自己回填的那一段：反代按约定应覆盖客户端传入的
+            // X-Forwarded-For，此时只有一个值；万一反代改成了追加而不是覆盖，
+            // 客户端能在最左边塞任意伪造 IP，但反代自己观察到的连接方地址
+            // 永远写在最右边——从右往左取第一个能解析的值，不给左侧伪造留
+            // 可乘之机。
+            for value in forwarded.rsplit(',') {
                 if let Ok(ip) = value.trim().parse::<IpAddr>() {
                     return canonical(ip).to_string();
                 }
@@ -126,6 +131,20 @@ mod tests {
 
         headers.insert("x-forwarded-for", HeaderValue::from_static("not-an-ip"));
         assert_eq!(client_ip(Some(private), &headers), "10.0.0.2");
+    }
+
+    #[test]
+    fn client_ip_ignores_client_spoofed_prefix_when_proxy_appends() {
+        // 反代若误配成「追加」而不是「覆盖」，客户端可以在自己发出的请求里
+        // 先塞一个伪造 IP；反代只会在右边追加它自己观察到的真实连接方地址。
+        // 我们必须信任最右边那一段，而不是最左边客户端能控制的那一段。
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "x-forwarded-for",
+            HeaderValue::from_static("203.0.113.99, 198.51.100.10"),
+        );
+        let private: SocketAddr = "10.0.0.2:1234".parse().unwrap();
+        assert_eq!(client_ip(Some(private), &headers), "198.51.100.10");
     }
 
     #[test]

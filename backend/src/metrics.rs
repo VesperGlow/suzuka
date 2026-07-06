@@ -71,7 +71,7 @@ async fn read_counter(
         );
     }
 
-    let conn = app.db.lock().unwrap();
+    let conn = app.conn();
     let count: Option<i64> = match conn
         .query_row(
             &format!("SELECT count FROM {table} WHERE path = ?1"),
@@ -132,7 +132,7 @@ async fn bump_counter(
         );
     }
 
-    let conn = app.db.lock().unwrap();
+    let conn = app.conn();
     let count: i64 = match conn.query_row(
         &format!(
             "INSERT INTO {table} (path, count) VALUES (?1, 1)
@@ -158,7 +158,7 @@ RETURNING count"
 /// 返回全站累计的阅读量与喜欢数，供「关于」页展示。只读，无需限流。
 /// 路由已限定为 GET，方法校验交给路由层。
 pub async fn handle_summary(State(app): State<Arc<App>>) -> Response {
-    let conn = app.db.lock().unwrap();
+    let conn = app.conn();
     let views: i64 = match conn.query_row(
         "SELECT COALESCE(SUM(count), 0) FROM page_views",
         [],

@@ -155,6 +155,12 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
                     ))));
                 }
             }
+            // 正文里出现的原始 HTML/JS（block 或 inline）一律当纯文本转义输出，
+            // 不再直接执行——对齐 Hugo goldmark `unsafe=false` 的行为，
+            // 避免文章正文意外粘入的 <script>/事件属性被原样发布到线上。
+            Event::Html(text) | Event::InlineHtml(text) => {
+                out.push(Event::Text(text.clone()));
+            }
             _ => out.push(events[i].clone()),
         }
         i += 1;

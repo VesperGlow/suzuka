@@ -86,7 +86,7 @@ pub async fn list_messages(State(app): State<Arc<App>>, RawQuery(raw): RawQuery)
         }
     }
 
-    let conn = app.db.lock().unwrap();
+    let conn = app.conn();
     let result = if before_id > 0 {
         query_messages(
             &conn,
@@ -240,7 +240,7 @@ pub async fn create_message(
         .format(&Rfc3339)
         .unwrap_or_default();
 
-    let conn = app.db.lock().unwrap();
+    let conn = app.conn();
     if let Err(err) = conn.execute(
         "INSERT INTO messages (name, email, website, content, ref_title, ref_url, created_at)
 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",

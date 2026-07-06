@@ -99,11 +99,20 @@ document.querySelectorAll("[data-post-filter-scope]").forEach((scope) => {
     }
   }
 
+  // 分类/标签的筛选按钮值来自跨文章聚合后的 term（大小写已按 hugo_title_case
+  // 规整），而每篇文章卡片上的 data-tags/data-categories 是 frontmatter 原始大
+  // 小写；同一个标签在不同文章里大小写不一致时（如 "Vue" / "vue"）会被聚合成
+  // 一个筛选按钮，因此这里按大小写不敏感比较，避免筛选结果比聚合计数少。
+  function hasValue(list, value) {
+    const target = value.toLowerCase();
+    return list.some((v) => v.toLowerCase() === target);
+  }
+
   function applyFilter(type, value) {
     let visibleCount = 0;
 
     items.forEach((item) => {
-      const visible = type === "all" || valuesFor(item, type).includes(value);
+      const visible = type === "all" || hasValue(valuesFor(item, type), value);
       item.hidden = !visible;
       item.classList.toggle("is-hidden", !visible);
       if (visible) visibleCount += 1;

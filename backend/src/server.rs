@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use axum::extract::{DefaultBodyLimit, Request};
 use axum::http::{header, HeaderValue};
@@ -32,6 +32,12 @@ impl App {
             limiter: Some(RateLimiter::new(POST_BURST, POST_WINDOW, now.clone())),
             counter_limiter: Some(RateLimiter::new(COUNTER_BURST, COUNTER_WINDOW, now)),
         }
+    }
+
+    /// 取数据库连接锁：即便某次持锁期间 panic 导致 Mutex 中毒，也照样拿到内部
+    /// 连接继续服务，不让单次请求的意外 panic 演变成后续所有请求永久 500。
+    pub fn conn(&self) -> MutexGuard<'_, Connection> {
+        self.db.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 }
 
@@ -78,4 +84,34 @@ async fn security_headers(request: Request, next: Next) -> Response {
     );
     headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
     response
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::open_database;
+
+    #[test]
+    fn conn_survives_a_panic_while_locked() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let db = open_database(&tmp.path().join("guestbook.db")).unwrap();
+        let app = Arc::new(App::new(db));
+
+        // 模拟某次持锁期间业务代码 panic：std::sync::Mutex 会把自己标记为
+        // "中毒"，此后任何 .lock().unwrap() 都会 panic。
+        let poisoning = app.clone();
+        let joined = std::thread::spawn(move || {
+            let _conn = poisoning.conn();
+            panic!("simulated panic while holding the db lock");
+        })
+        .join();
+        assert!(joined.is_err(), "the spawned thread should have panicked");
+
+        // App::conn() 应该照常拿到内部连接，而不是把中毒状态传染给所有后续请求。
+        let conn = app.conn();
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM messages", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(count, 0);
+    }
 }

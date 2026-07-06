@@ -223,8 +223,20 @@ fn parse_page(path: &Path, lang: &str, kind: PageKind, key: &str) -> Result<Opti
     if fm.draft {
         return Ok(None);
     }
-    let date = parse_date(fm.date.as_ref())
-        .with_context(|| format!("解析 {} 日期失败", path.display()))?;
+    if fm.title.trim().is_empty() {
+        bail!("{} 缺少必填字段 title", path.display());
+    }
+    // Section（_index）多是没有自身日期的列表/配置页（如 archives 首页、
+    // build.render=never 的隐藏占位页），不强制要求 date；Post/Page 都是
+    // 真实渲染且带时间线意义的内容，缺 date 属于作者疏漏，直接报错而不是
+    // 静默落到 1970 年份。
+    let date = match (kind, fm.date.as_ref()) {
+        (PageKind::Section, None) => Utc.timestamp_opt(0, 0).unwrap().fixed_offset(),
+        (_, None) => bail!("{} 缺少必填字段 date", path.display()),
+        (_, Some(value)) => {
+            parse_date(value).with_context(|| format!("解析 {} 日期失败", path.display()))?
+        }
+    };
     Ok(Some(RawPage {
         lang: lang.to_string(),
         kind,
@@ -248,11 +260,7 @@ fn split_front_matter(raw: &str) -> Option<(&str, &str)> {
     Some((fm, body))
 }
 
-fn parse_date(value: Option<&serde_yaml::Value>) -> Result<DateTime<FixedOffset>> {
-    let epoch = || Utc.timestamp_opt(0, 0).unwrap().fixed_offset();
-    let Some(value) = value else {
-        return Ok(epoch());
-    };
+fn parse_date(value: &serde_yaml::Value) -> Result<DateTime<FixedOffset>> {
     let text = match value {
         serde_yaml::Value::String(s) => s.clone(),
         other => serde_yaml::to_string(other)?.trim().to_string(),
