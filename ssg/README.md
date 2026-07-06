@@ -70,7 +70,7 @@ minifier。
 | 分页（`/p/2/` 等） | ✅ 首版——`/en/posts/` 是本站唯一真的会分页的地方（7 篇 > pagerSize 6），其余 term 页条目数都不够，只在 `/p/1/` 出跳转桩 |
 | sitemap.xml（根 sitemapindex + 各语言 urlset，含默认语言的 `/zh-cn/` 重定向桩） | ✅ 首版，URL 集合对拍通过（同 lastmod 并列顺序跟黄金基准不完全一致，见下） |
 | 代码高亮（syntect → Chroma class） | ⏳ 未实现（本站文章目前无代码块） |
-| HTML/CSS/JS minify（`--minify` 参数，`lightningcss` + `minify-js` + `minify-html`） | ✅ 首版，内容完整性已验证（见下），跟 Hugo 用的 minifier 不同，不追求逐字节一致 |
+| HTML/CSS minify（`--minify` 参数，`lightningcss` + `minify-html`） | ✅ 首版，跟 Hugo 用的 minifier 不同，不追求逐字节一致。JS **故意不压缩**，见下 |
 | Pagefind 搜索索引 | ✅ 独立于生成器，切换后照旧在 `public` 产物上跑 |
 
 **当前状态：不压缩的产物与 Hugo 黄金基准文件数完全一致（242/242），内容/结构对拍
@@ -84,11 +84,20 @@ minifier。
   复刻 Hugo 内置模板的空白痕迹，靠 diff harness 逐行对齐收敛，已通过 113/113 对拍。
 - **goldmark 排版细节**：typographer 的引号/破折号判定是启发式，长尾差异靠对拍收敛，
   当前 113/113 对拍通过。
-- **`minify-js` 对个别合法写法会内部断言 panic**（不是普通 `Result::Err`）：三元表达式
-  两支返回类型不对称之类的写法就会踩到，本站的 `site.js`/`theme.js` 恰好命中，
-  压缩不了、静默退回原文件。用 `std::panic::catch_unwind` 包一层兜底——单个文件/页面
-  压缩失败就整个退回不压缩，不让一次 panic 拖垮整个构建。`--minify` 开着的时候这些
-  panic 消息会打到 stderr，是已知的、无害的噪音，不代表构建失败。
+- **JS 故意不压缩——`minify-js` 出过线上事故，不只是会 panic**：一开始用它压缩
+  `assets/js/*.js` 和 HTML 里的内联 `<script>`（通过 `minify-html` 的 `minify_js`
+  开关）。它不仅对个别合法写法（三元表达式两支返回类型不对称）会内部断言 panic——
+  已经用 `catch_unwind` 兜底过——**还会产出不 panic、但真的跑错的代码**：把
+  `about-uptime.js` 里的 `updateUptime` 函数声明从它引用的 `if (uptime) { const
+  startedAt = ...; ... }` 块里提到了块外面，导致函数体里引用的那些 `const` 变量
+  全部拿不到，一调用就是 `ReferenceError`。这个版本合并上线后关于页的运行时长
+  计数器直接卡死不动（推断留言板等其他动态功能的异常也是同一批 JS 被错误压缩
+  导致的）。修复方式很直接：**完全不让任何工具碰 JS**——`assets.rs` 的 CSS/JS
+  处理去掉了 JS 分支，`minify_html_doc` 里 `cfg.minify_js` 固定 `false`，`Cargo.toml`
+  也去掉了 `minify-js` 依赖。HTML 空白压缩和 CSS 压缩（`lightningcss`，没出过这类
+  正确性问题）继续保留。教训：只做过"剥标签比较文本"级别的完整性校验，没有真的在
+  浏览器里跑一遍压缩后的 JS——下次改动到任何压缩管线，必须实际执行一遍脚本逻辑
+  再上线，静态检查（哪怕通过 `node --check` 语法检查）不能替代运行时验证。
 - **`--minify` 用一个进程内的 `thread_local` 开关，没有到处传参数**：`write_file`/
   `assets::build` 内部读同一个 `Cell<bool>`，`build()` 一开始设一次。构建单进程单次跑，
   没有并发场景，图省事没有把这个参数穿透 17 处 `write_file` 调用点。

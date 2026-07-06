@@ -2036,16 +2036,19 @@ fn write_file(dest: &Path, rel: &str, content: &str) -> Result<()> {
     std::fs::write(&path, bytes).with_context(|| format!("写入 {} 失败", path.display()))
 }
 
-/// 对应 Hugo `--minify`：压缩 HTML，顺带压缩 `<style>`/`style=` 里的 CSS 和
-/// `<script>`（无 type 或 text/javascript/module）里的 JS——具体压缩结果
-/// 跟 Hugo 用的 tdewolff/minify 逐字节不同，对拍时已经归一化掉这类差异
+/// 对应 Hugo `--minify`：压缩 HTML，顺带压缩 `<style>`/`style=` 里的 CSS——
+/// 具体压缩结果跟 Hugo 用的 tdewolff/minify 逐字节不同，对拍时已经归一化
+/// 掉这类差异。JS 故意不让 minify-html 碰：它内部用 minify-js 压
+/// `<script>`，这个 crate 不仅会对合法写法内部断言 panic，还会产出不 panic
+/// 但真的跑错的代码（把函数声明提到它引用的块作用域变量外面，运行时
+/// ReferenceError），关于页运行时长脚本就是这么线上炸的，见 assets.rs 的
+/// 说明。
 fn minify_html_doc(html: &str) -> Vec<u8> {
     let mut cfg = minify_html::Cfg::new();
     cfg.minify_css = true;
-    cfg.minify_js = true;
-    // minify-html 内部靠 minify-js 压 <script>；minify-js 对个别合法写法
-    // （比如三元表达式两支返回类型不对称）会内部断言 panic，不是普通
-    // Result::Err，用 catch_unwind 兜底，panic 就整页退回不压缩
+    cfg.minify_js = false;
+    // 就算只压 HTML/CSS，minify-html 内部仍然可能触发意外 panic；
+    // catch_unwind 兜底，panic 就整页退回不压缩，不让一次异常拖垮整个构建
     let bytes = html.as_bytes();
     std::panic::catch_unwind(|| minify_html::minify(bytes, &cfg))
         .unwrap_or_else(|_| bytes.to_vec())

@@ -10,7 +10,6 @@ chrono = "0.4"
 imagesize = "0.13"
 lightningcss = "1.0.0-alpha.71"
 minify-html = "0.18.1"
-minify-js = "0.6.0"
 minijinja = { version = "2", features = ["loader", "json"] }
 percent-encoding = "2"
 pulldown-cmark = { version = "0.12", default-features = false, features = ["html"] }

@@ -29,24 +29,13 @@ fn minify_css(source: &str) -> String {
     }
 }
 
-/// 用 minify-js 压缩一份 JS；解析失败或者压缩失败（这个 crate 对某些合法
-/// 写法——比如三元表达式两支返回类型不对称——会内部断言 panic，不只是普通
-/// Result::Err）都原样返回，不让构建失败。用 catch_unwind 兜底 panic。
-fn minify_js(source: &str) -> String {
-    use minify_js::{minify, Session, TopLevelMode};
-    let result = std::panic::catch_unwind(|| {
-        let session = Session::new();
-        let mut out = Vec::with_capacity(source.len());
-        match minify(&session, TopLevelMode::Global, source.as_bytes(), &mut out) {
-            Ok(()) => Some(out),
-            Err(_) => None,
-        }
-    });
-    match result {
-        Ok(Some(out)) => String::from_utf8(out).unwrap_or_else(|_| source.to_string()),
-        _ => source.to_string(),
-    }
-}
+// JS 故意不压缩：minify-js 除了会对合法写法内部断言 panic（已用
+// catch_unwind 兜底），还会产出不 panic 但真的跑错的代码——比如把一个
+// 函数声明提到它引用的 const 所在的 if 块外面，导致函数体里那些变量
+// 变成未定义，调用时直接 ReferenceError（关于页运行时长脚本就是这么
+// 线上炸的：函数被提到 `if (uptime) { const c = ...; }` 外面，但函数体
+// 里还在用 c）。这个 crate 的正确性信不过，先只做 HTML 空白压缩 + CSS
+// 压缩，JS 原样发布。
 
 pub struct Assets {
     /// 逻辑路径（如 "css/style.css"）→ 带指纹的发布路径（如 "/css/style.min.<hash>.css"）
@@ -78,12 +67,10 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<Assets> {
         }
         let raw = std::fs::read_to_string(entry.path())
             .with_context(|| format!("读取 {} 失败", entry.path().display()))?;
-        let content = if !minify {
-            raw
-        } else if ext == "css" {
+        let content = if minify && ext == "css" {
             minify_css(&raw)
         } else {
-            minify_js(&raw)
+            raw
         };
         let content = content.into_bytes();
         let hash = hex(&Sha256::digest(&content));
