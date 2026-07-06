@@ -69,6 +69,10 @@ fn normalize(input: &str) -> Vec<String> {
     let mut text = input.replace("\r\n", "\n");
     text = mask_fingerprints(&text);
     text = mask_inline_scripts(&text);
+    // JSON 输出（jsonify 默认转义）里字面 & 会被编码成对应的 Unicode 转义
+    // 序列，下面这条实体等价形归一规则要见到字面 & 才能生效，所以先解码
+    // 回来（两边对称处理，不影响原本就一致的文件）
+    text = text.replace("\\u0026", "&");
     // 实体等价形归一
     for (from, to) in [
         ("&#34;", "&quot;"),

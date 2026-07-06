@@ -36,6 +36,23 @@ pub struct FrontMatter {
     pub layout: Option<String>,
     #[serde(rename = "redirectTo")]
     pub redirect_to: Option<String>,
+    pub build: BuildOpts,
+    pub sitemap: SitemapOpts,
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct BuildOpts {
+    /// Hugo `build.render`："never" 表示这个 kind=Section 的占位页不生成
+    /// 任何输出（本站用来关掉 content/pages/_index、content/archives/_index
+    /// 之外没有专属 layout 的 section 自动列表页）
+    pub render: Option<String>,
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct SitemapOpts {
+    pub disable: bool,
 }
 
 pub struct Resource {
@@ -76,6 +93,12 @@ pub struct PostBundle {
 pub struct Content {
     pub posts: Vec<PostBundle>,
     pub pages: Vec<RawPage>,
+    /// content/archives/_index*.md：archives 独立页（layout="archives"）
+    pub archives: Vec<RawPage>,
+    /// content/posts/_index*.md：posts 这个 section 的隐式列表页配置
+    /// （中文端 build.render=never 关掉，英文端没关，会真的渲染一个
+    /// /en/posts/ 列表页，见 build.rs 里对 build.render 的判断）
+    pub posts_section: Vec<RawPage>,
 }
 
 pub fn load(source: &Path, default_lang: &str) -> Result<Content> {
@@ -139,9 +162,26 @@ pub fn load(source: &Path, default_lang: &str) -> Result<Content> {
     // 站内的默认排序：日期倒序（新→旧）
     posts.sort_by(|a, b| bundle_date(b).cmp(&bundle_date(a)));
 
+    let pages = load_pages_in_dir(&source.join("content").join("pages"), default_lang)?;
+    let archives = load_pages_in_dir(&source.join("content").join("archives"), default_lang)?;
+    let posts_section = load_pages_in_dir(&posts_dir, default_lang)?;
+
+    Ok(Content {
+        posts,
+        pages,
+        archives,
+        posts_section,
+    })
+}
+
+/// 扫描一个目录下的 `*.md`（含 `<stem>.<lang>.md` 翻译版本），按文件名推导
+/// key/语言/kind：`_index[.<lang>].md` 是 Section，其余是 Page。
+fn load_pages_in_dir(dir: &Path, default_lang: &str) -> Result<Vec<RawPage>> {
     let mut pages = Vec::new();
-    let pages_dir = source.join("content").join("pages");
-    for entry in std::fs::read_dir(&pages_dir).context("读取 content/pages 失败")? {
+    let Ok(read_dir) = std::fs::read_dir(dir) else {
+        return Ok(pages);
+    };
+    for entry in read_dir {
         let entry = entry?;
         let name = entry.file_name().to_string_lossy().to_string();
         if !name.ends_with(".md") {
@@ -162,8 +202,7 @@ pub fn load(source: &Path, default_lang: &str) -> Result<Content> {
             pages.push(page);
         }
     }
-
-    Ok(Content { posts, pages })
+    Ok(pages)
 }
 
 fn bundle_date(b: &PostBundle) -> DateTime<FixedOffset> {

@@ -76,6 +76,15 @@ struct PageCtx {
     description: String,
     rel_permalink: String,
     permalink: String,
+    /// `<link rel="canonical">` 目标：默认等于 permalink，front matter 声明
+    /// 了 redirectTo 时改成那个绝对地址（页面本身仍然照常渲染整页内容）
+    canonical: String,
+    /// redirectTo 存在时的 meta-refresh + JS 跳转整块（Rust 侧构造，跟
+    /// internal_meta 一样按 `| safe` 整块插入；没有 redirectTo 就是空串）
+    redirect_block: String,
+    /// 这个页面自己的 RSS 输出地址（home/archives/分类/标签/posts 列表页才有，
+    /// 单篇文章、about/guestbook、404 没有）
+    rss_rel: Option<String>,
     date_iso: String,
     date_display: String,
     reading_time: usize,
@@ -92,12 +101,75 @@ struct PageCtx {
     internal_meta: String,
 }
 
+/// 归档卡片/列表卡片（archive-card.html、post-card.html）共用的单篇文章数据，
+/// 也是 RSS item 的数据来源
+#[derive(Serialize, Clone)]
+struct PostCard {
+    title: String,
+    rel: String,
+    permalink: String,
+    date_iso: String,
+    date_display: String,
+    date_mmdd: String,
+    year: String,
+    /// RSS pubDate：`Mon, 02 Jan 2006 15:04:05 -0700`
+    pub_date: String,
+    word_count: usize,
+    image_count: usize,
+    summary: String,
+    /// data-categories / data-tags 属性用的原始大小写 JSON 数组
+    categories_raw: Vec<String>,
+    tags_raw: Vec<String>,
+    /// RSS `<category>`：taxonomy term 的自动 .Title（首字母大写），不是原始大小写
+    tags_title: Vec<String>,
+    cover_url: Option<String>,
+    content_html: String,
+    /// 纯文本正文（已合并空白），index.json 的 content 字段用
+    plain: String,
+    /// date_published/date_modified 用的 RFC3339，`Z07:00` 记法（有别于
+    /// internal_meta 用的固定 `-07:00`）
+    date_rfc3339: String,
+    image: Option<String>,
+    /// 排序/跟 about、guestbook 混排用；不需要序列化给模板
+    #[serde(skip)]
+    date: DateTime<FixedOffset>,
+}
+
+/// 一个 taxonomy term（单个分类/标签）聚合出的页面数据
+#[derive(Serialize, Clone)]
+struct TermAgg {
+    raw: String,
+    title: String,
+    slug: String,
+    rel: String,
+    cards: Vec<PostCard>,
+}
+
+/// 按 rel 找到（或首次创建）一个 term 聚合项；Vec 保留首次出现的顺序
+fn term_agg<'a>(terms: &'a mut Vec<TermAgg>, raw: &str, tref: &TermRef) -> &'a mut TermAgg {
+    if let Some(pos) = terms.iter().position(|t| t.rel == tref.rel) {
+        &mut terms[pos]
+    } else {
+        terms.push(TermAgg {
+            raw: raw.to_string(),
+            title: tref.title.clone(),
+            slug: content::urlize(raw),
+            rel: tref.rel.clone(),
+            cards: Vec::new(),
+        });
+        terms.last_mut().unwrap()
+    }
+}
+
 struct LangData {
     posts: Vec<PageCtx>,
     post_refs: Vec<PostRef>,
     timeline: Vec<YearGroup>,
     newest_date: Option<DateTime<FixedOffset>>,
     total_words: usize,
+    categories: Vec<TermAgg>,
+    tags: Vec<TermAgg>,
+    cards: Vec<PostCard>,
 }
 
 pub fn build(source: &Path, dest: &Path) -> Result<()> {
@@ -212,6 +284,126 @@ pub fn build(source: &Path, dest: &Path) -> Result<()> {
                 theme_js => &assets.theme_js,
             },
         )?;
+
+        // 首页的 RSS / JSON Feed / index.json / guestbook-posts.json
+        // （Hugo `[outputs] home = [HTML, RSS, JSON, GuestbookPosts, JSONFeed]`）
+        {
+            let home_permalink = format!("{}{}", config.base_url, site.home_rel);
+            let card_refs: Vec<&PostCard> = data.cards.iter().collect();
+
+            // 首页 RSS 用全站 RegularPages（文章 + about/guestbook），不只是 posts
+            let mut rss_items: Vec<OwnedRssItem> = data
+                .cards
+                .iter()
+                .map(|c| OwnedRssItem {
+                    title: c.title.clone(),
+                    link: c.permalink.clone(),
+                    pub_date: c.pub_date.clone(),
+                    date: c.date,
+                    categories: c.tags_title.clone(),
+                    content_html: c.content_html.clone(),
+                })
+                .collect();
+            for raw_page in content
+                .pages
+                .iter()
+                .filter(|p| p.lang == lang.code && p.kind == PageKind::Page)
+            {
+                let rendered = markdown::render(&raw_page.body, &[], "");
+                let url = raw_page.fm.url.clone().unwrap_or_default();
+                rss_items.push(OwnedRssItem {
+                    title: raw_page.fm.title.clone(),
+                    link: format!("{}{url}", config.base_url),
+                    pub_date: gotime::format(&raw_page.date, "Mon, 02 Jan 2006 15:04:05 -0700"),
+                    date: raw_page.date,
+                    categories: Vec::new(),
+                    content_html: rendered.html,
+                });
+            }
+            rss_items.sort_by(|a, b| b.date.cmp(&a.date));
+            let last_build_date = rss_items
+                .first()
+                .map(|c| c.pub_date.clone())
+                .unwrap_or_default();
+
+            let rss = render_rss(
+                &lang.title,
+                &home_permalink,
+                &lang.description,
+                &lang.title,
+                &lang.locale,
+                &config.author,
+                chrono::Utc::now().year(),
+                &last_build_date,
+                &format!("{}{}", config.base_url, site.rss_rel),
+                &rss_items
+                    .iter()
+                    .map(|c| RssItem {
+                        title: &c.title,
+                        link: &c.link,
+                        pub_date: &c.pub_date,
+                        categories: &c.categories,
+                        content_html: Some(&c.content_html),
+                    })
+                    .collect::<Vec<_>>(),
+                &config.base_url,
+            );
+            write_file(
+                dest,
+                format!("{prefix}/feed.xml").trim_start_matches('/'),
+                &rss,
+            )?;
+
+            write_file(
+                dest,
+                format!("{prefix}/feed.json").trim_start_matches('/'),
+                &feed_json(
+                    &lang.title,
+                    &home_permalink,
+                    &format!("{}{}", config.base_url, site.jsonfeed_rel),
+                    &lang.description,
+                    &lang.locale,
+                    &config.author,
+                    &card_refs,
+                    &config.base_url,
+                ),
+            )?;
+
+            write_file(
+                dest,
+                format!("{prefix}/index.json").trim_start_matches('/'),
+                &index_json(&card_refs),
+            )?;
+
+            let default_bundle_cards: Vec<GuestbookItem> = content
+                .posts
+                .iter()
+                .map(|bundle| {
+                    let version = bundle
+                        .versions
+                        .iter()
+                        .find(|v| v.lang == lang.code)
+                        .or_else(|| {
+                            bundle
+                                .versions
+                                .iter()
+                                .find(|v| v.lang == config.default_lang)
+                        })
+                        .expect("bundle 至少有一个语言版本");
+                    let rel = format!("{prefix}/posts/{}/", content::encode_path(&bundle.slug));
+                    GuestbookItem {
+                        title: version.fm.title.clone(),
+                        rel,
+                        date_iso: gotime::format(&version.date, "2006-01-02"),
+                    }
+                })
+                .collect();
+            write_file(
+                dest,
+                format!("{prefix}/guestbook-posts.json").trim_start_matches('/'),
+                &guestbook_posts_json(&default_bundle_cards),
+            )?;
+        }
 
         // 404 页
         let notfound = notfound_ctx(&config, lang)?;
@@ -383,6 +575,11 @@ fn build_lang_posts(
 
     let mut posts = Vec::new();
     let mut total_words = 0usize;
+    // 用 Vec 保留「首次出现」顺序，而不是 HashMap（迭代顺序每次进程随机，
+    // 会导致构建产物不确定）
+    let mut cat_terms: Vec<TermAgg> = Vec::new();
+    let mut tag_terms: Vec<TermAgg> = Vec::new();
+    let mut all_cards: Vec<PostCard> = Vec::new();
     for (idx, (bundle, page)) in items.iter().enumerate() {
         let rel = format!("{prefix}/posts/{}/", content::encode_path(&bundle.slug));
         let bundle_rel = format!("/posts/{}/", content::encode_path(&bundle.slug));
@@ -480,6 +677,51 @@ fn build_lang_posts(
             jsonld: Some(&jsonld),
         });
 
+        let cover_url = page
+            .fm
+            .images
+            .first()
+            .filter(|img| bundle.resources.iter().any(|r| &r.name == *img))
+            .map(|img| format!("{bundle_rel}{img}"))
+            .or_else(|| rendered.first_image_src.clone());
+        let card = PostCard {
+            title: page.fm.title.clone(),
+            rel: rel.clone(),
+            permalink: permalink.clone(),
+            date_iso: post_refs[idx].date_iso.clone(),
+            date_display: post_refs[idx].date_display.clone(),
+            date_mmdd: post_refs[idx].date_mmdd.clone(),
+            year: post_refs[idx].year.clone(),
+            pub_date: gotime::format(&page.date, "Mon, 02 Jan 2006 15:04:05 -0700"),
+            word_count,
+            image_count: rendered.html.matches("<img").count(),
+            summary: description.clone(),
+            categories_raw: page.fm.categories.clone(),
+            tags_raw: page.fm.tags.clone(),
+            tags_title: og_tags.clone(),
+            cover_url,
+            content_html: rendered.html.clone(),
+            plain: collapse_ws(&html_unescape_typographic(&rendered.plain)),
+            date_rfc3339: gotime::format(&page.date, "2006-01-02T15:04:05Z07:00"),
+            // JSON Feed 的 image：只认 front matter images，没有站点默认图兜底
+            // （跟 og:image 不一样），绝对化但不经过 bundle 解析
+            image: page
+                .fm
+                .images
+                .first()
+                .map(|img| format!("{}/{img}", config.base_url)),
+            date: page.date,
+        };
+        for cat in &page.fm.categories {
+            let tref = term_ref("categories", cat);
+            term_agg(&mut cat_terms, cat, &tref).cards.push(card.clone());
+        }
+        for tag in &page.fm.tags {
+            let tref = term_ref("tags", tag);
+            term_agg(&mut tag_terms, tag, &tref).cards.push(card.clone());
+        }
+        all_cards.push(card);
+
         posts.push(PageCtx {
             kind: "post".into(),
             is_home: false,
@@ -490,6 +732,9 @@ fn build_lang_posts(
             description_meta: collapse_ws(&description),
             description,
             rel_permalink: rel,
+            canonical: permalink.clone(),
+            redirect_block: String::new(),
+            rss_rel: None,
             permalink,
             date_iso: gotime::format(&page.date, "2006-01-02"),
             date_display: gotime::format(&page.date, &date_layout),
@@ -518,6 +763,9 @@ fn build_lang_posts(
         timeline,
         newest_date,
         total_words,
+        categories: cat_terms,
+        tags: tag_terms,
+        cards: all_cards,
     })
 }
 
@@ -587,6 +835,8 @@ fn home_ctx(
         description_meta: collapse_ws(&lang.description),
         description: lang.description.clone(),
         rel_permalink: rel,
+        canonical: permalink.clone(),
+        rss_rel: Some(format!("{prefix}/feed.xml")),
         permalink,
         all_translations,
         internal_meta,
@@ -649,6 +899,12 @@ fn static_page_ctx(
         jsonld: None,
     });
 
+    let (canonical, redirect_block) = match redirect_fields(config, page.fm.redirect_to.as_deref())
+    {
+        Some((c, b)) => (c, b),
+        None => (permalink.clone(), String::new()),
+    };
+
     Ok(PageCtx {
         kind: page.key.clone(),
         layout: page.fm.layout.clone().unwrap_or_default(),
@@ -657,6 +913,8 @@ fn static_page_ctx(
         description_meta: collapse_ws(&description),
         description,
         rel_permalink: url,
+        canonical,
+        redirect_block,
         permalink,
         content_html,
         all_translations,
@@ -712,6 +970,7 @@ fn notfound_ctx(config: &SiteConfig, lang: &crate::config::Language) -> Result<P
         description_meta: collapse_ws(&lang.description),
         description: lang.description.clone(),
         rel_permalink: rel,
+        canonical: permalink.clone(),
         permalink,
         all_translations,
         internal_meta,
@@ -958,6 +1217,24 @@ fn format_number(n: usize) -> String {
     out
 }
 
+/// Hugo `htmlUnescape` 只在 index.json 的 `.Plain` 上用了一次；实测行为是
+/// 排版实体（弯引号/破折号/省略号，都是"配对成功"才产生的）会解码回真实字符，
+/// 但 typographer 遇到无法判断开合的直引号、原样转义成的 `&quot;`/`&#34;`
+/// 反而不会被解开——所以这里故意不处理 quot/#34/#39/apos，让它保持实体文本，
+/// 跟 diff.rs 里 `&#34;`/`&quot;` 的归一化规则对上
+fn html_unescape_typographic(s: &str) -> String {
+    s.replace("&ldquo;", "\u{201c}")
+        .replace("&rdquo;", "\u{201d}")
+        .replace("&lsquo;", "\u{2018}")
+        .replace("&rsquo;", "\u{2019}")
+        .replace("&hellip;", "\u{2026}")
+        .replace("&mdash;", "\u{2014}")
+        .replace("&ndash;", "\u{2013}")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&amp;", "&")
+}
+
 fn collapse_ws(s: &str) -> String {
     s.split_whitespace().collect::<Vec<_>>().join(" ")
 }
@@ -972,10 +1249,327 @@ fn resolve_bundle_image(config: &SiteConfig, bundle: &PostBundle, bundle_rel: &s
     }
 }
 
+/// redirectTo 存在时算出 (canonical 绝对地址, meta-refresh+JS 跳转整块)；
+/// 复刻 baseof.html 里 canonical 用 absURL、meta/script 用 relURL 的区别——
+/// redirect_to 本身已经是带语言前缀的根相对路径，relURL 等价于原样返回
+fn redirect_fields(config: &SiteConfig, redirect_to: Option<&str>) -> Option<(String, String)> {
+    let target = redirect_to?;
+    let abs = format!("{}{target}", config.base_url);
+    let js = serde_json::to_string(target).unwrap_or_default();
+    let block = format!(
+        "<meta http-equiv=\"refresh\" content=\"0; url={}\">\n  <script>window.location.replace({js});</script>\n  ",
+        escape_attr(target)
+    );
+    Some((abs, block))
+}
+
 fn escape_attr(s: &str) -> String {
     s.replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
         .replace('"', "&#34;")
         .replace('\'', "&#x27;")
+}
+
+/// RSS item：标题/链接/标签是普通文章卡片
+struct RssItem<'a> {
+    title: &'a str,
+    link: &'a str,
+    pub_date: &'a str,
+    /// RSS `<category>`；文章条目用 taxonomy term 的 .Title，term/section
+    /// 列表条目（feed 里列的是子 term 页而不是文章）没有分类，传空切片
+    categories: &'a [String],
+    /// 完整正文（会话把站内根相对 src/href 改成绝对地址后逐字节 HTML 转义）；
+    /// term/section 列表条目没有正文，传空串
+    content_html: Option<&'a str>,
+}
+
+/// 首页 RSS 的条目是全站 RegularPages（文章 + about/guestbook 这类独立页），
+/// 不像 feed.json/index.json 那样只看 posts —— 所以单独存一份带日期的
+/// 拥有所有权的列表，跟文章卡片按日期混排后再借出 RssItem
+struct OwnedRssItem {
+    title: String,
+    link: String,
+    pub_date: String,
+    date: DateTime<FixedOffset>,
+    categories: Vec<String>,
+    content_html: String,
+}
+
+/// 复刻 Hugo 内置 `_default/rss.xml`：Hugo 的非 HTML 输出格式走 text/template
+/// （不自动转义），模板里没写 `| html` 的字段（title/link/description/
+/// category）原样插入，只有 item 的 `<description>` 显式转义
+#[allow(clippy::too_many_arguments)]
+fn render_rss(
+    channel_title: &str,
+    channel_link: &str,
+    channel_description: &str,
+    site_title: &str,
+    locale: &str,
+    author: &str,
+    current_year: i32,
+    last_build_date: &str,
+    self_link: &str,
+    items: &[RssItem],
+    base_url: &str,
+) -> String {
+    let mut s = String::new();
+    s.push_str("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\n");
+    s.push_str("<rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">\n");
+    s.push_str("  <channel>\n");
+    s.push_str(&format!("    <title>{}</title>\n", escape_attr(channel_title)));
+    s.push_str(&format!("    <link>{channel_link}</link>\n"));
+    s.push_str(&format!(
+        "    <description>{}</description>\n",
+        escape_attr(channel_description)
+    ));
+    s.push_str(&format!(
+        "    <generator>{}</generator>\n",
+        escape_attr(site_title)
+    ));
+    s.push_str(&format!("    <language>{locale}</language>\n"));
+    s.push_str(&format!("    <managingEditor>{author}</managingEditor>\n"));
+    s.push_str(&format!("    <webMaster>{author}</webMaster>\n"));
+    s.push_str(&format!(
+        "    <copyright>© {current_year} {author}</copyright>\n"
+    ));
+    s.push_str(&format!(
+        "    <lastBuildDate>{last_build_date}</lastBuildDate>\n"
+    ));
+    s.push_str(&format!(
+        "    <atom:link href=\"{self_link}\" rel=\"self\" type=\"application/rss+xml\" />\n"
+    ));
+    for item in items {
+        s.push_str("    <item>\n");
+        s.push_str(&format!("      <title>{}</title>\n", escape_attr(item.title)));
+        s.push_str(&format!("      <link>{}</link>\n", item.link));
+        s.push_str(&format!("      <pubDate>{}</pubDate>\n", item.pub_date));
+        s.push_str(&format!("      <guid>{}</guid>\n", item.link));
+        for cat in item.categories {
+            s.push_str(&format!("      <category>{}</category>\n", escape_attr(cat)));
+        }
+        let content = item
+            .content_html
+            .map(|html| {
+                html.replace("src=\"/", &format!("src=\"{base_url}/"))
+                    .replace("href=\"/", &format!("href=\"{base_url}/"))
+            })
+            .unwrap_or_default();
+        s.push_str(&format!(
+            "      <description>{}</description>\n",
+            escape_attr(&content)
+        ));
+        s.push_str("    </item>\n");
+    }
+    s.push_str("  </channel>\n");
+    s.push_str("</rss>\n");
+    s
+}
+
+/// Hugo `{{ if eq .Title site.Title }}{{ site.Title }}{{ else }}{{ with .Title }}{{ . }} · {{ end }}{{ site.Title }}{{ end }}`
+fn channel_title(page_title: &str, site_title: &str) -> String {
+    if page_title == site_title || page_title.is_empty() {
+        site_title.to_string()
+    } else {
+        format!("{page_title} · {site_title}")
+    }
+}
+
+/// Hugo `strings.Truncate <max>`：按字符数截断，避免切在词中间——是往前
+/// 扫到下一个空白（而不是回退到上一个），所以结果常常比 max 更长；
+/// 截断时补 " …"（空格 + 省略号）
+fn truncate_runes(s: &str, max: usize) -> String {
+    let chars: Vec<char> = s.chars().collect();
+    if chars.len() <= max {
+        return s.to_string();
+    }
+    let mut cut = max;
+    while cut < chars.len() && !chars[cut].is_whitespace() {
+        cut += 1;
+    }
+    let mut out: String = chars[..cut].iter().collect();
+    out.push_str(" …");
+    out
+}
+
+/// 一条 sitemap.xml `<url>` 记录
+struct SitemapEntry {
+    /// 带语言前缀的根相对路径，如 "/en/tags/galgame/"
+    rel: String,
+    /// lastmod：None 表示页面没有真实日期（Hugo `.Lastmod.IsZero`），不输出这一行
+    lastmod: Option<String>,
+    /// 去掉语言前缀后的路径，用来跟其他语言的条目配对判断是否互为翻译
+    match_key: String,
+}
+
+/// 复刻 Hugo 内置 sitemap 模板：sitemapindex 汇总各语言 urlset，
+/// 每语言一份 urlset，条目按 lastmod 倒序（同 lastmod 的相对顺序不追求
+/// 跟 Hugo 内部排序一致——纯粹是展示顺序，不影响 SEO 语义，对拍时按
+/// url 集合而非顺序比较，见 diff.rs）
+fn render_sitemap_index(base_url: &str, langs: &[(&str, Option<&str>)]) -> String {
+    let mut s = String::new();
+    s.push_str("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\n");
+    s.push_str("<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n\t\n");
+    for (prefix, lastmod) in langs {
+        s.push_str("\t\t<sitemap>\n\t\t\t<loc>");
+        s.push_str(&format!("{base_url}{prefix}/sitemap.xml"));
+        s.push_str("</loc>\n\t\t\t\n");
+        if let Some(lm) = lastmod {
+            s.push_str(&format!("\t\t\t\t<lastmod>{lm}</lastmod>\n\t\t\t\n"));
+        }
+        s.push_str("\t\t</sitemap>\n\t\n");
+    }
+    s.push_str("</sitemapindex>\n");
+    s
+}
+
+/// key = match_key，value = 这个路径在各语言下的 (hreflang, rel)，按
+/// config.languages 的固定顺序（zh 在前）——不管在渲染哪个语言的 urlset，
+/// alternate 链接的先后顺序都固定，跟"自己是谁"无关
+fn render_sitemap_urlset(
+    base_url: &str,
+    entries: &[SitemapEntry],
+    alts_by_key: &HashMap<String, Vec<(String, String)>>,
+) -> String {
+    let mut s = String::new();
+    s.push_str("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\n");
+    s.push_str("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"\n  xmlns:xhtml=\"http://www.w3.org/1999/xhtml\">\n");
+    let mut sorted: Vec<&SitemapEntry> = entries.iter().collect();
+    sorted.sort_by(|a, b| b.lastmod.cmp(&a.lastmod));
+    for e in sorted {
+        s.push_str("  <url>\n");
+        s.push_str(&format!("    <loc>{base_url}{}</loc>\n", e.rel));
+        if let Some(lm) = &e.lastmod {
+            s.push_str(&format!("    <lastmod>{lm}</lastmod>\n"));
+        }
+        if let Some(alts) = alts_by_key.get(&e.match_key) {
+            if alts.len() > 1 {
+                for (hreflang, rel) in alts {
+                    s.push_str(&format!(
+                        "    <xhtml:link\n                rel=\"alternate\"\n                hreflang=\"{hreflang}\"\n                href=\"{base_url}{rel}\"\n                />\n"
+                    ));
+                }
+            }
+        }
+        s.push_str("  </url>");
+    }
+    s.push('\n');
+    s.push_str("</urlset>\n");
+    s
+}
+
+/// Hugo `jsonify` 对 `map[string]interface{}` 按键的字母序输出（这个 crate
+/// 开了 `preserve_order`，所以要手动按字母序 insert，不能用 `json!{}` 字面量
+/// 顺序，也不能事后再插可选字段）
+fn ordered_json(pairs: Vec<(&str, serde_json::Value)>) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    for (k, v) in pairs {
+        map.insert(k.to_string(), v);
+    }
+    serde_json::Value::Object(map)
+}
+
+/// Go `encoding/json.Marshal` 默认把字符串里的 `<`、`>`、`&` 转成
+/// `<`/`>`/`&`（防止 JSON 被当 HTML 解析时出问题），Hugo
+/// `jsonify` 没有关掉这个默认行为；serde_json 不做这层转义，序列化完再
+/// 全局替换一遍效果等价——这三个字符在合法 JSON 里只会出现在字符串值内部，
+/// 不会是结构字符，所以整串替换是安全的
+fn json_html_escape(s: &str) -> String {
+    s.replace('&', "\\u0026")
+        .replace('<', "\\u003c")
+        .replace('>', "\\u003e")
+}
+
+/// layouts/index.json：全部文章的极简摘要列表（url/title/date/tags/content）
+fn index_json(items: &[&PostCard]) -> String {
+    let arr: Vec<serde_json::Value> = items
+        .iter()
+        .map(|c| {
+            ordered_json(vec![
+                ("content", serde_json::json!(truncate_runes(&c.plain, 800))),
+                ("date", serde_json::json!(c.date_display)),
+                ("tags", serde_json::json!(c.tags_raw)),
+                ("title", serde_json::json!(c.title)),
+                ("url", serde_json::json!(c.rel)),
+            ])
+        })
+        .collect();
+    json_html_escape(
+        &serde_json::to_string(&ordered_json(vec![("items", serde_json::json!(arr))]))
+            .unwrap_or_default(),
+    )
+}
+
+/// layouts/index.guestbookposts.json：关于页站点总览用的极简列表
+fn guestbook_posts_json(items: &[GuestbookItem]) -> String {
+    let arr: Vec<serde_json::Value> = items
+        .iter()
+        .map(|it| {
+            ordered_json(vec![
+                ("date", serde_json::json!(it.date_iso)),
+                ("title", serde_json::json!(it.title)),
+                ("url", serde_json::json!(it.rel)),
+            ])
+        })
+        .collect();
+    json_html_escape(
+        &serde_json::to_string(&ordered_json(vec![("items", serde_json::json!(arr))]))
+            .unwrap_or_default(),
+    )
+}
+
+struct GuestbookItem {
+    title: String,
+    rel: String,
+    date_iso: String,
+}
+
+/// layouts/index.jsonfeed.json（JSON Feed 1.1）
+#[allow(clippy::too_many_arguments)]
+fn feed_json(
+    site_title: &str,
+    home_url: &str,
+    feed_url: &str,
+    description: &str,
+    locale: &str,
+    author: &str,
+    items: &[&PostCard],
+    base_url: &str,
+) -> String {
+    let arr: Vec<serde_json::Value> = items
+        .iter()
+        .map(|c| {
+            let content_html = c
+                .content_html
+                .replace("src=\"/", &format!("src=\"{base_url}/"))
+                .replace("href=\"/", &format!("href=\"{base_url}/"));
+            let mut pairs = vec![
+                ("content_html", serde_json::json!(content_html)),
+                ("date_modified", serde_json::json!(c.date_rfc3339)),
+                ("date_published", serde_json::json!(c.date_rfc3339)),
+                ("id", serde_json::json!(c.permalink)),
+            ];
+            if let Some(img) = &c.image {
+                pairs.push(("image", serde_json::json!(img)));
+            }
+            if !c.summary.is_empty() {
+                pairs.push(("summary", serde_json::json!(c.summary)));
+            }
+            pairs.push(("tags", serde_json::json!(c.tags_raw)));
+            pairs.push(("title", serde_json::json!(c.title)));
+            pairs.push(("url", serde_json::json!(c.permalink)));
+            ordered_json(pairs)
+        })
+        .collect();
+    let doc = ordered_json(vec![
+        ("authors", serde_json::json!([{"name": author}])),
+        ("description", serde_json::json!(description)),
+        ("feed_url", serde_json::json!(feed_url)),
+        ("home_page_url", serde_json::json!(home_url)),
+        ("items", serde_json::json!(arr)),
+        ("language", serde_json::json!(locale)),
+        ("title", serde_json::json!(site_title)),
+        ("version", serde_json::json!("https://jsonfeed.org/version/1.1")),
+    ]);
+    json_html_escape(&serde_json::to_string_pretty(&doc).unwrap_or_default())
 }
