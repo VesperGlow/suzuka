@@ -163,11 +163,11 @@ other = "Zoom in"
 [uptimeLabel]
 other = "Site uptime"
 [uptimeFallback]
-other = "Suzuka has been here for a while"
+other = "Suzuka here"
 [uptimeFormat]
-other = "Suzuka here · {days}d {hours}h {minutes}m {seconds}s"
+other = "Suzuka here {days}d {hours}h {minutes}m {seconds}s"
 [uptimeMobileFormat]
-other = "Suzuka here · {days}d {hours}h {minutes}m {seconds}s"
+other = "Suzuka here {days}d {hours}h {minutes}m {seconds}s"
 [aboutImageAlt]
 other = "Suzuka"
 [termsDescription]
