@@ -285,7 +285,7 @@ a:hover { color: var(--accent); }
     width: 30px; height: calc((100vh - var(--header-height)) / 3); padding: 0;
     transform: translateY(-50%);
     color: var(--text-faint);
-    background: var(--surface);
+    background: var(--paper);
     border: 1px solid var(--line);
     border-radius: 999px;
     box-shadow: var(--glass-shadow);
