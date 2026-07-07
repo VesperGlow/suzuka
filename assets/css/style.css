@@ -308,12 +308,14 @@ a:hover { color: var(--accent); }
 
 /* Layer: pages */
 /* Home page (wiki portal) */
-.home-page { min-width: 0; padding: 34px 0 64px; font-size: 17px; }
+.home-page { min-width: 0; padding: 34px 0 40px; font-size: 17px; }
 .home-hero { margin-bottom: 2.5rem; }
 .home-hero h1 { margin: 0; font: 700 clamp(26px, 4.2vw, 34px)/1.3 var(--sans); }
 .home-intro { max-width: 62ch; margin: 10px 0 0; color: var(--muted); font-size: 17px; line-height: 1.75; }
 .home-updated { margin: 12px 0 0; color: var(--text-faint); font-size: 14px; }
 .home-section { padding-bottom: 40px; }
+.home-quicklinks { padding-bottom: 0; }
+.home-quicklinks .post-subscribe { margin-top: 0; }
 .home-section h2 { margin: 0 0 16px; font: 600 20px/1.4 var(--sans); }
 .home-recent-list { margin: 0; padding: 0; list-style: none; }
 .home-recent-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 13px 0; }
