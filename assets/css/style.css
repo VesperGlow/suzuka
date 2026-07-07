@@ -18,12 +18,13 @@
   --frame-line: light-dark(rgba(126, 157, 184, .16), rgba(180, 205, 245, .18));
   --accent: light-dark(#4475a0, #8dbdff);
   --accent-dark: light-dark(#305372, #b4d4ff);
-  --accent-soft: light-dark(#e4eef8, rgba(141, 189, 255, .14));
+  /* 悬停/选中填充都摊在 --paper 上，得比 #eaf2f8 深一档才可辨；选中(accent-soft)比悬停(surface-hover)再深一档 */
+  --accent-soft: light-dark(#c9dcec, rgba(141, 189, 255, .22));
   --accent-border: light-dark(rgba(110, 155, 194, .28), rgba(180, 205, 245, .3));
   --search-highlight: light-dark(rgba(169, 204, 232, .42), rgba(122, 169, 219, .24));
   --search-highlight-inset: light-dark(rgba(79, 118, 159, .13), rgba(180, 211, 244, .16));
   --surface: light-dark(#fcfeff, rgba(20, 31, 50, .72));
-  --surface-hover: light-dark(rgba(228, 238, 248, .5), rgba(50, 70, 103, .42));
+  --surface-hover: light-dark(rgba(68, 117, 160, .12), rgba(141, 189, 255, .16));
   --text-divider: light-dark(#b3bec9, #7f8da8);
   --on-accent: light-dark(#f8fbff, #0b1220);
   --glass: light-dark(rgba(252, 254, 255, .92), rgba(20, 31, 50, .72));
