@@ -422,7 +422,13 @@ impl LangRender<'_> {
     }
 
     /// 渲染一个页面模板：base 上下文（lang/site/page/侧栏数据）+ 模板特有的 extra
-    fn render_page(&self, template: &str, out_rel: &str, page: &PageCtx, extra: Value) -> Result<()> {
+    fn render_page(
+        &self,
+        template: &str,
+        out_rel: &str,
+        page: &PageCtx,
+        extra: Value,
+    ) -> Result<()> {
         let base = minijinja::context! {
             lang => self.lang.code.clone(),
             site => &self.site,
@@ -635,7 +641,13 @@ impl LangRender<'_> {
             return Ok(());
         };
         let rendered = markdown::render(&raw_page.body, &[], "");
-        let ctx = archives_ctx(self.config, self.lang, self.content, raw_page, rendered.html)?;
+        let ctx = archives_ctx(
+            self.config,
+            self.lang,
+            self.content,
+            raw_page,
+            rendered.html,
+        )?;
         let out_rel = format!("{}index.html", ctx.rel_permalink.trim_start_matches('/'));
 
         // 时间线视图：按年分组（cards 已按日期倒序）
@@ -674,7 +686,12 @@ impl LangRender<'_> {
     fn taxonomies(&self, lang_data: &HashMap<String, LangData>) -> Result<()> {
         let config = self.config;
         for (taxonomy, singular, list_title, terms) in [
-            ("categories", "category", "Categories", &self.data.categories),
+            (
+                "categories",
+                "category",
+                "Categories",
+                &self.data.categories,
+            ),
             ("tags", "tag", "Tags", &self.data.tags),
         ] {
             let list_rel = format!("{}/{taxonomy}/", self.prefix);
@@ -761,9 +778,11 @@ impl LangRender<'_> {
     /// posts 这个 section 的隐式列表页（只有 build.render 没被关掉的语言才
     /// 渲染——本站只有英文）；7 篇 > pagerSize 6，真的会分页
     fn posts_section(&self) -> Result<()> {
-        let Some(raw_page) = self.content.posts_section.iter().find(|p| {
-            p.lang == self.lang.code && p.fm.build.render.as_deref() != Some("never")
-        }) else {
+        let Some(raw_page) =
+            self.content.posts_section.iter().find(|p| {
+                p.lang == self.lang.code && p.fm.build.render.as_deref() != Some("never")
+            })
+        else {
             return Ok(());
         };
         const PAGE_SIZE: usize = 6;
@@ -1716,7 +1735,10 @@ impl<'a> InternalMeta<'a> {
 fn internal_meta_block(m: &InternalMeta) -> String {
     let esc = escape_attr;
     let mut lines = vec![
-        format!("<meta property=\"og:url\" content=\"{}\">", esc(m.permalink)),
+        format!(
+            "<meta property=\"og:url\" content=\"{}\">",
+            esc(m.permalink)
+        ),
         format!(
             "<meta property=\"og:site_name\" content=\"{}\">",
             esc(m.site_title)
@@ -1773,7 +1795,10 @@ fn internal_meta_block(m: &InternalMeta) -> String {
         esc(m.description)
     ));
 
-    lines.push(format!("<meta itemprop=\"name\" content=\"{}\">", esc(m.title)));
+    lines.push(format!(
+        "<meta itemprop=\"name\" content=\"{}\">",
+        esc(m.title)
+    ));
     lines.push(format!(
         "<meta itemprop=\"description\" content=\"{}\">",
         esc(m.description)
@@ -2220,9 +2245,7 @@ fn render_sitemap_index(base_url: &str, langs: &[(&str, Option<&str>)]) -> Strin
     s.push_str("<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n");
     for (prefix, lastmod) in langs {
         s.push_str("  <sitemap>\n");
-        s.push_str(&format!(
-            "    <loc>{base_url}{prefix}/sitemap.xml</loc>\n"
-        ));
+        s.push_str(&format!("    <loc>{base_url}{prefix}/sitemap.xml</loc>\n"));
         if let Some(lm) = lastmod {
             s.push_str(&format!("    <lastmod>{lm}</lastmod>\n"));
         }
