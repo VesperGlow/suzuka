@@ -95,6 +95,76 @@
     }
   });
 
+  // 移动端抽屉左滑关闭：跟手拖动，松手按位移和速度决定收起还是弹回。
+  // 竖向滚动不受影响（CSS 侧 touch-action: pan-y，这里也先判定手势方向再接管）。
+  let swipeId = null;
+  let swipeStartX = 0;
+  let swipeStartY = 0;
+  let swipeLastX = 0;
+  let swipeLastT = 0;
+  let swipeVelocity = 0;
+  let swipeDragging = false;
+
+  const settleDrawer = (open) => {
+    // 先强制一次布局，让过渡从当前拖动位置继续，而不是跳回展开位再动画
+    sidebar.getBoundingClientRect();
+    sidebar.style.transition = "";
+    sidebar.style.transform = "";
+    setOpen(open);
+  };
+
+  sidebar.addEventListener(
+    "touchstart",
+    (event) => {
+      if (desktopQuery.matches || !isOpen() || event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      swipeId = touch.identifier;
+      swipeStartX = swipeLastX = touch.clientX;
+      swipeStartY = touch.clientY;
+      swipeLastT = event.timeStamp;
+      swipeVelocity = 0;
+      swipeDragging = false;
+    },
+    { passive: true }
+  );
+
+  sidebar.addEventListener(
+    "touchmove",
+    (event) => {
+      if (swipeId === null) return;
+      const touch = Array.from(event.changedTouches).find((t) => t.identifier === swipeId);
+      if (!touch) return;
+      const dx = touch.clientX - swipeStartX;
+      const dy = touch.clientY - swipeStartY;
+      if (!swipeDragging) {
+        // 向左划出一小段、且横向分量明显大于竖向，才认定是关闭手势
+        if (dx > -12 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+        swipeDragging = true;
+        sidebar.style.transition = "none";
+      }
+      const dt = event.timeStamp - swipeLastT;
+      if (dt > 0) swipeVelocity = (touch.clientX - swipeLastX) / dt;
+      swipeLastX = touch.clientX;
+      swipeLastT = event.timeStamp;
+      sidebar.style.transform = `translateX(${Math.min(0, dx)}px)`;
+    },
+    { passive: true }
+  );
+
+  const endDrawerSwipe = () => {
+    if (swipeId === null) return;
+    const dx = swipeLastX - swipeStartX;
+    const wasDragging = swipeDragging;
+    swipeId = null;
+    swipeDragging = false;
+    if (!wasDragging) return;
+    // 划过 35% 宽度，或松手瞬间还有明显向左的速度（px/ms），就收起
+    const shouldClose = dx < -sidebar.offsetWidth * 0.35 || (swipeVelocity < -0.5 && dx < -20);
+    settleDrawer(!shouldClose);
+  };
+  sidebar.addEventListener("touchend", endDrawerSwipe);
+  sidebar.addEventListener("touchcancel", endDrawerSwipe);
+
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && isOpen()) {
       setOpen(false);

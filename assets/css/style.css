@@ -245,6 +245,8 @@ a:hover { color: var(--accent); }
     /* 100vh 在手机浏览器上会被底部工具栏遮住，dvh 跟随可视区域变化 */
     height: 100vh; height: 100dvh;
     overscroll-behavior: contain;
+    /* 竖向滚动交给浏览器，横向手势留给 JS 的左滑关闭 */
+    touch-action: pan-y;
     box-shadow: var(--glass-shadow);
     transform: translateX(-100%);
     transition: transform var(--duration-medium) var(--ease-emphasized);
@@ -290,10 +292,13 @@ a:hover { color: var(--accent); }
     border-radius: 999px;
     box-shadow: var(--glass-shadow);
     cursor: pointer;
-    transition: left var(--duration-medium) var(--ease-emphasized), color .4s var(--ease-standard), background-color .4s var(--ease-standard), border-color .4s var(--ease-standard), box-shadow .4s var(--ease-standard), opacity .4s var(--ease-standard);
+    transition: left var(--duration-medium) var(--ease-emphasized), color .18s var(--ease-standard), background-color .18s var(--ease-standard), border-color .18s var(--ease-standard), box-shadow .18s var(--ease-standard), opacity .4s var(--ease-standard);
   }
   .sidebar-handle svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--duration-medium) var(--ease-emphasized); }
-  .sidebar-handle:hover, .sidebar-handle:focus-visible { color: var(--accent-dark); border-color: var(--accent-border); background: var(--surface-hover); }
+  /* 悬停/聚焦渐显为主题色胶囊，与收起后的把手反馈同一套语言；箭头顺势向收起方向探一下 */
+  .sidebar-handle:hover, .sidebar-handle:focus-visible { color: var(--on-accent); background: var(--accent); border-color: transparent; box-shadow: 0 2px 12px color-mix(in srgb, var(--accent) 45%, transparent); }
+  .sidebar-handle:hover svg, .sidebar-handle:focus-visible svg { transform: translateX(-2px); }
+  :root.sidebar-collapsed .sidebar-handle:hover svg, :root.sidebar-collapsed .sidebar-handle:focus-visible svg { transform: rotate(180deg) translateX(-2px); }
   /* 收起后贴在屏幕左缘：平时淡化，刚收起（JS 加 is-strong）或悬停/聚焦时渐显为主题色胶囊 */
   :root.sidebar-collapsed .sidebar-handle { left: -4px; opacity: .8; }
   :root.sidebar-collapsed .sidebar-handle.is-strong,
