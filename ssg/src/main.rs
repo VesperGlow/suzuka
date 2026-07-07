@@ -5,6 +5,7 @@ mod content;
 mod diff;
 mod gotime;
 mod i18n;
+mod images;
 mod markdown;
 
 use anyhow::{bail, Result};

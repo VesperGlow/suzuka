@@ -59,8 +59,14 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
                         // （跟段落/标题一样），但引号配对计数器继续跟全文共享
                         // ——alt/caption 的引号也会计进去，跟正文一样。
                         prev_char = None;
-                        let (figure, src, _alt_plain) =
-                            build_figure(inner, resources, bundle_rel, &mut prev_char, &mut quotes);
+                        let (figure, src, _alt_plain) = build_figure(
+                            inner,
+                            resources,
+                            bundle_rel,
+                            first_image_src.is_none(),
+                            &mut prev_char,
+                            &mut quotes,
+                        );
                         if first_image_src.is_none() {
                             first_image_src = Some(src);
                         }
@@ -81,6 +87,7 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
                     &events[i..=end],
                     resources,
                     bundle_rel,
+                    first_image_src.is_none(),
                     &mut prev_char,
                     &mut quotes,
                 );
@@ -274,11 +281,23 @@ fn is_standalone_image(inner: &[Event]) -> bool {
     }
 }
 
-/// 从图片事件序列构造 figure HTML（复刻 render-image.html 的空白痕迹）
+/// srcset 的 sizes 兜底公式（给不支持 `auto` 关键字的浏览器）。按
+/// style.css 的布局推：≤768 正文两侧各 16px；769–1023 正文栏 760px 封顶、
+/// 视口不足时减两侧 padding；≥1024 取「侧栏收起」的最宽情形——
+/// 100vw − 2×48(shell padding) − 200(目录栏) − 40(栏间距) = 100vw − 336px。
+/// 故意按收起侧栏算：sizes 偏大只是多下载一档，偏小会让收起后图片发糊。
+/// 懒加载的图在前面再加 `auto,`，支持的浏览器直接按真实布局宽度选档，
+/// 侧栏开合、有无目录栏都自动跟上。
+const SIZES_FALLBACK: &str = "(max-width: 768px) calc(100vw - 32px), (max-width: 1023px) min(calc(100vw - 48px), 760px), calc(100vw - 336px)";
+
+/// 从图片事件序列构造 figure HTML（复刻 render-image.html 的空白痕迹）。
+/// is_first：全文第一张图不懒加载、提升抓取优先级——它多半在首屏或紧邻
+/// 首屏，lazy 会把文章页的 LCP 拖到滚动计算之后。
 fn build_figure(
     image_events: &[Event],
     resources: &[Resource],
     bundle_rel: &str,
+    is_first: bool,
     prev_char: &mut Option<char>,
     quotes: &mut QuoteState,
 ) -> (String, String, String) {
@@ -302,12 +321,39 @@ fn build_figure(
     } else {
         format!(" title=\"{}\"", escape_attr(&title))
     };
+    let loading_attr = if is_first {
+        " fetchpriority=\"high\""
+    } else {
+        " loading=\"lazy\""
+    };
     let (img, src) = match resource {
         Some(res) => {
             let src = format!("{bundle_rel}{}", res.name);
+            let srcset_attr = if res.variants.is_empty() {
+                String::new()
+            } else {
+                let mut candidates: Vec<String> = res
+                    .variants
+                    .iter()
+                    .map(|w| {
+                        format!(
+                            "{bundle_rel}{} {w}w",
+                            crate::images::variant_name(&res.name, *w)
+                        )
+                    })
+                    .collect();
+                candidates.push(format!("{src} {}w", res.width));
+                // sizes=auto 只对懒加载的图生效，eager 的首图用纯公式
+                let sizes = if is_first {
+                    SIZES_FALLBACK.to_string()
+                } else {
+                    format!("auto, {SIZES_FALLBACK}")
+                };
+                format!(" srcset=\"{}\" sizes=\"{sizes}\"", candidates.join(", "))
+            };
             (
                 format!(
-                    "<img src=\"{src}\" alt=\"{alt}\" width=\"{}\" height=\"{}\" loading=\"lazy\" decoding=\"async\"{title_attr}>",
+                    "<img src=\"{src}\" alt=\"{alt}\" width=\"{}\" height=\"{}\"{srcset_attr}{loading_attr} decoding=\"async\"{title_attr}>",
                     res.width, res.height
                 ),
                 src,
@@ -315,7 +361,7 @@ fn build_figure(
         }
         None => (
             format!(
-                "<img src=\"{}\" alt=\"{alt}\" loading=\"lazy\" decoding=\"async\"{title_attr}>",
+                "<img src=\"{}\" alt=\"{alt}\"{loading_attr} decoding=\"async\"{title_attr}>",
                 escape_attr(&dest)
             ),
             dest.clone(),

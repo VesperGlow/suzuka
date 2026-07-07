@@ -61,6 +61,8 @@ pub struct Resource {
     pub disk_path: PathBuf,
     pub width: u32,
     pub height: u32,
+    /// 构建期生成的缩放变体宽度（见 images.rs），markdown 渲染据此拼 srcset
+    pub variants: Vec<u32>,
 }
 
 pub struct RawPage {
@@ -133,11 +135,13 @@ pub fn load(source: &Path, default_lang: &str) -> Result<Content> {
                     Ok(dim) => (dim.width as u32, dim.height as u32),
                     Err(_) => (0, 0),
                 };
+                let variants = crate::images::variant_widths_for(&name, width);
                 resources.push(Resource {
                     name,
                     disk_path: path,
                     width,
                     height,
+                    variants,
                 });
             }
         }

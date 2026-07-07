@@ -704,6 +704,8 @@ html.archive-no-transition .archive-view-switch button { transition: none; }
 .back-to-top-layer { position: absolute; z-index: 1; inset: 0; display: block; width: 100%; height: var(--back-to-top-height); overflow: hidden; }
 .back-to-top-silhouette { z-index: 1; }
 .back-to-top-color { z-index: 2; }
+/* 初始值放这而不是 style 属性：CSP style-src 'self' 不放行内联 style */
+.back-to-top-reading { --reading-remainder: 100%; }
 .back-to-top-reading .back-to-top-color { clip-path: inset(var(--reading-remainder) 0 0); }
 .back-to-top img { display: block; width: 100%; height: auto; filter: drop-shadow(0 4px 5px rgba(67, 91, 119, .12)); transform: translateY(var(--back-to-top-offset)); }
 .back-to-top-silhouette img { filter: brightness(0) saturate(100%) invert(72%) sepia(27%) saturate(1035%) hue-rotate(177deg) brightness(101%) contrast(91%) drop-shadow(0 4px 5px rgba(67, 91, 119, .12)); }

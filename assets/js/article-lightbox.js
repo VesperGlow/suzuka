@@ -137,14 +137,16 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
     currentIndex = (index + galleryImages.length) % galleryImages.length;
     const image = galleryImages[currentIndex];
     resetTransform();
-    previewImage.src = imageLinkFor(image) || image.currentSrc || image.src;
+    // 用 image.src（原图）而不是 currentSrc：正文 srcset 选中的缩放变体
+    // 不够灯箱放大看，灯箱始终加载全尺寸原图
+    previewImage.src = imageLinkFor(image) || image.src;
     previewImage.alt = image.alt || "";
     updateGalleryControls();
 
     if (galleryImages.length > 1) {
       const adjacent = galleryImages[(currentIndex + 1) % galleryImages.length];
       const preload = new Image();
-      preload.src = imageLinkFor(adjacent) || adjacent.currentSrc || adjacent.src;
+      preload.src = imageLinkFor(adjacent) || adjacent.src;
     }
   }
 

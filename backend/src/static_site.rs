@@ -23,9 +23,15 @@ pub fn static_router(dir: &str) -> Router {
         }
     });
 
+    // CSP 只需在启动时组装一次：内联脚本哈希清单随静态产物一起发布，
+    // 产物不换，清单不变。
+    let csp = load_csp_header(Path::new(dir));
     Router::new()
         .fallback_service(ServeDir::new(dir).not_found_service(fallback))
-        .layer(middleware::from_fn(static_headers))
+        .layer(middleware::from_fn(move |request: Request, next: Next| {
+            let csp = csp.clone();
+            async move { static_headers(request, next, csp).await }
+        }))
 }
 
 /// 扫描 ssg 静态产物里真实存在的文章路径（posts/ 下含 index.html 的目录），
@@ -59,8 +65,53 @@ fn collect_post_dirs(root: &Path, dir: &Path, paths: &mut HashSet<String>) -> st
     Ok(())
 }
 
-/// 给静态响应补上 nosniff / 反嵌入 / Referrer 策略与按路径计算的 Cache-Control。
-async fn static_headers(request: Request, next: Next) -> Response {
+/// 组装静态站的 Content-Security-Policy。内联脚本哈希由 ssg 构建时写进
+/// 产物根部的 csp-hashes.txt（对最终落盘字节算的 sha256，见 ssg 的
+/// build.rs）；启动时读一次。清单缺失/不可读时干脆不下发 CSP——宁可少
+/// 一层防护，也不能对着旧产物把里面的内联脚本（主题闪烁抑制等）全拦死。
+fn load_csp_header(dir: &Path) -> Option<HeaderValue> {
+    let path = dir.join("csp-hashes.txt");
+    let raw = match std::fs::read_to_string(&path) {
+        Ok(raw) => raw,
+        Err(err) => {
+            eprintln!(
+                "warning: read {} failed ({err}); serving without Content-Security-Policy",
+                path.display()
+            );
+            return None;
+        }
+    };
+    // 'wasm-unsafe-eval'：英文搜索的 pagefind 要实例化 WebAssembly
+    let mut script_src = String::from("'self' 'wasm-unsafe-eval'");
+    for line in raw.lines().map(str::trim).filter(|l| !l.is_empty()) {
+        if !line.starts_with("sha256-") || line.contains(['\'', ';']) {
+            eprintln!(
+                "warning: {} 里有格式不对的行（{line}），已跳过",
+                path.display()
+            );
+            continue;
+        }
+        script_src.push_str(" '");
+        script_src.push_str(line);
+        script_src.push('\'');
+    }
+    let value = format!(
+        "default-src 'self'; script-src {script_src}; style-src 'self'; \
+         img-src 'self' data:; object-src 'none'; base-uri 'self'; \
+         form-action 'self'; frame-ancestors 'none'"
+    );
+    match HeaderValue::from_str(&value) {
+        Ok(header) => Some(header),
+        Err(err) => {
+            eprintln!("warning: CSP 头构造失败（{err}），本次不下发");
+            None
+        }
+    }
+}
+
+/// 给静态响应补上 nosniff / 反嵌入 / Referrer / HSTS / CSP 策略与按路径
+/// 计算的 Cache-Control。
+async fn static_headers(request: Request, next: Next, csp: Option<HeaderValue>) -> Response {
     let path = request.uri().path().to_owned();
     let mut response = next.run(request).await;
     let status = response.status();
@@ -74,6 +125,16 @@ async fn static_headers(request: Request, next: Next) -> Response {
         header::REFERRER_POLICY,
         HeaderValue::from_static("strict-origin-when-cross-origin"),
     );
+    // TLS 由 Cloudflare 终止，这个头随响应透传给浏览器。纯 HTTP 环境
+    // （本地开发）下浏览器会忽略它，无需条件判断。不带 includeSubDomains：
+    // 子域名是否全走 HTTPS 不是这个服务能替域名主人决定的事。
+    headers.insert(
+        header::STRICT_TRANSPORT_SECURITY,
+        HeaderValue::from_static("max-age=31536000"),
+    );
+    if let Some(csp) = csp {
+        headers.insert(header::CONTENT_SECURITY_POLICY, csp);
+    }
     // 只给成功命中的文件（含 304 / Range）声明缓存策略，404 页保持默认协商缓存。
     if status.is_success() || status.is_redirection() {
         if let Some(cc) = cache_control_for(&path) {
@@ -178,6 +239,27 @@ mod tests {
                 "/posts/nested/deep-post/".to_string(),
             ])
         );
+    }
+
+    #[test]
+    fn csp_from_manifest() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        // 清单缺失：不下发 CSP，而不是下发一个拦死内联脚本的
+        assert_eq!(load_csp_header(tmp.path()), None);
+
+        std::fs::write(
+            tmp.path().join("csp-hashes.txt"),
+            "sha256-2kpHhkcU4p5OoreyhonSFcII/0Gef6Q6W97spxuJaWg=\n\nbogus line\n",
+        )
+        .unwrap();
+        let header = load_csp_header(tmp.path()).unwrap();
+        let value = header.to_str().unwrap();
+        assert!(value
+            .contains("script-src 'self' 'wasm-unsafe-eval' 'sha256-2kpHhkcU4p5OoreyhonSFcII/0Gef6Q6W97spxuJaWg='"));
+        // 格式不对的行只跳过，不进头、也不让启动失败
+        assert!(!value.contains("bogus"));
+        assert!(value.starts_with("default-src 'self'; "));
+        assert!(value.contains("frame-ancestors 'none'"));
     }
 
     #[test]

@@ -6,7 +6,9 @@ description = "suzuka-chan.moe 专用静态站点生成器"
 
 [dependencies]
 anyhow = "1"
+base64 = "0.22"
 chrono = "0.4"
+fast_image_resize = "5"
 imagesize = "0.13"
 lightningcss = "1.0.0-alpha.71"
 minify-html = "0.18.1"
@@ -19,6 +21,8 @@ serde_yaml = "0.9"
 sha2 = "0.10"
 toml = "0.8"
 walkdir = "2"
+# default 会拖进整个 image crate（只为 DynamicImage 互转），这里用不到
+webp = { version = "0.3", default-features = false }
 
 [profile.release]
 strip = true

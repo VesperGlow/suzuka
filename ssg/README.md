@@ -152,7 +152,9 @@ minifier。
   同日期的并列顺序没有再深究（跟 sitemap.xml 的并列顺序一样，认为是可接受的已知差异）。
 - **归档卡片的封面图逻辑跟 og:image 是两条完全不同的路径**：archive-cover-url.html
   只认 `Params.cover`/`image`/`featured_image`，从来不看 front matter 的 `images`
-  （那是 og:image/JSON-LD 用的），永远退到正文里第一张图。
+  （那是 og:image/JSON-LD 用的），永远退到正文里第一张图（有 768w 缩放变体时用
+  变体，见 images.rs）。og:image 自 2026-07 起有意偏离 Hugo：front matter `images`
+  缺失时先退正文首图（分享卡片贴合文章内容），再退站点默认图。
 - **redirectTo 的 meta-refresh 块前后各有一个空行**（`</head>` 前的固定空行 + 块自己
   的收尾空行），比表面看起来更"贵"——两侧都要留空行，不能只加一侧，否则后面所有
   内容整体错位一行（`/en/posts/` 这组页面踩过）。

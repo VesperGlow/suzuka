@@ -220,24 +220,41 @@ struct LangData {
 // 免得给 17 处 write_file / 9 处 render_to 调用点都加一个参数
 thread_local! {
     static MINIFY: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    // 全站内联 <script> 的 sha256（写盘时顺手收集），构建收尾写进
+    // csp-hashes.txt，backend 启动时读它拼 Content-Security-Policy。
+    // BTreeSet：去重 + 排序，保证产物字节稳定。
+    static CSP_HASHES: std::cell::RefCell<std::collections::BTreeSet<String>> =
+        const { std::cell::RefCell::new(std::collections::BTreeSet::new()) };
 }
 
 pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
     MINIFY.with(|m| m.set(minify));
+    CSP_HASHES.with(|h| h.borrow_mut().clear());
     let config = SiteConfig::load(source)?;
     let lang_codes: Vec<String> = config.languages.iter().map(|l| l.code.clone()).collect();
     let i18n = Arc::new(I18n::load(source, &lang_codes)?);
     let content = content::load(source, &config.default_lang)?;
     let assets = crate::assets::build(source, dest, minify)?;
 
-    // 文章 bundle 的图片资源只按默认语言路径发布一份（与 Hugo 行为一致）
+    // 文章 bundle 的图片资源只按默认语言路径发布一份（与 Hugo 行为一致）；
+    // 大图顺带生成 srcset 用的缩放变体（并行，见 images.rs）
+    let mut resize_jobs = Vec::new();
     for bundle in &content.posts {
         let out_dir = dest.join("posts").join(&bundle.slug);
         std::fs::create_dir_all(&out_dir)?;
         for res in &bundle.resources {
             std::fs::copy(&res.disk_path, out_dir.join(&res.name))?;
+            if !res.variants.is_empty() {
+                resize_jobs.push(crate::images::ResizeJob {
+                    src: res.disk_path.clone(),
+                    out_dir: out_dir.clone(),
+                    name: res.name.clone(),
+                    widths: res.variants.clone(),
+                });
+            }
         }
     }
+    crate::images::generate(&resize_jobs)?;
 
     let mut env = Environment::new();
     env.set_loader(path_loader(source.join("ssg").join("templates")));
@@ -1072,6 +1089,19 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
         ),
     )?;
 
+    // 内联脚本哈希清单：backend 用它组装 CSP 的 script-src，散列公开无妨。
+    // 放正式产物里而不是旁路文件，保证「部署了哪份站点就用哪份清单」。
+    let csp_manifest = CSP_HASHES.with(|h| {
+        let hashes = h.borrow();
+        let mut out = String::new();
+        for hash in hashes.iter() {
+            out.push_str(hash);
+            out.push('\n');
+        }
+        out
+    });
+    write_file(dest, "csp-hashes.txt", &csp_manifest)?;
+
     println!("构建完成 → {}", dest.display());
     Ok(())
 }
@@ -1191,7 +1221,8 @@ fn build_lang_posts(
             .map(|t| content::hugo_title_case(t))
             .collect();
 
-        // 正文里出现的第一张图（不管 front matter 有没有声明），只给 jsonld 的兜底用
+        // 正文里出现的第一张图（不管 front matter 有没有声明），给 og:image
+        // 和 jsonld 的兜底用
         let cover_abs = rendered
             .first_image_src
             .as_ref()
@@ -1201,16 +1232,17 @@ fn build_lang_posts(
             .first()
             .map(|img| format!("{}/{img}", config.base_url));
 
-        // og:image / twitter:image / itemprop="image"：复刻 Hugo 内置
-        // _funcs/get-page-images.html —— 只认 front matter images（按 bundle
-        // 资源解析出正确的 /posts/slug/ 前缀），没声明就退到站点默认图。
-        // 不看正文首图（本站没有用到 get-page-images 的 cover/feature/thumbnail
-        // 那一档兜底，故未实现）。
+        // og:image / twitter:image / itemprop="image"：优先 front matter
+        // images（按 bundle 资源解析出正确的 /posts/slug/ 前缀），没声明就
+        // 退到正文首图——Galgame 感想篇篇有截图，分享卡片用正文首图远比
+        // 站点通用图贴切——都没有才落到站点默认图。（此处曾复刻 Hugo
+        // get-page-images 的「不看正文首图」行为，2026-07 起有意偏离。）
         let og_image = page
             .fm
             .images
             .first()
             .map(|img| resolve_bundle_image(config, bundle, &bundle_rel, img))
+            .or_else(|| cover_abs.clone())
             .or_else(|| fallback_img.clone());
 
         // jsonld 的 image：复刻本项目自己的 schema-blogposting.html —— front
@@ -1253,8 +1285,17 @@ fn build_lang_posts(
         // archive-cover-url.html 只看 Params.cover/image/featured_image
         // （本站都没用），从不看 front matter 的 images——所以归档卡片封面
         // 永远是正文里第一张图，跟 og:image 的解析逻辑（会优先用 front
-        // matter images）是两条不同的路径，故意不共用
-        let cover_url = rendered.first_image_src.clone();
+        // matter images）是两条不同的路径，故意不共用。
+        // 卡片封面显示宽度只有几百 px：首图有 768w 缩放变体就用变体，
+        // 别让一张卡片缩略图拖整张 2560 原图。
+        let cover_url = rendered.first_image_src.clone().map(|src| {
+            bundle
+                .resources
+                .iter()
+                .find(|r| r.variants.contains(&768) && format!("{bundle_rel}{}", r.name) == src)
+                .map(|r| format!("{bundle_rel}{}", crate::images::variant_name(&r.name, 768)))
+                .unwrap_or(src)
+        });
         let card = PostCard {
             title: page.fm.title.clone(),
             rel: rel.clone(),
@@ -2062,7 +2103,53 @@ fn write_file(dest: &Path, rel: &str, content: &str) -> Result<()> {
     } else {
         std::borrow::Cow::Borrowed(content.as_bytes())
     };
+    // CSP 哈希对最终落盘字节算（minify 之后），跟浏览器看到的完全一致
+    if rel.ends_with(".html") {
+        CSP_HASHES.with(|h| collect_inline_script_hashes(&bytes, &mut h.borrow_mut()));
+    }
     std::fs::write(&path, bytes).with_context(|| format!("写入 {} 失败", path.display()))
+}
+
+/// 收集 HTML 里可执行内联 <script> 的 sha256（base64），给 CSP script-src
+/// 用。跳过带 src 的外链脚本；也跳过 application/ld+json——数据块不参与
+/// 执行，不受 script-src 约束，而且每页内容都不同，收进去只会把头撑爆。
+fn collect_inline_script_hashes(html: &[u8], out: &mut std::collections::BTreeSet<String>) {
+    use sha2::{Digest, Sha256};
+    let mut i = 0;
+    while let Some(pos) = find_bytes(&html[i..], b"<script").map(|p| i + p) {
+        // 排除 <scriptxxx> 这类假匹配：标签名后必须是空白或 '>'
+        let after = html.get(pos + b"<script".len()).copied();
+        let Some(tag_close) = find_bytes(&html[pos..], b">").map(|p| pos + p) else {
+            return;
+        };
+        let content_start = tag_close + 1;
+        let Some(content_end) =
+            find_bytes(&html[content_start..], b"</script").map(|p| content_start + p)
+        else {
+            return;
+        };
+        i = content_end + b"</script".len();
+        if !matches!(after, Some(b'>') | Some(b' ') | Some(b'\t') | Some(b'\n')) {
+            continue;
+        }
+        let tag = &html[pos..content_start];
+        if find_bytes(tag, b" src").is_some() || find_bytes(tag, b"ld+json").is_some() {
+            continue;
+        }
+        let body = &html[content_start..content_end];
+        if body.iter().all(|b| b.is_ascii_whitespace()) {
+            continue;
+        }
+        use base64::Engine;
+        let hash = base64::engine::general_purpose::STANDARD.encode(Sha256::digest(body));
+        out.insert(format!("sha256-{hash}"));
+    }
+}
+
+fn find_bytes(haystack: &[u8], needle: &[u8]) -> Option<usize> {
+    haystack
+        .windows(needle.len())
+        .position(|window| window == needle)
 }
 
 /// 对应 Hugo `--minify`：压缩 HTML，顺带压缩 `<style>`/`style=` 里的 CSS——
