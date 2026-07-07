@@ -363,7 +363,6 @@ a:hover { color: var(--accent); }
 .about-uptime p { margin: 0; font: clamp(.8rem, 1.1vw, .9rem)/1.6 var(--sans); font-variant-numeric: tabular-nums; }
 .about-stats { grid-column: 1; width: 100%; margin-top: 26px; display: grid; grid-template-columns: repeat(4, 1fr); }
 .about-stat { display: flex; flex-direction: column; gap: 5px; padding: 8px 10px; text-align: center; }
-.about-stat + .about-stat { border-left: 1px solid var(--list-line); }
 .about-stat-num { color: var(--ink); font: 600 26px/1.15 var(--sans); font-variant-numeric: tabular-nums; }
 .about-stat-label { color: var(--muted); font-size: var(--font-size-ui); }
 
@@ -753,8 +752,6 @@ html.archive-no-transition .archive-view-switch button { transition: none; }
   .posts-page-header { padding-top: 22px; }
   .about-page { display: grid; grid-template: "visual" auto "header" auto "prose" auto "stats" auto "subscribe" auto "uptime" auto / 1fr; row-gap: .75rem; padding: 22px 0 40px; }
   .about-stats { grid-area: stats; margin-top: .5rem; grid-template-columns: repeat(2, 1fr); row-gap: 14px; }
-  .about-stat + .about-stat { border-left: 0; }
-  .about-stat:nth-child(even) { border-left: 1px solid var(--list-line); }
   .about-page .post-subscribe { grid-area: subscribe; margin-top: .25rem; }
   .about-copy { display: contents; }
   .about-header { grid-area: header; padding-bottom: 0; }
