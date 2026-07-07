@@ -20,6 +20,11 @@ impl Language {
             format!("/{}", self.code)
         }
     }
+
+    /// 语言首页的根相对路径："/"（默认语言）或 "/<code>/"
+    pub fn home_rel(&self, default_lang: &str) -> String {
+        format!("{}/", self.url_prefix(default_lang))
+    }
 }
 
 pub struct SiteConfig {
@@ -95,6 +100,13 @@ impl SiteConfig {
             summary_length,
             languages,
         })
+    }
+
+    /// 站点默认分享图（params.images 第一张）的绝对地址
+    pub fn default_image(&self) -> Option<String> {
+        self.images
+            .first()
+            .map(|img| format!("{}/{img}", self.base_url))
     }
 
     pub fn language(&self, code: &str) -> &Language {

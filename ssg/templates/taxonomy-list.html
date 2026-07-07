@@ -8,7 +8,7 @@
 
   <div class="term-cloud">
     {% for term in terms %}
-      <a href="{{ term.rel | safe }}"><span>{{ term.title }}</span><small>{{ term.cards | length }}</small></a>
+      <a href="{{ term.rel | safe }}"><span>{{ term.title }}</span><small>{{ term.count }}</small></a>
     {% else %}
       <p class="empty">{{ t("empty") }}</p>
     {% endfor %}

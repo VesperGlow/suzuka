@@ -2,6 +2,15 @@
 
 use chrono::{DateTime, Datelike, FixedOffset, Timelike};
 
+/// RSS pubDate / lastBuildDate（对应 Go time.RFC1123Z）
+pub const RFC1123Z: &str = "Mon, 02 Jan 2006 15:04:05 -0700";
+/// sitemap lastmod 与 meta 日期（RFC 3339，数字时区）
+pub const RFC3339: &str = "2006-01-02T15:04:05-07:00";
+/// JSON Feed 日期（RFC 3339，UTC 记作 Z）
+pub const RFC3339Z: &str = "2006-01-02T15:04:05Z07:00";
+/// 纯日期
+pub const DATE_ONLY: &str = "2006-01-02";
+
 const MONTHS_LONG: [&str; 12] = [
     "January",
     "February",

@@ -9,7 +9,7 @@
     <div class="archive-tag-panel is-collapsible" id="archive-tag-list">
       <nav class="tag-filter-list" aria-label="{{ t("filterByTag") }}">
         {% for tag in tags_by_count %}
-          <button type="button" data-filter-type="tags" data-filter-value="{{ tag.title }}" aria-pressed="false">{{ tag.title }} <span>· {{ tag.cards | length }}</span></button>
+          <button type="button" data-filter-type="tags" data-filter-value="{{ tag.title }}" aria-pressed="false">{{ tag.title }} <span>· {{ tag.count }}</span></button>
         {% endfor %}
       </nav>
     </div>

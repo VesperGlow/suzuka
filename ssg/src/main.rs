@@ -2,7 +2,6 @@ mod assets;
 mod build;
 mod config;
 mod content;
-mod diff;
 mod gotime;
 mod i18n;
 mod images;
@@ -20,23 +19,7 @@ fn main() -> Result<()> {
             let minify = args.iter().any(|a| a == "--minify");
             build::build(&PathBuf::from(source), &PathBuf::from(dest), minify)
         }
-        Some("diff") => {
-            let positional: Vec<&String> =
-                args[1..].iter().filter(|a| !a.starts_with("--")).collect();
-            if positional.len() != 2 {
-                bail!("用法: ssg diff <golden目录> <ssg产物目录>");
-            }
-            let mismatches =
-                diff::diff_trees(&PathBuf::from(positional[0]), &PathBuf::from(positional[1]))?;
-            if mismatches > 0 {
-                bail!("{mismatches} 个文件与黄金基准不一致");
-            }
-            println!("对拍通过：产物与黄金基准一致（含已声明的归一化规则）");
-            Ok(())
-        }
-        _ => bail!(
-            "用法: ssg build [--source 目录] [--dest 目录] [--minify] | ssg diff <golden> <ours>"
-        ),
+        _ => bail!("用法: ssg build [--source 目录] [--dest 目录] [--minify]"),
     }
 }
 

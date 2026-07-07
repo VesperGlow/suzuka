@@ -1,7 +1,7 @@
 <nav class="category-filter" aria-label="{{ t("filterByCategory") }}">
   <div class="category-filter-track">
     <button type="button" data-filter-type="all" data-filter-value=""{% if all_active %} class="active" aria-pressed="true"{% else %} aria-pressed="false"{% endif %}>{{ t("all") }} <span>· {{ total_posts }}</span></button>
-{% for cat in categories_by_count %}    <button type="button" data-filter-type="categories" data-filter-value="{{ cat.title }}"{% if active_category_rel == cat.rel %} class="active" aria-pressed="true"{% else %} aria-pressed="false"{% endif %}>{{ cat.title }} <span>· {{ cat.cards | length }}</span></button>
+{% for cat in categories_by_count %}    <button type="button" data-filter-type="categories" data-filter-value="{{ cat.title }}"{% if active_category_rel == cat.rel %} class="active" aria-pressed="true"{% else %} aria-pressed="false"{% endif %}>{{ cat.title }} <span>· {{ cat.count }}</span></button>
 {% endfor %}
 
   </div>
