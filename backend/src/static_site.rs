@@ -126,11 +126,11 @@ async fn static_headers(request: Request, next: Next, csp: Option<HeaderValue>) 
         HeaderValue::from_static("strict-origin-when-cross-origin"),
     );
     // TLS 由 Cloudflare 终止，这个头随响应透传给浏览器。纯 HTTP 环境
-    // （本地开发）下浏览器会忽略它，无需条件判断。不带 includeSubDomains：
-    // 子域名是否全走 HTTPS 不是这个服务能替域名主人决定的事。
+    // （本地开发）下浏览器会忽略它，无需条件判断。includeSubDomains 是
+    // 域名主人 2026-07 确认过的：所有子域都走 HTTPS。
     headers.insert(
         header::STRICT_TRANSPORT_SECURITY,
-        HeaderValue::from_static("max-age=31536000"),
+        HeaderValue::from_static("max-age=31536000; includeSubDomains"),
     );
     if let Some(csp) = csp {
         headers.insert(header::CONTENT_SECURITY_POLICY, csp);
