@@ -4,7 +4,9 @@ if (root) {
   const apiURL = root.dataset.apiUrl;
   const postsURL = root.dataset.postsUrl;
   const form = root.querySelector("[data-guestbook-form]");
-  const submitButton = form.querySelector('[type="submit"]');
+  // 不能用 [type="submit"] 选：minify-html 会把 button 默认的 type=submit
+  // 属性当冗余删掉，线上拿到 null，提交时直接 TypeError。
+  const submitButton = form.querySelector(".guestbook-submit");
   const formStatus = root.querySelector("[data-guestbook-form-status]");
   const listStatus = root.querySelector("[data-guestbook-list-status]");
   const messageList = root.querySelector("[data-guestbook-message-list]");
