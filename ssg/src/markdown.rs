@@ -8,6 +8,7 @@
 //! - 独立成段的图片不包 <p>（wrapStandAloneImageWithinParagraph=false）
 
 use crate::content::Resource;
+use crate::meta::{escape_attr, escape_text};
 use pulldown_cmark::{html, CowStr, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 use std::collections::HashMap;
 
@@ -112,7 +113,7 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
                     toc.push(TocEntry {
                         level: level_num,
                         id: id.clone(),
-                        inner_html: inner_html.clone(),
+                        inner_html: strip_anchors(&inner_html),
                     });
                 }
                 let tag = format!("<{level} id=\"{id}\">{inner_html}</{level}>\n");
@@ -123,15 +124,9 @@ pub fn render(body: &str, resources: &[Resource], bundle_rel: &str) -> Rendered 
             Event::Start(Tag::Link {
                 dest_url, title, ..
             }) => {
-                let mut a = format!("<a href=\"{}\"", escape_attr(dest_url));
-                if !title.is_empty() {
-                    a.push_str(&format!(" title=\"{}\"", escape_attr(title)));
-                }
-                if dest_url.starts_with("http") {
-                    a.push_str(" target=\"_blank\" rel=\"noopener noreferrer\"");
-                }
-                a.push('>');
-                out.push(Event::InlineHtml(CowStr::from(a)));
+                out.push(Event::InlineHtml(CowStr::from(link_open_tag(
+                    dest_url, title,
+                ))));
             }
             Event::End(TagEnd::Link) => {
                 out.push(Event::InlineHtml(CowStr::from("</a>")));
@@ -327,6 +322,18 @@ fn build_figure(
         " loading=\"lazy\""
     };
     let (img, src) = match resource {
+        // 尺寸解析失败（imagesize 不认识/文件损坏）时 width 落 0，写进
+        // width/height 属性会让图片直接塌缩不可见：退化成无尺寸 <img>，
+        // 让浏览器按自然尺寸渲染，问题留给肉眼可见。
+        Some(res) if res.width == 0 => {
+            let src = format!("{bundle_rel}{}", res.name);
+            (
+                format!(
+                    "<img src=\"{src}\" alt=\"{alt}\"{loading_attr} decoding=\"async\"{title_attr}>"
+                ),
+                src,
+            )
+        }
         Some(res) => {
             let src = format!("{bundle_rel}{}", res.name);
             let srcset_attr = if res.variants.is_empty() {
@@ -391,7 +398,21 @@ fn collect_plain(events: &[Event]) -> String {
     out
 }
 
-/// 渲染标题内部的行内内容（文字走 typographer，行内代码保留 <code>）
+/// 链接的开标签（正文与标题共用）：外链加 target/rel
+fn link_open_tag(dest_url: &str, title: &str) -> String {
+    let mut a = format!("<a href=\"{}\"", escape_attr(dest_url));
+    if !title.is_empty() {
+        a.push_str(&format!(" title=\"{}\"", escape_attr(title)));
+    }
+    if dest_url.starts_with("http") {
+        a.push_str(" target=\"_blank\" rel=\"noopener noreferrer\"");
+    }
+    a.push('>');
+    a
+}
+
+/// 渲染标题内部的行内内容（文字走 typographer，行内代码保留 <code>，
+/// 链接保留 <a>——TOC 里会再剥掉，见 strip_anchors）
 fn render_inline(
     events: &[Event],
     prev_char: &mut Option<char>,
@@ -407,6 +428,10 @@ fn render_inline(
                 out.push_str("</code>");
                 *prev_char = t.chars().last().or(*prev_char);
             }
+            Event::Start(Tag::Link {
+                dest_url, title, ..
+            }) => out.push_str(&link_open_tag(dest_url, title)),
+            Event::End(TagEnd::Link) => out.push_str("</a>"),
             Event::Start(Tag::Emphasis) => out.push_str("<em>"),
             Event::End(TagEnd::Emphasis) => out.push_str("</em>"),
             Event::Start(Tag::Strong) => out.push_str("<strong>"),
@@ -415,6 +440,26 @@ fn render_inline(
         }
     }
     out
+}
+
+/// 剥掉行内 HTML 里的 <a ...>...</a> 包裹（保留内部文字）。TOC 条目本身
+/// 就是链接，标题里的链接原样嵌进去会产生非法的嵌套 <a>。
+/// 输入是 render_inline 自己拼出来的 HTML，标签形态可控，直接扫描即可。
+fn strip_anchors(html: &str) -> String {
+    let mut out = String::with_capacity(html.len());
+    let mut rest = html;
+    while let Some(start) = rest.find("<a ") {
+        out.push_str(&rest[..start]);
+        match rest[start..].find('>') {
+            Some(end) => rest = &rest[start + end + 1..],
+            None => {
+                rest = "";
+                break;
+            }
+        }
+    }
+    out.push_str(rest);
+    out.replace("</a>", "")
 }
 
 /// goldmark autoHeadingID（GitHub 风格）：小写、保留字母数字与连字符、空格转连字符、其余去除
@@ -624,15 +669,46 @@ fn is_typo_punct(ch: char) -> bool {
     }
 }
 
-fn escape_text(text: &str) -> String {
-    text.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-fn escape_attr(text: &str) -> String {
-    text.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
+    #[test]
+    fn heading_links_render_anchor_but_toc_strips_it() {
+        let rendered = render("## 参见 [ATRI](https://example.com/atri)\n", &[], "");
+        assert!(
+            rendered.html.contains(
+                "<a href=\"https://example.com/atri\" target=\"_blank\" rel=\"noopener noreferrer\">ATRI</a>"
+            ),
+            "标题里的链接应保留 <a>：{}",
+            rendered.html
+        );
+        // TOC 条目本身是 <a href="#...">，内部不允许再嵌 <a>
+        assert_eq!(rendered.toc.len(), 1);
+        assert_eq!(rendered.toc[0].inner_html, "参见 ATRI");
+    }
+
+    #[test]
+    fn zero_size_resource_gets_no_dimensions() {
+        let res = Resource {
+            name: "broken.webp".into(),
+            disk_path: std::path::PathBuf::new(),
+            width: 0,
+            height: 0,
+            variants: Vec::new(),
+        };
+        let rendered = render("![alt](broken.webp)\n", &[res], "/posts/x/");
+        assert!(
+            rendered
+                .html
+                .contains("<img src=\"/posts/x/broken.webp\" alt=\"alt\""),
+            "{}",
+            rendered.html
+        );
+        assert!(
+            !rendered.html.contains("width=\"0\""),
+            "不能输出 width=\"0\"：{}",
+            rendered.html
+        );
+    }
 }

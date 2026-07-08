@@ -226,10 +226,21 @@ pub(crate) fn redirect_fields(
     Some((abs, block))
 }
 
+/// HTML 属性值转义（双引号用数字实体，单引号一并转义）。也用于 RSS/XML
+/// 文本节点：数字字符引用在 XML 里同样合法。全站唯一的一份实现——
+/// markdown.rs 此前有一份 `"` → `&quot;` 的变体，已统一到这里
+/// （`&#34;` 与 `&quot;` 语义等价）。
 pub(crate) fn escape_attr(s: &str) -> String {
     s.replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
         .replace('"', "&#34;")
         .replace('\'', "&#x27;")
+}
+
+/// 文本节点转义（只处理 & < >），行内代码等不需要引号转义的场合用。
+pub(crate) fn escape_text(text: &str) -> String {
+    text.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
 }

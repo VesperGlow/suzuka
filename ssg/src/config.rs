@@ -42,8 +42,9 @@ impl SiteConfig {
             std::fs::read_to_string(source.join("site.toml")).context("读取 site.toml 失败")?;
         let doc: toml::Value = raw.parse().context("解析 site.toml 失败")?;
 
-        let base_url = doc["baseURL"]
-            .as_str()
+        let base_url = doc
+            .get("baseURL")
+            .and_then(|v| v.as_str())
             .context("site.toml 缺少 baseURL")?
             .trim_end_matches('/')
             .to_string();
