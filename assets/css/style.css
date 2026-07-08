@@ -977,7 +977,8 @@ html.archive-no-transition .archive-view-switch button { transition: none; }
   .guestbook-reference { width: 100%; justify-content: center; }
   .guestbook-reference { font-size: 13px; }
   .guestbook-picker-drawer { min-width: 0; height: auto; max-height: calc(100vh - var(--header-height, 72px) - 48px); position: static; align-self: start; overflow: hidden; background: transparent; border-inline: 1px solid color-mix(in srgb, var(--line) 42%, transparent); border-radius: 0; box-shadow: none; }
-  .guestbook-picker-handle { width: 28px; max-height: 240px; display: inline-flex; align-items: center; justify-content: center; position: absolute; z-index: 20; top: 50%; right: 0; transform: translate(50%, -50%); writing-mode: vertical-rl; text-orientation: mixed; margin: 0; padding: 14px 7px; color: var(--text-subtle); background: color-mix(in srgb, var(--control-surface) 92%, transparent); border: 1px solid var(--line); border-radius: var(--radius-pill); font: 13px/1.4 var(--sans); letter-spacing: .04em; opacity: 1; transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard); }
+  /* 定位平移走独立 translate 属性，让统一悬停规则的 transform: scale() 与之复合而非覆盖 */
+  .guestbook-picker-handle { width: 34px; max-height: 280px; display: inline-flex; align-items: center; justify-content: center; position: absolute; z-index: 20; top: 50%; right: 0; translate: 50% -50%; writing-mode: vertical-rl; text-orientation: mixed; margin: 0; padding: 18px 8px; color: var(--text-subtle); background: color-mix(in srgb, var(--control-surface) 92%, transparent); border: 1px solid var(--line); border-radius: var(--radius-pill); font: 14px/1.4 var(--sans); letter-spacing: .04em; opacity: 1; transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard); }
   .guestbook-picker-handle:hover, .guestbook-picker-handle[aria-expanded="true"] { color: var(--accent-dark); background: var(--control-active); border-color: var(--accent-border); }
   .guestbook-picker-panel { width: 100%; height: auto; max-height: inherit; min-width: 0; min-height: 0; display: flex; flex-direction: column; margin: 0; padding: 10px clamp(24px, 2.5vw, 36px) 14px; overflow: hidden; opacity: 0; pointer-events: none; transform: translateX(-8px); background: color-mix(in srgb, var(--control-surface) 18%, transparent); border: 0; border-radius: 0; box-shadow: none; transition: opacity 200ms ease, transform 240ms ease; }
   .guestbook-layout.is-picker-open .guestbook-picker-panel { opacity: 1; pointer-events: auto; transform: translateX(0); }
@@ -1047,7 +1048,7 @@ html.archive-no-transition .archive-view-switch button { transition: none; }
   .guestbook-form { padding: 0 2px 18px; background: transparent; border-block: 0; box-shadow: none; }
   .guestbook-reference-tools { justify-content: center; margin: 0 0 16px; padding-bottom: 0; border-bottom: 0; }
   .guestbook-reference { width: 100%; justify-content: center; }
-  .guestbook-picker-handle { width: fit-content; max-width: 100%; display: flex; margin: 0 auto 16px; padding: 5px 13px; writing-mode: horizontal-tb; color: var(--text-subtle); background: color-mix(in srgb, var(--control-surface) 55%, transparent); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); border-radius: var(--radius-pill); text-align: center; }
+  .guestbook-picker-handle { width: fit-content; max-width: 100%; display: flex; margin: 0 auto 16px; padding: 8px 18px; writing-mode: horizontal-tb; color: var(--text-subtle); background: color-mix(in srgb, var(--control-surface) 55%, transparent); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); border-radius: var(--radius-pill); text-align: center; font-size: 14px; }
   .guestbook-post-picker { width: 100%; margin: -2px 0 16px; padding: 12px; background: color-mix(in srgb, var(--control-surface) 45%, transparent); border: 1px solid color-mix(in srgb, var(--list-line) 60%, transparent); border-radius: var(--radius-medium); box-shadow: none; }
   .guestbook-post-results { --guestbook-post-row-height: 56px; max-height: calc(var(--guestbook-post-row-height) * 2.5); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text-faint) 35%, transparent) transparent; }
   .guestbook-post-results li + li { border-color: color-mix(in srgb, var(--list-line) 55%, transparent); }
@@ -1090,7 +1091,7 @@ html.archive-no-transition .archive-view-switch button { transition: none; }
   .header-action, .header-tools [data-header-search-toggle], .header-search-clear, .header-search-submit, .site-brand,
   .soft-button, .subscribe-link, .reaction-button, .pagination a, .term-cloud a,
   .category-filter button, .tag-filter-list button, .archive-view-switch button,
-  .guestbook-submit, .guestbook-load-more, .guestbook-reference button, .guestbook-post-picker-toggle, .guestbook-picker-handle,
+  .guestbook-submit, .guestbook-load-more, .guestbook-reference button, .guestbook-picker-handle,
   .text-link, .read-more, .home-recent-list a:not(.home-recent-category), .home-recent-category,
   .post-card h2 a, .article-category a, .article-meta-tag,
   .article-toc a, .article-toc-desktop a, .archive-card-tags button, .archive-timeline-meta button,
@@ -1103,16 +1104,11 @@ html.archive-no-transition .archive-view-switch button { transition: none; }
   :is(.site-brand, .soft-button, .subscribe-link, .pagination a, .term-cloud a, .category-filter button, .tag-filter-list button, .archive-view-switch button, .guestbook-picker-handle):hover,
   :is(.guestbook-submit, .guestbook-load-more, .reaction-button):hover:not(:disabled) { transform: scale(1.04); }
   /* 小号纯文字链接 */
-  :is(.text-link, .read-more, .home-recent-category, .article-category a, .article-meta-tag, .archive-card-tags button, .archive-timeline-meta button, .article-toc a, .article-toc-desktop a, .tag-filter summary, .guestbook-post-picker-toggle, .footer-copyright a):hover { transform: scale(1.06); }
+  :is(.text-link, .read-more, .home-recent-category, .article-category a, .article-meta-tag, .archive-card-tags button, .archive-timeline-meta button, .article-toc a, .article-toc-desktop a, .tag-filter summary, .footer-copyright a):hover { transform: scale(1.06); }
   /* 长标题链接：以起始端为原点轻微放大，避免两头晃动 */
   .home-recent-list a:not(.home-recent-category), .post-card h2 a, .post-navigation-previous { transform-origin: left center; }
   .post-navigation-next { transform-origin: right center; }
   :is(.home-recent-list a:not(.home-recent-category), .post-card h2 a, .post-navigation-previous, .post-navigation-next):hover { transform: scale(1.02); }
   /* 大块可点卡片：更轻的整体缩放 */
   .archive-card:hover, .post-discussion-link:hover { transform: scale(1.01); }
-}
-
-/* 留言板抽屉把手在桌面布局里自带定位 transform，缩放需与之复合 */
-@media (hover: hover) and (prefers-reduced-motion: no-preference) and (min-width: 960px) {
-  .guestbook-picker-handle:hover { transform: translate(50%, -50%) scale(1.04); }
 }
