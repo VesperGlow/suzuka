@@ -13,6 +13,10 @@ pub struct Translation {
 pub struct I18n {
     // lang -> key -> 文案
     tables: HashMap<String, HashMap<String, Translation>>,
+    /// 渲染期间遇到的缺失 key（"lang/key"）。构建收尾检查非空即失败——
+    /// 缺文案是模板笔误，不该以「构建成功 + 线上空白文案」的形式溜到线上。
+    /// Mutex 是因为 translate 经 Arc<I18n> 在模板函数里被调用，只有 &self。
+    missing: std::sync::Mutex<std::collections::BTreeSet<String>>,
 }
 
 impl I18n {
@@ -41,13 +45,20 @@ impl I18n {
             }
             tables.insert(lang.clone(), table);
         }
-        Ok(I18n { tables })
+        Ok(I18n {
+            tables,
+            missing: std::sync::Mutex::new(std::collections::BTreeSet::new()),
+        })
     }
 
-    /// Hugo 的 i18n：找不到 key 时返回空串（并在构建日志里能看出缺失）
+    /// 找不到 key 时返回空串占位，同时记入 missing 清单（构建收尾统一报错）
     pub fn translate(&self, lang: &str, key: &str, args: &HashMap<String, String>) -> String {
         let Some(tr) = self.tables.get(lang).and_then(|t| t.get(key)) else {
             eprintln!("警告: i18n 缺少 {lang}/{key}");
+            self.missing
+                .lock()
+                .expect("missing-key 集合锁中毒")
+                .insert(format!("{lang}/{key}"));
             return String::new();
         };
         let template = match (&tr.one, args.get("Count")) {
@@ -55,6 +66,16 @@ impl I18n {
             _ => &tr.other,
         };
         interpolate(template, args)
+    }
+
+    /// 渲染全程累计的缺失 key（已排序去重），空表示文案完整。
+    pub fn missing_keys(&self) -> Vec<String> {
+        self.missing
+            .lock()
+            .expect("missing-key 集合锁中毒")
+            .iter()
+            .cloned()
+            .collect()
     }
 }
 

@@ -297,6 +297,13 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
     });
     write_file(dest, "csp-hashes.txt", &csp_manifest)?;
 
+    // 文案完整性检查：渲染过程中任何一次 t() 打空都算构建失败，
+    // 不让「构建成功但线上文案空白」这种静默错误溜出去。
+    let missing = i18n.missing_keys();
+    if !missing.is_empty() {
+        anyhow::bail!("i18n 缺少文案 key：{}", missing.join("、"));
+    }
+
     println!("构建完成 → {}", dest.display());
     Ok(())
 }
