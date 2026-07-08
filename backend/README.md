@@ -41,6 +41,11 @@ single-container mode):
 - `GET|POST /views` — per-post read counts (`?path=/posts/.../`)
 - `GET|POST /reactions` — per-post likes
 - `GET /summary` — site-wide totals for views and reactions
+- `GET /healthz` — liveness probe; runs `SELECT 1` against the database
+
+API requests are logged to stdout, one line each (UTC timestamp, client IP,
+method, path, status, duration); errors go to stderr with the same timestamp
+format. Static file requests are not logged.
 
 The service only accepts `X-Forwarded-For` from loopback or private-network
 peers. The reverse proxy must overwrite, rather than append to, any incoming

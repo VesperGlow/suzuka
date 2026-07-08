@@ -107,9 +107,17 @@ pub fn write_error(status: StatusCode, text: &str) -> Response {
     write_json(status, &json!({ "error": text }))
 }
 
+/// 日志行统一的 UTC 时间戳（RFC 3339）。格式化理论上不会失败，
+/// 兜底空串也比让日志把请求打挂强。
+pub fn log_timestamp() -> String {
+    time::OffsetDateTime::now_utc()
+        .format(&time::format_description::well_known::Rfc3339)
+        .unwrap_or_default()
+}
+
 /// 对外隐藏实现细节，同时把真实错误留在服务日志中便于排查。
 pub fn internal_error(operation: &str, err: &dyn std::fmt::Display) -> Response {
-    eprintln!("{operation}: {err}");
+    eprintln!("{} error {operation}: {err}", log_timestamp());
     write_error(StatusCode::INTERNAL_SERVER_ERROR, operation)
 }
 

@@ -269,6 +269,15 @@ async fn counters() {
 }
 
 #[tokio::test]
+async fn healthz() {
+    let (router, _tmp) = test_app();
+    let (status, response) = send(&router, get("/healthz")).await;
+    assert_eq!(status, StatusCode::OK);
+    let out: serde_json::Value = serde_json::from_slice(&response).unwrap();
+    assert_eq!(out["status"], "ok");
+}
+
+#[tokio::test]
 async fn summary() {
     let (router, _tmp) = test_app();
 

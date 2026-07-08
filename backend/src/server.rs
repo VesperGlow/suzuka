@@ -1,17 +1,20 @@
 use std::collections::HashSet;
+use std::net::SocketAddr;
 use std::sync::{Arc, Mutex, MutexGuard};
+use std::time::Instant;
 
-use axum::extract::{DefaultBodyLimit, Request};
-use axum::http::{header, HeaderValue};
+use axum::extract::{ConnectInfo, DefaultBodyLimit, Request, State};
+use axum::http::{header, HeaderValue, StatusCode};
 use axum::middleware::{self, Next};
 use axum::response::Response;
 use axum::routing::get;
 use axum::Router;
 use rusqlite::Connection;
+use serde_json::json;
 use time::OffsetDateTime;
 
 use crate::guestbook::{self, POST_BURST, POST_WINDOW};
-use crate::httputil::MAX_REQUEST_BYTES;
+use crate::httputil::{client_ip, internal_error, log_timestamp, write_json, MAX_REQUEST_BYTES};
 use crate::metrics::{self, COUNTER_BURST, COUNTER_WINDOW};
 use crate::ratelimit::{Clock, RateLimiter};
 use crate::static_site;
@@ -85,9 +88,46 @@ pub fn handler(app: Arc<App>) -> Router {
             get(metrics::read_reactions).post(metrics::bump_reactions),
         )
         .route("/summary", get(metrics::handle_summary))
+        .route("/healthz", get(healthz))
         .layer(middleware::from_fn(security_headers))
+        .layer(middleware::from_fn(access_log))
         .layer(DefaultBodyLimit::max(MAX_REQUEST_BYTES))
         .with_state(app)
+}
+
+/// 存活探针：确认进程在跑且数据库还答话，给外部拨测用。
+/// 单容器模式下挂在 /api/guestbook/healthz。
+async fn healthz(State(app): State<Arc<App>>) -> Response {
+    let result = app.conn().query_row("SELECT 1", [], |_| Ok(()));
+    match result {
+        Ok(()) => write_json(StatusCode::OK, &json!({ "status": "ok" })),
+        Err(err) => internal_error("health check failed", &err),
+    }
+}
+
+/// API 访问日志：一行一条（时间戳、来源 IP、方法、路径、状态码、耗时）。
+/// 静态文件请求不记——量大且 CDN 侧已有日志，动态接口才是排障时缺证据的地方。
+async fn access_log(request: Request, next: Next) -> Response {
+    let method = request.method().clone();
+    let path = request
+        .uri()
+        .path_and_query()
+        .map(|p| p.as_str().to_string())
+        .unwrap_or_else(|| request.uri().path().to_string());
+    let peer = request
+        .extensions()
+        .get::<ConnectInfo<SocketAddr>>()
+        .map(|info| info.0);
+    let ip = client_ip(peer, request.headers());
+    let start = Instant::now();
+    let response = next.run(request).await;
+    println!(
+        "{} {ip} {method} {path} {} {}ms",
+        log_timestamp(),
+        response.status().as_u16(),
+        start.elapsed().as_millis()
+    );
+    response
 }
 
 async fn security_headers(request: Request, next: Next) -> Response {
