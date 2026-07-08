@@ -62,8 +62,38 @@
     setOpen(!isOpen());
   });
 
+  // 收起/展开会改变正文栏宽，文字重排后同一滚动像素对应的内容就变了。
+  // 切换前记住阅读线（视口上缘、header 之下）附近的块级元素，在 padding
+  // 过渡动画期间逐帧把它钉回原来的视口位置，阅读进度不漂移。
+  const keepReadingAnchor = () => {
+    const main = document.getElementById("main-content");
+    if (!main || window.scrollY < 40) return;
+    const readingLine = 64 + 24; // --header-height + 一点余量
+    let anchor = null;
+    for (const el of main.querySelectorAll("p, h1, h2, h3, h4, h5, h6, li, pre, blockquote, figure, table")) {
+      const rect = el.getBoundingClientRect();
+      if (rect.height > 0 && rect.bottom > readingLine) {
+        anchor = el;
+        break;
+      }
+    }
+    if (!anchor) return;
+    const startTop = anchor.getBoundingClientRect().top;
+    // 覆盖 .25s 过渡再留余量；reduced-motion 下无过渡，首帧即修正完毕
+    const deadline = performance.now() + 400;
+    const step = () => {
+      const delta = anchor.getBoundingClientRect().top - startTop;
+      // 站点开了 html { scroll-behavior: smooth }，必须显式 instant，
+      // 否则逐帧的平滑滚动互相叠加会跑飞
+      if (delta) window.scrollBy({ top: delta, behavior: "instant" });
+      if (performance.now() < deadline) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
+
   if (collapseToggle) {
     collapseToggle.addEventListener("click", () => {
+      keepReadingAnchor();
       setCollapsed(!root.classList.contains("sidebar-collapsed"));
     });
     // 页面加载时可能已由 <head> 内联脚本恢复了收起状态，这里同步按钮文案。
