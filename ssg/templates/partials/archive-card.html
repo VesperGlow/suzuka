@@ -1,7 +1,12 @@
 <article class="archive-card" data-filter-item data-categories="{{ card.categories_attr | safe }}" data-tags="{{ card.tags_attr | safe }}">
   <a class="archive-card-cover" href="{{ card.rel | safe }}" aria-label="{{ t("readPost", Title=card.title) }}">
     {% if card.cover_url %}
-      <img src="{{ card.cover_url | safe }}" alt="" loading="lazy" decoding="async">
+      {#- sizes 兜底公式（不支持 auto 的浏览器）按各断点"筛选后单卡占满内容栏"
+          的最宽情形推：≤768 shell 两侧各 16px；≤900 单栏、shell padding ≤2×24；
+          更宽时减 shell padding(≤96) + 归档侧栏(340) + 栏间距(≤64)，按主侧栏
+          收起算，1560 shell 封顶得 1060。偏大只多下载一档，偏小筛选后会发糊。
+          改 style.css 的 .archive-layout / .shell 宽度时要同步这里。 -#}
+      <img src="{{ card.cover_url | safe }}" alt="" loading="lazy" decoding="async"{% if card.cover_srcset %} srcset="{{ card.cover_srcset | safe }}" sizes="auto, (max-width: 768px) calc(100vw - 32px), (max-width: 900px) calc(100vw - 48px), min(calc(100vw - 440px), 1060px)"{% endif %}>
     {% else %}
       <span class="archive-card-placeholder" aria-hidden="true"></span>
     {% endif %}

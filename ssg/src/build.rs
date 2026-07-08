@@ -153,6 +153,8 @@ struct PostCard {
     /// RSS `<category>` / og keywords：term 的自动 title（首字母大写），不是原始大小写
     tags_title: Vec<String>,
     cover_url: Option<String>,
+    /// 封面全部缩放档位（含原图）的 srcset；首图无变体时为 None，模板退回单 src
+    cover_srcset: Option<String>,
     content_html: String,
     /// 纯文本正文（已合并空白），index.json 的 content 字段用
     plain: String,
@@ -1192,16 +1194,38 @@ fn build_lang_posts(
 
         // 归档卡片封面永远是正文里第一张图，跟 og:image 的解析逻辑（会优先
         // 用 front matter images）是两条不同的路径，故意不共用。
-        // 卡片封面显示宽度只有几百 px：首图有 768w 缩放变体就用变体，
-        // 别让一张卡片缩略图拖整张 2560 原图。
-        let cover_url = rendered.first_image_src.clone().map(|src| {
+        // 卡片封面常态显示宽度只有几百 px：src 取 768w 变体兜底，
+        // 别让一张卡片缩略图拖整张 2560 原图。但归档网格是 auto-fit，
+        // 筛选后只剩一张卡时会拉到整个内容栏宽（最宽 1060px CSS 像素），
+        // 所以 srcset 带上全部档位，靠模板里的 sizes=auto 按真实布局宽度换档。
+        let cover_resource = rendered.first_image_src.as_deref().and_then(|src| {
             bundle
                 .resources
                 .iter()
-                .find(|r| r.variants.contains(&768) && format!("{bundle_rel}{}", r.name) == src)
+                .find(|r| format!("{bundle_rel}{}", r.name) == src)
+        });
+        let cover_url = rendered.first_image_src.clone().map(|src| {
+            cover_resource
+                .filter(|r| r.variants.contains(&768))
                 .map(|r| format!("{bundle_rel}{}", crate::images::variant_name(&r.name, 768)))
                 .unwrap_or(src)
         });
+        let cover_srcset = cover_resource
+            .filter(|r| !r.variants.is_empty())
+            .map(|r| {
+                let mut candidates: Vec<String> = r
+                    .variants
+                    .iter()
+                    .map(|w| {
+                        format!(
+                            "{bundle_rel}{} {w}w",
+                            crate::images::variant_name(&r.name, *w)
+                        )
+                    })
+                    .collect();
+                candidates.push(format!("{bundle_rel}{} {}w", r.name, r.width));
+                candidates.join(", ")
+            });
         let card = PostCard {
             title: page.fm.title.clone(),
             rel: rel.clone(),
@@ -1220,6 +1244,7 @@ fn build_lang_posts(
             tags_raw: page.fm.tags.clone(),
             tags_title: og_tags.clone(),
             cover_url,
+            cover_srcset,
             content_html: rendered.html.clone(),
             plain: collapse_ws(&html_unescape_typographic(&rendered.plain)),
             date_rfc3339: gotime::format(&page.date, gotime::RFC3339Z),
