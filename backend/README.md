@@ -23,9 +23,12 @@ GUESTBOOK_DB_PATH=/var/lib/suzuka/backend.db \
 
 `GUESTBOOK_STATIC_DIR` picks between two routing modes (see `src/server.rs`):
 
-- **Unset** (pure API, e.g. local development against a separately-served
-  frontend): routes are exposed directly at the paths below, e.g.
-  `GET /messages`.
+- **Unset** (pure API): routes are exposed directly at the paths below, e.g.
+  `GET /messages`. Note that the site's frontend always fetches under the
+  `/api/guestbook/` prefix, so this mode alone cannot serve the guestbook UI —
+  to exercise the frontend against the backend locally, use the
+  single-container mode below (`GUESTBOOK_STATIC_DIR=../public cargo run`
+  from this directory, then browse `http://127.0.0.1:8787/`).
 - **Set to a directory** (single-container production mode, as run by the
   root `Containerfile`): the backend also serves that directory's static
   files at `/`, and the same routes are nested under `/api/guestbook/`

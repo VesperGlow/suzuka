@@ -42,7 +42,17 @@ npx -y pagefind@1.3.0 --site public
 `ssg` 目前只有一次性 `build`，没有类似 `hugo server -D` 的热重载；改完内容后重新跑一遍
 上面的命令，用任意静态文件服务器（如 `python3 -m http.server --directory public`）预览即可。
 
-留言板、阅读量等功能需要后端在本地一并运行，见 [`backend/README.md`](backend/README.md)。
+留言板、阅读量等功能需要后端在本地一并运行。注意前端 `fetch` 的路径写死在
+`/api/guestbook/` 前缀下，而这个前缀只在后端的**单容器模式**（设置了
+`GUESTBOOK_STATIC_DIR`）下存在——用独立静态服务器预览时这些请求会 404。
+本地联调动态功能请让后端一体托管静态产物：
+
+```sh
+GUESTBOOK_STATIC_DIR=public cargo run --manifest-path backend/Cargo.toml
+# 然后浏览 http://127.0.0.1:8787/
+```
+
+详见 [`backend/README.md`](backend/README.md) 的两种路由模式说明。
 
 ## 构建
 
