@@ -463,6 +463,62 @@ async fn guestbook_ref_respects_post_whitelist() {
 }
 
 #[tokio::test]
+async fn non_ascii_post_paths_are_normalized() {
+    // 白名单存磁盘上的原始 UTF-8 目录名；前端（ssg encode_path）发的是
+    // 百分号编码形。两种形态都必须命中同一篇文章、同一行计数。
+    let (router, _tmp) = test_app_with_whitelist(&["/posts/视觉小说/"]);
+    let encoded = "/posts/%E8%A7%86%E8%A7%89%E5%B0%8F%E8%AF%B4/";
+
+    let (status, response) = send(
+        &router,
+        post_json("/views", &format!(r#"{{"path":"{encoded}"}}"#)),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let counter: Counter = serde_json::from_slice(&response).unwrap();
+    assert_eq!(counter.count, 1);
+
+    // 解码形直接写：落进同一行，而不是分裂成两个 key。
+    let (status, response) = send(
+        &router,
+        post_json("/views", r#"{"path":"/posts/视觉小说/"}"#),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let counter: Counter = serde_json::from_slice(&response).unwrap();
+    assert_eq!(counter.count, 2);
+
+    // GET 侧 query 已由 form_urlencoded 解码一层，读到同一行。
+    let (status, response) = send(&router, get(&format!("/views?path={encoded}"))).await;
+    assert_eq!(status, StatusCode::OK);
+    let counter: Counter = serde_json::from_slice(&response).unwrap();
+    assert_eq!(counter.count, 2);
+
+    // 留言引用同样归一化，入库为解码形。
+    let body = format!(
+        r#"{{"name":"Suzuka","content":"hi","ref_title":"视觉小说","ref_url":"{encoded}"}}"#
+    );
+    let (status, response) = send(&router, post_json("/messages", &body)).await;
+    assert_eq!(status, StatusCode::CREATED);
+    let message: Message = serde_json::from_slice(&response).unwrap();
+    assert_eq!(message.ref_url, "/posts/视觉小说/");
+
+    // 编码形藏着穿越/查询串的路径解码后照样被拒。
+    let (status, _) = send(
+        &router,
+        post_json("/views", r#"{"path":"/posts/a%2F..%2F..%2Fetc/"}"#),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (status, _) = send(
+        &router,
+        post_json("/views", r#"{"path":"/posts/%E8%A7%86%3Fx=1/"}"#),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
 async fn counter_path_length_is_capped() {
     // 未配置白名单（纯 API 模式）时，超长路径也会被拒绝。
     let (router, _tmp) = test_app();

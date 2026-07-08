@@ -720,6 +720,7 @@ dependencies = [
  "email_address",
  "http-body-util",
  "mime",
+ "percent-encoding",
  "rusqlite",
  "serde",
  "serde_json",

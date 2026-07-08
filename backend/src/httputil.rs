@@ -70,6 +70,19 @@ fn is_private(ip: IpAddr) -> bool {
     }
 }
 
+/// 归一化并校验文章路径：percent-decode 后必须仍是合法的 /posts/ 相对路径。
+/// ssg 在 HTML 属性/JSON 里放的是 encode_path 的百分号编码形（非 ASCII slug
+/// 会是 `/posts/%E8%A7%86.../`），而白名单（scan_post_paths）存的是磁盘上的
+/// 原始 UTF-8 目录名——两种形态在这里统一收敛成解码形，入库也用解码形，
+/// 保证同一篇文章的计数/引用不因编码差异分裂或被拒。
+pub fn normalize_post_path(value: &str) -> Option<String> {
+    let decoded = percent_encoding::percent_decode_str(value)
+        .decode_utf8()
+        .ok()?
+        .into_owned();
+    valid_post_url(&decoded).then_some(decoded)
+}
+
 /// 校验传入路径是否为站内 /posts/ 的相对路径，
 /// 既用于留言的来源链接，也用于阅读数 / 喜欢的目标文章。
 pub fn valid_post_url(value: &str) -> bool {

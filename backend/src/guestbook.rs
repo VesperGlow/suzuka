@@ -10,7 +10,9 @@ use serde::{Deserialize, Serialize};
 use time::format_description::well_known::Rfc3339;
 use time::Duration;
 
-use crate::httputil::{internal_error, valid_post_url, write_error, write_json, ClientIp};
+use crate::httputil::{
+    internal_error, normalize_post_path, valid_post_url, write_error, write_json, ClientIp,
+};
 use crate::server::App;
 
 /// 每个来源 IP 在 POST_WINDOW 内最多允许 POST_BURST 次留言提交。
@@ -234,11 +236,22 @@ pub async fn create_message(
     if let Err(text) = validate_message(&item) {
         return write_error(StatusCode::BAD_REQUEST, &text);
     }
-    if !item.ref_url.is_empty() && !app.post_path_allowed(&item.ref_url) {
-        return write_error(
-            StatusCode::BAD_REQUEST,
-            "ref_url does not match a published post",
-        );
+    // 与计数接口一致：percent-decode 归一化后再对白名单，入库也存解码形，
+    // 让非 ASCII slug 的编码差异不至于把真实文章的引用拒之门外。
+    if !item.ref_url.is_empty() {
+        let Some(normalized) = normalize_post_path(&item.ref_url) else {
+            return write_error(
+                StatusCode::BAD_REQUEST,
+                "ref_url must be a relative /posts/ path",
+            );
+        };
+        if !app.post_path_allowed(&normalized) {
+            return write_error(
+                StatusCode::BAD_REQUEST,
+                "ref_url does not match a published post",
+            );
+        }
+        item.ref_url = normalized;
     }
 
     item.created_at = (app.now)()

@@ -10,7 +10,7 @@ use serde_json::json;
 use time::Duration;
 
 use crate::guestbook::{is_json_content_type, too_many_requests};
-use crate::httputil::{internal_error, valid_post_url, write_error, write_json, ClientIp};
+use crate::httputil::{internal_error, normalize_post_path, write_error, write_json, ClientIp};
 use crate::server::App;
 
 /// 阅读数 / 喜欢这类计数写接口的限流：正常浏览也会触发，因此放得比留言宽松，
@@ -23,14 +23,18 @@ pub const COUNTER_WINDOW: Duration = Duration::MINUTE;
 const MAX_COUNTER_PATH_CHARS: usize = 300;
 
 /// 计数接口共用的路径校验：/posts/ 相对路径 + 限长 + 白名单（如已配置）。
-fn validate_counter_path(app: &App, path: &str) -> Result<(), &'static str> {
-    if path.chars().count() > MAX_COUNTER_PATH_CHARS || !valid_post_url(path) {
+/// 返回 percent-decode 后的归一化路径，读写数据库都用这一形态。
+fn validate_counter_path(app: &App, path: &str) -> Result<String, &'static str> {
+    if path.chars().count() > MAX_COUNTER_PATH_CHARS {
         return Err("path must be a relative /posts/ path");
     }
-    if !app.post_path_allowed(path) {
+    let Some(normalized) = normalize_post_path(path) else {
+        return Err("path must be a relative /posts/ path");
+    };
+    if !app.post_path_allowed(&normalized) {
         return Err("path does not match a published post");
     }
-    Ok(())
+    Ok(normalized)
 }
 
 /// 阅读数 / 喜欢计数接口的统一返回体。
@@ -79,9 +83,10 @@ async fn read_counter(
         .find(|(k, _)| k == "path")
         .map(|(_, v)| v.trim().to_string())
         .unwrap_or_default();
-    if let Err(text) = validate_counter_path(&app, &page_path) {
-        return write_error(StatusCode::BAD_REQUEST, text);
-    }
+    let page_path = match validate_counter_path(&app, &page_path) {
+        Ok(normalized) => normalized,
+        Err(text) => return write_error(StatusCode::BAD_REQUEST, text),
+    };
 
     let conn = app.conn();
     let count: Option<i64> = match conn
@@ -136,10 +141,10 @@ async fn bump_counter(
         return write_error(StatusCode::BAD_REQUEST, "invalid request body");
     };
 
-    let page_path = input.path.trim().to_string();
-    if let Err(text) = validate_counter_path(&app, &page_path) {
-        return write_error(StatusCode::BAD_REQUEST, text);
-    }
+    let page_path = match validate_counter_path(&app, input.path.trim()) {
+        Ok(normalized) => normalized,
+        Err(text) => return write_error(StatusCode::BAD_REQUEST, text),
+    };
 
     let conn = app.conn();
     let count: i64 = match conn.query_row(
