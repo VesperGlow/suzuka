@@ -20,7 +20,6 @@ pub const POST_BURST: usize = 5;
 pub const POST_WINDOW: Duration = Duration::MINUTE;
 const MESSAGE_PAGE_SIZE: i64 = 50;
 const MAX_MESSAGE_PAGE_SIZE: i64 = 100;
-const LEGACY_MESSAGE_LIMIT: i64 = 500;
 
 #[derive(Serialize)]
 pub struct Message {
@@ -75,49 +74,31 @@ struct MessageInput {
     created_at: Option<String>,
 }
 
+/// 恒返回分页对象（messages / next_before_id / total_count）。
+/// 曾有一个「不带参数时返回裸数组」的 legacy 形态，2026-07 确认无消费者后删除。
 pub async fn list_messages(State(app): State<Arc<App>>, RawQuery(raw): RawQuery) -> Response {
     let raw = raw.unwrap_or_default();
     let params = parse_query(&raw);
-    let paginated = params.iter().any(|(k, _)| k == "limit" || k == "before_id");
-
-    let (mut limit, mut before_id) = (LEGACY_MESSAGE_LIMIT, 0i64);
-    if paginated {
-        match message_page_params(&params) {
-            Ok(parsed) => (limit, before_id) = parsed,
-            Err(text) => return write_error(StatusCode::BAD_REQUEST, &text),
-        }
-    }
+    let (limit, before_id) = match message_page_params(&params) {
+        Ok(parsed) => parsed,
+        Err(text) => return write_error(StatusCode::BAD_REQUEST, &text),
+    };
 
     let conn = app.conn();
-    let result = if before_id > 0 {
-        query_messages(
-            &conn,
-            "SELECT id, name, website, content, ref_title, ref_url, created_at
+    // 多取一条用于判断是否还有下一页；before_id=0 表示从最新开始
+    let result = query_messages(
+        &conn,
+        "SELECT id, name, website, content, ref_title, ref_url, created_at
 FROM messages
-WHERE id < ?1
+WHERE (?1 = 0 OR id < ?1)
 ORDER BY id DESC
 LIMIT ?2",
-            params![before_id, limit + 1],
-        )
-    } else {
-        query_messages(
-            &conn,
-            "SELECT id, name, website, content, ref_title, ref_url, created_at
-FROM messages
-ORDER BY id DESC
-LIMIT ?1",
-            params![limit + 1],
-        )
-    };
+        params![before_id, limit + 1],
+    );
     let mut messages = match result {
         Ok(messages) => messages,
         Err(err) => return internal_error("unable to load messages", &err),
     };
-
-    if !paginated {
-        messages.truncate(limit as usize);
-        return write_json(StatusCode::OK, &messages);
-    }
 
     let mut next_before_id = 0;
     if messages.len() > limit as usize {

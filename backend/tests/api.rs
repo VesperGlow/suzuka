@@ -115,11 +115,13 @@ async fn create_and_list_messages() {
     assert_eq!(page.messages[0].email, "", "email must stay private");
     assert_eq!(page.messages[0].website, "https://example.com");
 
-    // 不带分页参数时保持旧的裸数组响应。
+    // 不带分页参数时同样返回分页对象（legacy 裸数组已删除），默认第一页。
     let (status, response) = send(&router, get("/messages")).await;
     assert_eq!(status, StatusCode::OK);
-    let legacy: Vec<Message> = serde_json::from_slice(&response).unwrap();
-    assert_eq!(legacy.len(), 1);
+    let page: MessagePage = serde_json::from_slice(&response).unwrap();
+    assert_eq!(page.messages.len(), 1);
+    assert_eq!(page.total_count, 1);
+    assert_eq!(page.next_before_id, 0);
 }
 
 #[tokio::test]

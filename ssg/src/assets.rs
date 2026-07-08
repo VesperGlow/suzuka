@@ -74,6 +74,11 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<Assets> {
         if ext != "css" && ext != "js" {
             continue;
         }
+        // theme.js 只以内联形式进 baseof（见下方 theme_js），发布指纹副本
+        // 没有任何引用，纯属产物噪音
+        if rel == "js/theme.js" {
+            continue;
+        }
         let raw = std::fs::read_to_string(entry.path())
             .with_context(|| format!("读取 {} 失败", entry.path().display()))?;
         let content = if minify && ext == "css" {

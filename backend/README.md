@@ -38,9 +38,9 @@ GUESTBOOK_DB_PATH=/var/lib/suzuka/backend.db \
 Routes (shown without the `/api/guestbook` prefix; add it back in
 single-container mode):
 
-- `GET|POST /messages` — guestbook. `GET` supports cursor pagination with
-  `?limit=50&before_id=<id>` and returns `messages`, `next_before_id`, and
-  `total_count`. Omitting both parameters keeps the legacy array response.
+- `GET|POST /messages` — guestbook. `GET` uses cursor pagination
+  (`?limit=50&before_id=<id>`, both optional; limit defaults to 50) and
+  returns `messages`, `next_before_id`, and `total_count`.
 - `GET|POST /views` — per-post read counts (`?path=/posts/.../`)
 - `GET|POST /reactions` — per-post likes
 - `GET /summary` — site-wide totals for views and reactions

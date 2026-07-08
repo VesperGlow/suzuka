@@ -409,9 +409,17 @@ impl LangRender<'_> {
             &home,
             minijinja::context! {},
         )?;
-        self.home_feeds(&home)?;
+        // about/guestbook 的 markdown 只渲染一次，页面本体与首页 RSS 共用
+        let page_renders: Vec<(&RawPage, markdown::Rendered)> = self
+            .content
+            .pages
+            .iter()
+            .filter(|p| p.lang == self.lang.code && p.kind == PageKind::Page)
+            .map(|p| (p, markdown::render(&p.body, &[], "")))
+            .collect();
+        self.home_feeds(&home, &page_renders)?;
         self.notfound()?;
-        self.static_pages()?;
+        self.static_pages(&page_renders)?;
         self.archives()?;
         self.taxonomies(lang_data)?;
         self.posts_section()?;
@@ -476,7 +484,11 @@ impl LangRender<'_> {
     }
 
     /// 首页的 RSS / JSON Feed / index.json / guestbook-posts.json
-    fn home_feeds(&self, home: &PageCtx) -> Result<()> {
+    fn home_feeds(
+        &self,
+        home: &PageCtx,
+        page_renders: &[(&RawPage, markdown::Rendered)],
+    ) -> Result<()> {
         let config = self.config;
         let lang = self.lang;
         let card_refs: Vec<&PostCard> = self.data.cards.iter().collect();
@@ -496,13 +508,7 @@ impl LangRender<'_> {
                 content_html: c.content_html.clone(),
             })
             .collect();
-        for raw_page in self
-            .content
-            .pages
-            .iter()
-            .filter(|p| p.lang == lang.code && p.kind == PageKind::Page)
-        {
-            let rendered = markdown::render(&raw_page.body, &[], "");
+        for (raw_page, rendered) in page_renders {
             let url = raw_page.fm.url.clone().unwrap_or_default();
             rss_items.push(OwnedRssItem {
                 title: raw_page.fm.title.clone(),
@@ -510,7 +516,7 @@ impl LangRender<'_> {
                 pub_date: gotime::format(&raw_page.date, gotime::RFC1123Z),
                 date: raw_page.date,
                 categories: Vec::new(),
-                content_html: rendered.html,
+                content_html: rendered.html.clone(),
             });
         }
         rss_items.sort_by_key(|b| std::cmp::Reverse(b.date));
@@ -590,14 +596,8 @@ impl LangRender<'_> {
 
     /// 独立页面：about / guestbook（跳过 _index 之类的 Section 页，
     /// 它们只是 `build.render: never` 的占位配置页，没有真实 url）
-    fn static_pages(&self) -> Result<()> {
-        for raw_page in self
-            .content
-            .pages
-            .iter()
-            .filter(|p| p.lang == self.lang.code && p.kind == PageKind::Page)
-        {
-            let rendered = markdown::render(&raw_page.body, &[], "");
+    fn static_pages(&self, page_renders: &[(&RawPage, markdown::Rendered)]) -> Result<()> {
+        for (raw_page, rendered) in page_renders {
             let word_count = if self.lang.has_cjk {
                 content::word_count_cjk(&rendered.plain)
             } else {
@@ -608,7 +608,7 @@ impl LangRender<'_> {
                 self.lang,
                 self.content,
                 raw_page,
-                rendered.html,
+                rendered.html.clone(),
                 word_count,
             )?;
             let template = match raw_page.fm.layout.as_deref() {
@@ -1057,20 +1057,8 @@ fn build_lang_posts(
                 .map(|r| format!("{bundle_rel}{}", crate::images::variant_name(&r.name, 768)))
                 .unwrap_or(src)
         });
-        let cover_srcset = cover_resource.filter(|r| !r.variants.is_empty()).map(|r| {
-            let mut candidates: Vec<String> = r
-                .variants
-                .iter()
-                .map(|w| {
-                    format!(
-                        "{bundle_rel}{} {w}w",
-                        crate::images::variant_name(&r.name, *w)
-                    )
-                })
-                .collect();
-            candidates.push(format!("{bundle_rel}{} {}w", r.name, r.width));
-            candidates.join(", ")
-        });
+        let cover_srcset = cover_resource
+            .and_then(|r| crate::images::srcset(&bundle_rel, &r.name, r.width, &r.variants));
         let card = PostCard {
             title: page.fm.title.clone(),
             rel: rel.clone(),

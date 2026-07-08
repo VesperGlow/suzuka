@@ -36,6 +36,21 @@ pub fn variant_name(name: &str, width: u32) -> String {
     format!("{stem}.{width}w.webp")
 }
 
+/// srcset 候选串：全部缩放档位按宽度升序 + 原图收尾
+/// （"…/001.768w.webp 768w, …, …/001.webp 2560w"）。
+/// 无变体时返回 None，调用方退回单 src。正文 figure 与归档卡片封面共用。
+pub fn srcset(bundle_rel: &str, name: &str, width: u32, variants: &[u32]) -> Option<String> {
+    if variants.is_empty() {
+        return None;
+    }
+    let mut candidates: Vec<String> = variants
+        .iter()
+        .map(|w| format!("{bundle_rel}{} {w}w", variant_name(name, *w)))
+        .collect();
+    candidates.push(format!("{bundle_rel}{name} {width}w"));
+    Some(candidates.join(", "))
+}
+
 /// 一张原图的变体生成任务（widths 已按 variant_widths_for 过滤）。
 pub struct ResizeJob {
     pub src: PathBuf,

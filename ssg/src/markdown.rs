@@ -336,28 +336,19 @@ fn build_figure(
         }
         Some(res) => {
             let src = format!("{bundle_rel}{}", res.name);
-            let srcset_attr = if res.variants.is_empty() {
-                String::new()
-            } else {
-                let mut candidates: Vec<String> = res
-                    .variants
-                    .iter()
-                    .map(|w| {
-                        format!(
-                            "{bundle_rel}{} {w}w",
-                            crate::images::variant_name(&res.name, *w)
-                        )
-                    })
-                    .collect();
-                candidates.push(format!("{src} {}w", res.width));
-                // sizes=auto 只对懒加载的图生效，eager 的首图用纯公式
-                let sizes = if is_first {
-                    SIZES_FALLBACK.to_string()
-                } else {
-                    format!("auto, {SIZES_FALLBACK}")
+            let srcset_attr =
+                match crate::images::srcset(bundle_rel, &res.name, res.width, &res.variants) {
+                    None => String::new(),
+                    Some(srcset) => {
+                        // sizes=auto 只对懒加载的图生效，eager 的首图用纯公式
+                        let sizes = if is_first {
+                            SIZES_FALLBACK.to_string()
+                        } else {
+                            format!("auto, {SIZES_FALLBACK}")
+                        };
+                        format!(" srcset=\"{srcset}\" sizes=\"{sizes}\"")
+                    }
                 };
-                format!(" srcset=\"{}\" sizes=\"{sizes}\"", candidates.join(", "))
-            };
             (
                 format!(
                     "<img src=\"{src}\" alt=\"{alt}\" width=\"{}\" height=\"{}\"{srcset_attr}{loading_attr} decoding=\"async\"{title_attr}>",
