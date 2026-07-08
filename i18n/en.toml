@@ -148,8 +148,6 @@ other = "Image preview"
 other = "Previous image"
 [nextImage]
 other = "Next image"
-[closeImagePreview]
-other = "Close image preview"
 [imagePreviewControls]
 other = "Image preview controls"
 [zoomOut]

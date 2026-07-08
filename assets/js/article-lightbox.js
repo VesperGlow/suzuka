@@ -4,7 +4,6 @@ const lightbox = document.querySelector("[data-article-lightbox]");
 if (articleContent && lightbox && typeof lightbox.showModal === "function") {
   const viewer = lightbox.querySelector("[data-article-lightbox-viewer]");
   const previewImage = lightbox.querySelector("[data-article-lightbox-image]");
-  const closeButton = lightbox.querySelector("[data-article-lightbox-close]");
   const previousButton = lightbox.querySelector("[data-article-lightbox-prev]");
   const nextButton = lightbox.querySelector("[data-article-lightbox-next]");
   const mobilePreviousButton = lightbox.querySelector("[data-article-lightbox-mobile-prev]");
@@ -14,7 +13,7 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
   const zoomOutButton = lightbox.querySelector("[data-article-lightbox-zoom-out]");
   const resetButton = lightbox.querySelector("[data-article-lightbox-reset]");
   const galleryImages = [...articleContent.querySelectorAll("img")];
-  const requiredElements = [viewer, previewImage, closeButton, previousButton, nextButton,
+  const requiredElements = [viewer, previewImage, previousButton, nextButton,
     mobilePreviousButton, mobileNextButton, imageCount, zoomInButton, zoomOutButton, resetButton];
 
   if (requiredElements.every(Boolean) && galleryImages.length) {
@@ -80,7 +79,7 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
   function positionGalleryNavigation() {
     lightbox.style.setProperty("--lightbox-image-width", `${previewImage.offsetWidth}px`);
     const sideGutter = Math.max(0, (viewer.clientWidth - previewImage.offsetWidth) / 2);
-    const buttonWidth = previousButton.offsetWidth || 52;
+    const buttonWidth = previousButton.offsetWidth || 64;
     const navSide = Math.max(12, (sideGutter - buttonWidth) / 2);
     lightbox.style.setProperty("--lightbox-nav-side", `${navSide}px`);
   }
@@ -141,12 +140,15 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
     // 不够灯箱放大看，灯箱始终加载全尺寸原图
     previewImage.src = imageLinkFor(image) || image.src;
     previewImage.alt = image.alt || "";
+    // 新图未就绪时旧图会滞留在 <img> 上，先遮住并显示加载指示
+    lightbox.classList.toggle("is-loading", !previewImage.complete);
     updateGalleryControls();
 
     if (galleryImages.length > 1) {
-      const adjacent = galleryImages[(currentIndex + 1) % galleryImages.length];
-      const preload = new Image();
-      preload.src = imageLinkFor(adjacent) || adjacent.src;
+      for (const offset of [1, -1]) {
+        const adjacent = galleryImages[(currentIndex + offset + galleryImages.length) % galleryImages.length];
+        new Image().src = imageLinkFor(adjacent) || adjacent.src;
+      }
     }
   }
 
@@ -300,7 +302,6 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
   nextButton.addEventListener("click", () => changeImage(1));
   mobilePreviousButton.addEventListener("click", () => changeImage(-1));
   mobileNextButton.addEventListener("click", () => changeImage(1));
-  closeButton.addEventListener("click", closeLightbox);
 
   articleContent.addEventListener("click", (event) => {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -316,7 +317,6 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
     showImage(galleryImages.indexOf(image));
     document.documentElement.classList.add("lightbox-open");
     lightbox.showModal();
-    closeButton.focus();
   });
 
   lightbox.addEventListener("keydown", (event) => {
@@ -354,6 +354,7 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
     clearTimeout(suppressClickTimer);
     previewImage.classList.remove("is-transforming");
     lightbox.classList.remove("is-zoomed");
+    lightbox.classList.remove("is-loading");
     previewImage.removeAttribute("style");
     previewImage.removeAttribute("src");
     previewImage.alt = "";
@@ -361,9 +362,11 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
     trigger = null;
   });
   previewImage.addEventListener("load", () => {
+    lightbox.classList.remove("is-loading");
     resetTransform();
     positionGalleryNavigation();
   });
+  previewImage.addEventListener("error", () => lightbox.classList.remove("is-loading"));
   window.addEventListener("resize", () => {
     if (!lightbox.open) return;
     clampTranslation();
