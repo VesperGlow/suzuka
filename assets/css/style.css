@@ -206,7 +206,7 @@ a:hover { color: var(--accent); }
 .sidebar-link:hover { color: var(--accent-dark); background: var(--surface-hover); }
 .sidebar-link.active { color: var(--accent-dark); background: var(--accent-soft); font-weight: 600; }
 .sidebar-link-top { margin-bottom: 22px; font-weight: 600; }
-.sidebar-timeline { flex: 0 1 auto; min-height: 96px; margin-bottom: 16px; overflow-y: auto; overscroll-behavior: contain; }
+.sidebar-timeline { flex: 0 1 auto; min-height: 96px; margin-bottom: 16px; overflow-y: auto; overscroll-behavior: none; }
 .sidebar-timeline-year { position: relative; }
 .sidebar-timeline-year::before { position: absolute; top: 6px; bottom: 6px; left: 11px; content: ""; border-left: 1px solid var(--line); }
 .sidebar-timeline-year + .sidebar-timeline-year { margin-top: 6px; }
