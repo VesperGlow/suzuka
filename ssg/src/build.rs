@@ -1210,22 +1210,20 @@ fn build_lang_posts(
                 .map(|r| format!("{bundle_rel}{}", crate::images::variant_name(&r.name, 768)))
                 .unwrap_or(src)
         });
-        let cover_srcset = cover_resource
-            .filter(|r| !r.variants.is_empty())
-            .map(|r| {
-                let mut candidates: Vec<String> = r
-                    .variants
-                    .iter()
-                    .map(|w| {
-                        format!(
-                            "{bundle_rel}{} {w}w",
-                            crate::images::variant_name(&r.name, *w)
-                        )
-                    })
-                    .collect();
-                candidates.push(format!("{bundle_rel}{} {}w", r.name, r.width));
-                candidates.join(", ")
-            });
+        let cover_srcset = cover_resource.filter(|r| !r.variants.is_empty()).map(|r| {
+            let mut candidates: Vec<String> = r
+                .variants
+                .iter()
+                .map(|w| {
+                    format!(
+                        "{bundle_rel}{} {w}w",
+                        crate::images::variant_name(&r.name, *w)
+                    )
+                })
+                .collect();
+            candidates.push(format!("{bundle_rel}{} {}w", r.name, r.width));
+            candidates.join(", ")
+        });
         let card = PostCard {
             title: page.fm.title.clone(),
             rel: rel.clone(),
