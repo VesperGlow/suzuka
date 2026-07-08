@@ -235,11 +235,18 @@ thread_local! {
     // BTreeSet：去重 + 排序，保证产物字节稳定。
     static CSP_HASHES: std::cell::RefCell<std::collections::BTreeSet<String>> =
         const { std::cell::RefCell::new(std::collections::BTreeSet::new()) };
+    // 本次构建已写出的渲染产物路径。同一路径写两次一定是配置错误
+    // （重复 slug、alias 撞真实页面、term 撞文章），谁后写谁赢会静默
+    // 丢页面，必须当场报错。资源与图片走 assets.rs / fs::copy，文件名
+    // 含指纹或按 bundle 目录隔离，不在此列。
+    static WRITTEN: std::cell::RefCell<std::collections::BTreeSet<String>> =
+        const { std::cell::RefCell::new(std::collections::BTreeSet::new()) };
 }
 
 pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
     MINIFY.with(|m| m.set(minify));
     CSP_HASHES.with(|h| h.borrow_mut().clear());
+    WRITTEN.with(|w| w.borrow_mut().clear());
     let config = SiteConfig::load(source)?;
     let lang_codes: Vec<String> = config.languages.iter().map(|l| l.code.clone()).collect();
     let i18n = Arc::new(I18n::load(source, &lang_codes)?);
@@ -1936,6 +1943,12 @@ fn render_to(
 }
 
 fn write_file(dest: &Path, rel: &str, content: &str) -> Result<()> {
+    let duplicate = WRITTEN.with(|w| !w.borrow_mut().insert(rel.to_string()));
+    if duplicate {
+        anyhow::bail!(
+            "输出路径冲突：{rel} 被写入两次（检查重复 slug / aliases / term 是否撞路径）"
+        );
+    }
     let path = dest.join(rel);
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
