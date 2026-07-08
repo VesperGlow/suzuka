@@ -2,10 +2,20 @@
 
 use crate::config::{Language, SiteConfig};
 use crate::content::{self, Content, PageKind, PostBundle, RawPage};
+use crate::feeds::{
+    card_rss_items, channel_title, feed_json, guestbook_posts_json, index_json, render_rss,
+    GuestbookItem, OwnedRssItem, RssChannel, RssItem,
+};
 use crate::gotime;
 use crate::i18n::I18n;
 use crate::markdown;
-use anyhow::{Context, Result};
+use crate::meta::{
+    alias_html, escape_attr, internal_meta_block, redirect_fields, schema_blogposting_json,
+    InternalMeta,
+};
+use crate::output::{self, render_to, write_file};
+use crate::sitemap::write_sitemaps;
+use anyhow::Result;
 use chrono::{DateTime, Datelike, FixedOffset};
 use minijinja::value::{Kwargs, Value};
 use minijinja::{path_loader, Environment, State, UndefinedBehavior};
@@ -129,59 +139,59 @@ struct PageCtx {
 /// 归档卡片/列表卡片（archive-card.html、post-card.html）共用的单篇文章数据，
 /// 也是 RSS item 的数据来源
 #[derive(Serialize, Clone)]
-struct PostCard {
-    title: String,
-    rel: String,
-    permalink: String,
-    date_iso: String,
-    date_display: String,
-    date_mmdd: String,
-    year: String,
+pub(crate) struct PostCard {
+    pub(crate) title: String,
+    pub(crate) rel: String,
+    pub(crate) permalink: String,
+    pub(crate) date_iso: String,
+    pub(crate) date_display: String,
+    pub(crate) date_mmdd: String,
+    pub(crate) year: String,
     /// RSS pubDate（RFC 1123）
-    pub_date: String,
-    word_count: usize,
-    image_count: usize,
-    summary: String,
+    pub(crate) pub_date: String,
+    pub(crate) word_count: usize,
+    pub(crate) image_count: usize,
+    pub(crate) summary: String,
     /// data-categories / data-tags 属性用的原始大小写 JSON 数组
-    categories_raw: Vec<String>,
-    tags_raw: Vec<String>,
+    pub(crate) categories_raw: Vec<String>,
+    pub(crate) tags_raw: Vec<String>,
     /// 上面两个数组序列化成 JSON 并做好 HTML 属性转义，模板里直接
     /// `| safe` 插进 data-categories/data-tags；不能用 minijinja 的
     /// `tojson` 过滤器，它会把结果标成"已安全"从而跳过属性转义
-    categories_attr: String,
-    tags_attr: String,
+    pub(crate) categories_attr: String,
+    pub(crate) tags_attr: String,
     /// RSS `<category>` / og keywords：term 的自动 title（首字母大写），不是原始大小写
-    tags_title: Vec<String>,
-    cover_url: Option<String>,
+    pub(crate) tags_title: Vec<String>,
+    pub(crate) cover_url: Option<String>,
     /// 封面全部缩放档位（含原图）的 srcset；首图无变体时为 None，模板退回单 src
-    cover_srcset: Option<String>,
-    content_html: String,
+    pub(crate) cover_srcset: Option<String>,
+    pub(crate) content_html: String,
     /// 纯文本正文（已合并空白），index.json 的 content 字段用
-    plain: String,
+    pub(crate) plain: String,
     /// JSON Feed date_published/date_modified 用的 RFC3339（UTC 记 Z）
-    date_rfc3339: String,
-    image: Option<String>,
+    pub(crate) date_rfc3339: String,
+    pub(crate) image: Option<String>,
     /// 排序/跟 about、guestbook 混排用；不需要序列化给模板
     #[serde(skip)]
-    date: DateTime<FixedOffset>,
+    pub(crate) date: DateTime<FixedOffset>,
     /// front matter `sitemap.disable`：sitemap.xml 构建时过滤用，不需要序列化给模板
     #[serde(skip)]
-    sitemap_disable: bool,
+    pub(crate) sitemap_disable: bool,
 }
 
 /// 一个 taxonomy term（单个分类/标签）聚合出的页面数据。文章本体只存
 /// LangData.cards 里的下标，避免每个 term 抱一份含全文 HTML 的卡片副本。
 #[derive(Serialize, Clone)]
-struct TermAgg {
-    raw: String,
-    title: String,
-    slug: String,
-    rel: String,
+pub(crate) struct TermAgg {
+    pub(crate) raw: String,
+    pub(crate) title: String,
+    pub(crate) slug: String,
+    pub(crate) rel: String,
     /// 模板里的文章计数（term 云、过滤器角标）
-    count: usize,
+    pub(crate) count: usize,
     /// LangData.cards 的下标（新→旧）
     #[serde(skip)]
-    posts: Vec<usize>,
+    pub(crate) posts: Vec<usize>,
 }
 
 /// 按 rel 找到（或首次创建）一个 term 聚合项；Vec 保留首次出现的顺序
@@ -215,38 +225,19 @@ fn term_cards<'a>(cards: &'a [PostCard], term: &TermAgg) -> Vec<&'a PostCard> {
     term.posts.iter().map(|&i| &cards[i]).collect()
 }
 
-struct LangData {
+pub struct LangData {
     posts: Vec<PageCtx>,
     post_refs: Vec<PostRef>,
     timeline: Vec<YearGroup>,
-    newest_date: Option<DateTime<FixedOffset>>,
+    pub(crate) newest_date: Option<DateTime<FixedOffset>>,
     total_words: usize,
-    categories: Vec<TermAgg>,
-    tags: Vec<TermAgg>,
-    cards: Vec<PostCard>,
-}
-
-// 单进程单次构建，没有并发需求：用 thread_local 存 minify 开关，
-// 免得给所有 write_file / render_to 调用点都加一个参数
-thread_local! {
-    static MINIFY: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
-    // 全站内联 <script> 的 sha256（写盘时顺手收集），构建收尾写进
-    // csp-hashes.txt，backend 启动时读它拼 Content-Security-Policy。
-    // BTreeSet：去重 + 排序，保证产物字节稳定。
-    static CSP_HASHES: std::cell::RefCell<std::collections::BTreeSet<String>> =
-        const { std::cell::RefCell::new(std::collections::BTreeSet::new()) };
-    // 本次构建已写出的渲染产物路径。同一路径写两次一定是配置错误
-    // （重复 slug、alias 撞真实页面、term 撞文章），谁后写谁赢会静默
-    // 丢页面，必须当场报错。资源与图片走 assets.rs / fs::copy，文件名
-    // 含指纹或按 bundle 目录隔离，不在此列。
-    static WRITTEN: std::cell::RefCell<std::collections::BTreeSet<String>> =
-        const { std::cell::RefCell::new(std::collections::BTreeSet::new()) };
+    pub(crate) categories: Vec<TermAgg>,
+    pub(crate) tags: Vec<TermAgg>,
+    pub(crate) cards: Vec<PostCard>,
 }
 
 pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
-    MINIFY.with(|m| m.set(minify));
-    CSP_HASHES.with(|h| h.borrow_mut().clear());
-    WRITTEN.with(|w| w.borrow_mut().clear());
+    output::begin(minify);
     let config = SiteConfig::load(source)?;
     let lang_codes: Vec<String> = config.languages.iter().map(|l| l.code.clone()).collect();
     let i18n = Arc::new(I18n::load(source, &lang_codes)?);
@@ -293,16 +284,7 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
 
     // 内联脚本哈希清单：backend 用它组装 CSP 的 script-src，散列公开无妨。
     // 放正式产物里而不是旁路文件，保证「部署了哪份站点就用哪份清单」。
-    let csp_manifest = CSP_HASHES.with(|h| {
-        let hashes = h.borrow();
-        let mut out = String::new();
-        for hash in hashes.iter() {
-            out.push_str(hash);
-            out.push('\n');
-        }
-        out
-    });
-    write_file(dest, "csp-hashes.txt", &csp_manifest)?;
+    write_file(dest, "csp-hashes.txt", &output::csp_manifest())?;
 
     // 文案完整性检查：渲染过程中任何一次 t() 打空都算构建失败，
     // 不让「构建成功但线上文案空白」这种静默错误溜出去。
@@ -886,155 +868,6 @@ impl LangRender<'_> {
         }
         Ok(())
     }
-}
-
-/// sitemap.xml：根 sitemapindex 汇总各语言，各语言一份 urlset
-fn write_sitemaps(
-    config: &SiteConfig,
-    content: &Content,
-    lang_data: &HashMap<String, LangData>,
-    dest: &Path,
-) -> Result<()> {
-    let mut entries_by_lang: HashMap<String, Vec<SitemapEntry>> = HashMap::new();
-    for lang in &config.languages {
-        let prefix = lang.url_prefix(&config.default_lang);
-        let data = &lang_data[&lang.code];
-        let strip = |rel: &str| -> String {
-            if !prefix.is_empty() {
-                rel.strip_prefix(&prefix).unwrap_or(rel).to_string()
-            } else {
-                rel.to_string()
-            }
-        };
-        let mut entries = Vec::new();
-
-        // 首页
-        let home_rel = lang.home_rel(&config.default_lang);
-        entries.push(SitemapEntry {
-            match_key: strip(&home_rel),
-            rel: home_rel,
-            lastmod: data
-                .newest_date
-                .map(|d| gotime::format(&d, gotime::RFC3339)),
-        });
-
-        // 文章（frontmatter 声明 sitemap.disable 的除外）
-        for card in data.cards.iter().filter(|c| !c.sitemap_disable) {
-            entries.push(SitemapEntry {
-                match_key: strip(&card.rel),
-                rel: card.rel.clone(),
-                lastmod: Some(gotime::format(&card.date, gotime::RFC3339)),
-            });
-        }
-
-        // about / guestbook
-        for raw_page in content
-            .pages
-            .iter()
-            .filter(|p| p.lang == lang.code && p.kind == PageKind::Page && !p.fm.sitemap.disable)
-        {
-            let Some(url) = raw_page.fm.url.clone() else {
-                continue;
-            };
-            let lastmod = if raw_page.date.timestamp() == 0 {
-                None
-            } else {
-                Some(gotime::format(&raw_page.date, gotime::RFC3339))
-            };
-            entries.push(SitemapEntry {
-                match_key: strip(&url),
-                rel: url,
-                lastmod,
-            });
-        }
-
-        // archives
-        if content
-            .archives
-            .iter()
-            .any(|p| p.lang == lang.code && !p.fm.sitemap.disable)
-        {
-            let rel = format!("{prefix}/archives/");
-            entries.push(SitemapEntry {
-                match_key: strip(&rel),
-                rel,
-                lastmod: None,
-            });
-        }
-
-        // 分类/标签：列表页 + term 页
-        for (taxonomy, terms) in [("categories", &data.categories), ("tags", &data.tags)] {
-            let list_rel = format!("{prefix}/{taxonomy}/");
-            entries.push(SitemapEntry {
-                match_key: strip(&list_rel),
-                rel: list_rel,
-                lastmod: data
-                    .newest_date
-                    .map(|d| gotime::format(&d, gotime::RFC3339)),
-            });
-            for term in terms.iter() {
-                let lastmod = term
-                    .posts
-                    .iter()
-                    .map(|&i| data.cards[i].date)
-                    .max()
-                    .map(|d| gotime::format(&d, gotime::RFC3339));
-                entries.push(SitemapEntry {
-                    match_key: strip(&term.rel),
-                    rel: term.rel.clone(),
-                    lastmod,
-                });
-            }
-        }
-
-        entries_by_lang.insert(lang.code.clone(), entries);
-    }
-
-    // alts_by_key：match_key -> 按 config.languages 固定顺序排列的
-    // (hreflang, rel) 列表，只有 len>1 才真的输出 xhtml:link
-    let mut alts_by_key: HashMap<String, Vec<(String, String)>> = HashMap::new();
-    for lang in &config.languages {
-        let hreflang = if lang.code == config.default_lang {
-            lang.locale.clone()
-        } else {
-            lang.code.clone()
-        };
-        for e in &entries_by_lang[&lang.code] {
-            alts_by_key
-                .entry(e.match_key.clone())
-                .or_default()
-                .push((hreflang.clone(), e.rel.clone()));
-        }
-    }
-
-    // 每种语言的 sitemap.xml 固定挂在 /<语言 code>/sitemap.xml 下——默认
-    // 语言实际 URL 没有前缀，所以在语言 code 路径下额外放一个跳回真实
-    // 首页的重定向桩
-    let mut index_langs = Vec::new();
-    for lang in &config.languages {
-        let entries = &entries_by_lang[&lang.code];
-        let urlset = render_sitemap_urlset(&config.base_url, entries, &alts_by_key);
-        write_file(dest, &format!("{}/sitemap.xml", lang.code), &urlset)?;
-        if lang.code == config.default_lang {
-            let home_permalink = format!("{}/", config.base_url);
-            write_file(
-                dest,
-                &format!("{}/index.html", lang.code),
-                &alias_html(&lang.locale, &home_permalink),
-            )?;
-        }
-        let lang_newest = entries.iter().filter_map(|e| e.lastmod.clone()).max();
-        index_langs.push((format!("/{}", lang.code), lang_newest));
-    }
-    let index_langs_ref: Vec<(&str, Option<&str>)> = index_langs
-        .iter()
-        .map(|(p, d)| (p.as_str(), d.as_deref()))
-        .collect();
-    write_file(
-        dest,
-        "sitemap.xml",
-        &render_sitemap_index(&config.base_url, &index_langs_ref),
-    )
 }
 
 fn build_lang_posts(
@@ -1723,306 +1556,6 @@ fn translations_of(config: &SiteConfig, bundle: &PostBundle) -> Vec<TranslationR
     out
 }
 
-struct InternalMeta<'a> {
-    permalink: &'a str,
-    site_title: &'a str,
-    title: &'a str,
-    description: &'a str,
-    locale: String,
-    og_type: &'a str,
-    section: Option<&'a str>,
-    date_published: &'a str,
-    date_modified: &'a str,
-    tags: &'a [String],
-    image: String,
-    word_count: Option<usize>,
-    jsonld: Option<&'a str>,
-}
-
-impl<'a> InternalMeta<'a> {
-    /// og:type=website、无 tags/jsonld 的基础形态；文章/独立页在此之上覆写
-    /// og_type / section / tags / image / word_count / jsonld
-    fn new(
-        lang: &'a Language,
-        config: &SiteConfig,
-        permalink: &'a str,
-        title: &'a str,
-        description: &'a str,
-        date_rfc: &'a str,
-    ) -> Self {
-        InternalMeta {
-            permalink,
-            site_title: &lang.title,
-            title,
-            description,
-            locale: lang.locale.replace('-', "_"),
-            og_type: "website",
-            section: None,
-            date_published: date_rfc,
-            date_modified: date_rfc,
-            tags: &[],
-            image: config.default_image().unwrap_or_default(),
-            word_count: None,
-            jsonld: None,
-        }
-    }
-}
-
-/// opengraph / twitter cards / schema.org microdata / JSON-LD 的整块 head 输出
-fn internal_meta_block(m: &InternalMeta) -> String {
-    let esc = escape_attr;
-    let mut lines = vec![
-        format!(
-            "<meta property=\"og:url\" content=\"{}\">",
-            esc(m.permalink)
-        ),
-        format!(
-            "<meta property=\"og:site_name\" content=\"{}\">",
-            esc(m.site_title)
-        ),
-        format!("<meta property=\"og:title\" content=\"{}\">", esc(m.title)),
-        format!(
-            "<meta property=\"og:description\" content=\"{}\">",
-            esc(m.description)
-        ),
-        format!(
-            "<meta property=\"og:locale\" content=\"{}\">",
-            esc(&m.locale)
-        ),
-        format!("<meta property=\"og:type\" content=\"{}\">", m.og_type),
-    ];
-    if m.og_type == "article" {
-        if let Some(section) = m.section {
-            lines.push(format!(
-                "<meta property=\"article:section\" content=\"{}\">",
-                esc(section)
-            ));
-        }
-        lines.push(format!(
-            "<meta property=\"article:published_time\" content=\"{}\">",
-            m.date_published
-        ));
-        lines.push(format!(
-            "<meta property=\"article:modified_time\" content=\"{}\">",
-            m.date_modified
-        ));
-        for tag in m.tags {
-            lines.push(format!(
-                "<meta property=\"article:tag\" content=\"{}\">",
-                esc(tag)
-            ));
-        }
-    }
-    lines.push(format!(
-        "<meta property=\"og:image\" content=\"{}\">",
-        esc(&m.image)
-    ));
-
-    lines.push("<meta name=\"twitter:card\" content=\"summary_large_image\">".to_string());
-    lines.push(format!(
-        "<meta name=\"twitter:image\" content=\"{}\">",
-        esc(&m.image)
-    ));
-    lines.push(format!(
-        "<meta name=\"twitter:title\" content=\"{}\">",
-        esc(m.title)
-    ));
-    lines.push(format!(
-        "<meta name=\"twitter:description\" content=\"{}\">",
-        esc(m.description)
-    ));
-
-    lines.push(format!(
-        "<meta itemprop=\"name\" content=\"{}\">",
-        esc(m.title)
-    ));
-    lines.push(format!(
-        "<meta itemprop=\"description\" content=\"{}\">",
-        esc(m.description)
-    ));
-    if !m.date_published.is_empty() {
-        lines.push(format!(
-            "<meta itemprop=\"datePublished\" content=\"{}\">",
-            m.date_published
-        ));
-        lines.push(format!(
-            "<meta itemprop=\"dateModified\" content=\"{}\">",
-            m.date_modified
-        ));
-    }
-    if let Some(wc) = m.word_count {
-        if wc > 0 {
-            lines.push(format!("<meta itemprop=\"wordCount\" content=\"{wc}\">"));
-        }
-    }
-    lines.push(format!(
-        "<meta itemprop=\"image\" content=\"{}\">",
-        esc(&m.image)
-    ));
-    if !m.tags.is_empty() {
-        lines.push(format!(
-            "<meta itemprop=\"keywords\" content=\"{}\">",
-            esc(&m.tags.join(","))
-        ));
-    }
-    if let Some(jsonld) = m.jsonld {
-        lines.push(format!(
-            "<script type=\"application/ld+json\">{jsonld}</script>"
-        ));
-    }
-    // baseof 里的插入点是 2 格缩进，行间用同样的缩进对齐
-    lines.join("\n  ")
-}
-
-#[allow(clippy::too_many_arguments)]
-fn schema_blogposting_json(
-    title: &str,
-    description: &str,
-    image: Option<&str>,
-    tags: &[String],
-    permalink: &str,
-    date_rfc: &str,
-    author: &str,
-    about_permalink: Option<&str>,
-    locale: &str,
-) -> String {
-    use serde_json::{json, Map, Value};
-    let mut author_obj = Map::new();
-    author_obj.insert("@type".into(), json!("Person"));
-    author_obj.insert("name".into(), json!(author));
-    if let Some(url) = about_permalink {
-        author_obj.insert("url".into(), json!(url));
-    }
-    // serde_json 开了 preserve_order：手动按字母序 insert，保证产物字节稳定
-    let mut root = Map::new();
-    root.insert("@context".into(), json!("https://schema.org"));
-    root.insert("@type".into(), json!("BlogPosting"));
-    root.insert("author".into(), Value::Object(author_obj));
-    root.insert("dateModified".into(), json!(date_rfc));
-    root.insert("datePublished".into(), json!(date_rfc));
-    root.insert("description".into(), json!(collapse_ws(description)));
-    root.insert("headline".into(), json!(title));
-    root.insert(
-        "image".into(),
-        json!(image.map(|i| vec![i.to_string()]).unwrap_or_default()),
-    );
-    root.insert("inLanguage".into(), json!(locale));
-    root.insert("keywords".into(), json!(tags.join(", ")));
-    root.insert(
-        "mainEntityOfPage".into(),
-        json!({"@id": permalink, "@type": "WebPage"}),
-    );
-    root.insert(
-        "publisher".into(),
-        json!({"@type": "Person", "name": author}),
-    );
-    serde_json::to_string(&Value::Object(root)).unwrap_or_default()
-}
-
-/// 别名/语言桩用的 meta-refresh 跳转页
-fn alias_html(locale: &str, target: &str) -> String {
-    format!(
-        "<!DOCTYPE html>\n<html lang=\"{locale}\">\n\t<head>\n\t\t<title>{target}</title>\n\t\t<link rel=\"canonical\" href=\"{target}\">\n\t\t<meta charset=\"utf-8\">\n\t\t<meta http-equiv=\"refresh\" content=\"0; url={target}\">\n\t</head>\n</html>\n"
-    )
-}
-
-fn render_to(
-    env: &Environment,
-    template: &str,
-    dest: &Path,
-    out_rel: &str,
-    ctx: Value,
-) -> Result<()> {
-    let tmpl = env
-        .get_template(template)
-        .with_context(|| format!("加载模板 {template} 失败"))?;
-    let html = tmpl
-        .render(ctx)
-        .with_context(|| format!("渲染 {out_rel} 失败"))?;
-    write_file(dest, out_rel, &html)
-}
-
-fn write_file(dest: &Path, rel: &str, content: &str) -> Result<()> {
-    let duplicate = WRITTEN.with(|w| !w.borrow_mut().insert(rel.to_string()));
-    if duplicate {
-        anyhow::bail!(
-            "输出路径冲突：{rel} 被写入两次（检查重复 slug / aliases / term 是否撞路径）"
-        );
-    }
-    let path = dest.join(rel);
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)?;
-    }
-    let should_minify = rel.ends_with(".html") && MINIFY.with(|m| m.get());
-    let bytes: std::borrow::Cow<[u8]> = if should_minify {
-        std::borrow::Cow::Owned(minify_html_doc(content))
-    } else {
-        std::borrow::Cow::Borrowed(content.as_bytes())
-    };
-    // CSP 哈希对最终落盘字节算（minify 之后），跟浏览器看到的完全一致
-    if rel.ends_with(".html") {
-        CSP_HASHES.with(|h| collect_inline_script_hashes(&bytes, &mut h.borrow_mut()));
-    }
-    std::fs::write(&path, bytes).with_context(|| format!("写入 {} 失败", path.display()))
-}
-
-/// 收集 HTML 里可执行内联 <script> 的 sha256（base64），给 CSP script-src
-/// 用。跳过带 src 的外链脚本；也跳过 application/ld+json——数据块不参与
-/// 执行，不受 script-src 约束，而且每页内容都不同，收进去只会把头撑爆。
-fn collect_inline_script_hashes(html: &[u8], out: &mut std::collections::BTreeSet<String>) {
-    use sha2::{Digest, Sha256};
-    let mut i = 0;
-    while let Some(pos) = find_bytes(&html[i..], b"<script").map(|p| i + p) {
-        // 排除 <scriptxxx> 这类假匹配：标签名后必须是空白或 '>'
-        let after = html.get(pos + b"<script".len()).copied();
-        let Some(tag_close) = find_bytes(&html[pos..], b">").map(|p| pos + p) else {
-            return;
-        };
-        let content_start = tag_close + 1;
-        let Some(content_end) =
-            find_bytes(&html[content_start..], b"</script").map(|p| content_start + p)
-        else {
-            return;
-        };
-        i = content_end + b"</script".len();
-        if !matches!(after, Some(b'>') | Some(b' ') | Some(b'\t') | Some(b'\n')) {
-            continue;
-        }
-        let tag = &html[pos..content_start];
-        if find_bytes(tag, b" src").is_some() || find_bytes(tag, b"ld+json").is_some() {
-            continue;
-        }
-        let body = &html[content_start..content_end];
-        if body.iter().all(|b| b.is_ascii_whitespace()) {
-            continue;
-        }
-        use base64::Engine;
-        let hash = base64::engine::general_purpose::STANDARD.encode(Sha256::digest(body));
-        out.insert(format!("sha256-{hash}"));
-    }
-}
-
-fn find_bytes(haystack: &[u8], needle: &[u8]) -> Option<usize> {
-    haystack
-        .windows(needle.len())
-        .position(|window| window == needle)
-}
-
-/// `--minify`：压缩 HTML，顺带压缩 `<style>`/`style=` 里的 CSS。
-/// JS 故意不让 minify-html 碰：它内部用 minify-js 压 `<script>`，这个
-/// crate 不仅会对合法写法内部断言 panic，还会产出不 panic 但真的跑错的
-/// 代码（把函数声明提到它引用的块作用域变量外面，运行时 ReferenceError），
-/// 关于页运行时长脚本就是这么线上炸的，见 assets.rs 的说明。
-fn minify_html_doc(html: &str) -> Vec<u8> {
-    let mut cfg = minify_html::Cfg::new();
-    cfg.minify_css = true;
-    cfg.minify_js = false;
-    // 就算只压 HTML/CSS，minify-html 内部仍然可能触发意外 panic；
-    // catch_unwind 兜底，panic 就整页退回不压缩，不让一次异常拖垮整个构建
-    let bytes = html.as_bytes();
-    std::panic::catch_unwind(|| minify_html::minify(bytes, &cfg)).unwrap_or_else(|_| bytes.to_vec())
-}
-
 /// 千位加英文逗号分隔（关于页统计数字用）
 fn format_number(n: usize) -> String {
     let digits = n.to_string();
@@ -2057,7 +1590,7 @@ fn html_unescape_typographic(s: &str) -> String {
         .replace("&amp;", "&")
 }
 
-fn collapse_ws(s: &str) -> String {
+pub(crate) fn collapse_ws(s: &str) -> String {
     s.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
@@ -2076,157 +1609,10 @@ fn resolve_bundle_image(
     }
 }
 
-/// redirectTo 存在时算出 (canonical 绝对地址, meta-refresh+JS 跳转整块)
-fn redirect_fields(config: &SiteConfig, redirect_to: Option<&str>) -> Option<(String, String)> {
-    let target = redirect_to?;
-    // canonical 和 meta-refresh 都把 target 插进 HTML 属性，必须一样转义；
-    // target 里带 "/& 之类字符会撑破 <link> 标签
-    let abs = format!("{}{}", config.base_url, escape_attr(target));
-    let js = serde_json::to_string(target).unwrap_or_default();
-    let block = format!(
-        "\n    <meta http-equiv=\"refresh\" content=\"0; url={}\">\n    <script>window.location.replace({js});</script>\n  ",
-        escape_attr(target)
-    );
-    Some((abs, block))
-}
-
-fn escape_attr(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&#34;")
-        .replace('\'', "&#x27;")
-}
-
 /// `data-categories`/`data-tags` 属性：JSON 数组落进一个 HTML 属性值，
 /// 要走属性转义，不能像 `<script>` 里那样原样插入
 fn json_attr(items: &[String]) -> String {
     escape_attr(&serde_json::to_string(items).unwrap_or_default())
-}
-
-/// RSS 单个条目
-struct RssItem<'a> {
-    title: &'a str,
-    link: &'a str,
-    pub_date: &'a str,
-    /// RSS `<category>`：term 的自动 title
-    categories: &'a [String],
-    /// 完整正文（站内根相对 src/href 会改成绝对地址后再 HTML 转义）
-    content_html: Option<&'a str>,
-}
-
-/// 首页 RSS 的条目是全站内容（文章 + about/guestbook 独立页），所以单独存
-/// 一份带日期、拥有所有权的列表，按日期混排后再借出 RssItem
-struct OwnedRssItem {
-    title: String,
-    link: String,
-    pub_date: String,
-    date: DateTime<FixedOffset>,
-    categories: Vec<String>,
-    content_html: String,
-}
-
-/// RSS channel 元数据
-struct RssChannel<'a> {
-    title: String,
-    link: String,
-    description: &'a str,
-    site_title: &'a str,
-    locale: &'a str,
-    author: &'a str,
-    last_build_date: Option<String>,
-    self_link: String,
-    base_url: &'a str,
-}
-
-/// 文章卡片 → RSS 条目
-fn card_rss_items<'a>(cards: &[&'a PostCard]) -> Vec<RssItem<'a>> {
-    cards
-        .iter()
-        .map(|&c| RssItem {
-            title: &c.title,
-            link: &c.permalink,
-            pub_date: &c.pub_date,
-            categories: &c.tags_title,
-            content_html: Some(&c.content_html),
-        })
-        .collect()
-}
-
-fn render_rss(ch: &RssChannel, items: &[RssItem]) -> String {
-    let mut s = String::new();
-    s.push_str("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\n");
-    s.push_str("<rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">\n");
-    s.push_str("  <channel>\n");
-    s.push_str(&format!("    <title>{}</title>\n", escape_attr(&ch.title)));
-    s.push_str(&format!("    <link>{}</link>\n", ch.link));
-    s.push_str(&format!(
-        "    <description>{}</description>\n",
-        escape_attr(ch.description)
-    ));
-    s.push_str(&format!(
-        "    <generator>{}</generator>\n",
-        escape_attr(ch.site_title)
-    ));
-    s.push_str(&format!("    <language>{}</language>\n", ch.locale));
-    s.push_str(&format!(
-        "    <managingEditor>{}</managingEditor>\n",
-        ch.author
-    ));
-    s.push_str(&format!("    <webMaster>{}</webMaster>\n", ch.author));
-    s.push_str(&format!(
-        "    <copyright>© {} {}</copyright>\n",
-        chrono::Utc::now().year(),
-        ch.author
-    ));
-    if let Some(lbd) = &ch.last_build_date {
-        s.push_str(&format!("    <lastBuildDate>{lbd}</lastBuildDate>\n"));
-    }
-    s.push_str(&format!(
-        "    <atom:link href=\"{}\" rel=\"self\" type=\"application/rss+xml\" />\n",
-        ch.self_link
-    ));
-    for item in items {
-        s.push_str("    <item>\n");
-        s.push_str(&format!(
-            "      <title>{}</title>\n",
-            escape_attr(item.title)
-        ));
-        s.push_str(&format!("      <link>{}</link>\n", item.link));
-        s.push_str(&format!("      <pubDate>{}</pubDate>\n", item.pub_date));
-        s.push_str(&format!("      <guid>{}</guid>\n", item.link));
-        for cat in item.categories {
-            s.push_str(&format!(
-                "      <category>{}</category>\n",
-                escape_attr(cat)
-            ));
-        }
-        let content = item
-            .content_html
-            .map(|html| {
-                html.replace("src=\"/", &format!("src=\"{}/", ch.base_url))
-                    .replace("href=\"/", &format!("href=\"{}/", ch.base_url))
-            })
-            .unwrap_or_default();
-        s.push_str(&format!(
-            "      <description>{}</description>\n",
-            escape_attr(&content)
-        ));
-        s.push_str("    </item>\n");
-    }
-    s.push_str("  </channel>\n");
-    s.push_str("</rss>\n");
-    s
-}
-
-/// feed channel 标题：页面标题 · 站点标题（页面标题为空或等于站点标题时
-/// 只保留站点标题）
-fn channel_title(page_title: &str, site_title: &str) -> String {
-    if page_title == site_title || page_title.is_empty() {
-        site_title.to_string()
-    } else {
-        format!("{page_title} · {site_title}")
-    }
 }
 
 /// 文章没写 description 时的兜底摘要：CJK 语言没有空白分词，按字符数截前
@@ -2248,193 +1634,4 @@ fn plain_summary(plain: &str, max_words: usize, has_cjk: bool) -> String {
         }
         format!("{}…", words[..max_words].join(" "))
     }
-}
-
-/// index.json 的 content 截断：CJK 硬切在第 `max` 个字符（连续汉字之间
-/// 没有分词，切哪都一样）；空格分词的语言切在词边界——第 `max` 个字符
-/// 本身是空白就直接切，切在词中间则回退到前一个空白、丢掉半个单词。
-/// 截断后补 " …"。
-fn truncate_runes(s: &str, max: usize, has_cjk: bool) -> String {
-    let chars: Vec<char> = s.chars().collect();
-    if chars.len() <= max {
-        return s.to_string();
-    }
-    let cut = if has_cjk || chars[max].is_whitespace() {
-        max
-    } else {
-        (0..max)
-            .rev()
-            .find(|&i| chars[i].is_whitespace())
-            .unwrap_or(max)
-    };
-    let mut out: String = chars[..cut].iter().collect();
-    out.push_str(" …");
-    out
-}
-
-/// 一条 sitemap.xml `<url>` 记录
-struct SitemapEntry {
-    /// 带语言前缀的根相对路径，如 "/en/tags/galgame/"
-    rel: String,
-    /// lastmod：None 表示页面没有真实日期，不输出这一行
-    lastmod: Option<String>,
-    /// 去掉语言前缀后的路径，用来跟其他语言的条目配对判断是否互为翻译
-    match_key: String,
-}
-
-fn render_sitemap_index(base_url: &str, langs: &[(&str, Option<&str>)]) -> String {
-    let mut s = String::new();
-    s.push_str("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\n");
-    s.push_str("<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n");
-    for (prefix, lastmod) in langs {
-        s.push_str("  <sitemap>\n");
-        s.push_str(&format!("    <loc>{base_url}{prefix}/sitemap.xml</loc>\n"));
-        if let Some(lm) = lastmod {
-            s.push_str(&format!("    <lastmod>{lm}</lastmod>\n"));
-        }
-        s.push_str("  </sitemap>\n");
-    }
-    s.push_str("</sitemapindex>\n");
-    s
-}
-
-/// alts_by_key：match_key -> 这个路径在各语言下的 (hreflang, rel)，按
-/// config.languages 的固定顺序（zh 在前）——不管在渲染哪个语言的 urlset，
-/// alternate 链接的先后顺序都固定
-fn render_sitemap_urlset(
-    base_url: &str,
-    entries: &[SitemapEntry],
-    alts_by_key: &HashMap<String, Vec<(String, String)>>,
-) -> String {
-    let mut s = String::new();
-    s.push_str("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>\n");
-    s.push_str("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\" xmlns:xhtml=\"http://www.w3.org/1999/xhtml\">\n");
-    let mut sorted: Vec<&SitemapEntry> = entries.iter().collect();
-    sorted.sort_by(|a, b| b.lastmod.cmp(&a.lastmod));
-    for e in sorted {
-        s.push_str("  <url>\n");
-        s.push_str(&format!("    <loc>{base_url}{}</loc>\n", e.rel));
-        if let Some(lm) = &e.lastmod {
-            s.push_str(&format!("    <lastmod>{lm}</lastmod>\n"));
-        }
-        if let Some(alts) = alts_by_key.get(&e.match_key) {
-            if alts.len() > 1 {
-                for (hreflang, rel) in alts {
-                    s.push_str(&format!(
-                        "    <xhtml:link rel=\"alternate\" hreflang=\"{hreflang}\" href=\"{base_url}{rel}\"/>\n"
-                    ));
-                }
-            }
-        }
-        s.push_str("  </url>\n");
-    }
-    s.push_str("</urlset>\n");
-    s
-}
-
-/// 手动控制键顺序的 JSON 对象（serde_json 开了 preserve_order，按插入顺序
-/// 输出），保证产物字节稳定
-fn ordered_json(pairs: Vec<(&str, serde_json::Value)>) -> serde_json::Value {
-    let mut map = serde_json::Map::new();
-    for (k, v) in pairs {
-        map.insert(k.to_string(), v);
-    }
-    serde_json::Value::Object(map)
-}
-
-/// index.json：全部文章的极简摘要列表（url/title/date/tags/content），
-/// 站内搜索的兜底索引
-fn index_json(items: &[&PostCard], has_cjk: bool) -> String {
-    let arr: Vec<serde_json::Value> = items
-        .iter()
-        .map(|c| {
-            ordered_json(vec![
-                (
-                    "content",
-                    serde_json::json!(truncate_runes(&c.plain, 800, has_cjk)),
-                ),
-                ("date", serde_json::json!(c.date_display)),
-                ("tags", serde_json::json!(c.tags_raw)),
-                ("title", serde_json::json!(c.title)),
-                ("url", serde_json::json!(c.rel)),
-            ])
-        })
-        .collect();
-    serde_json::to_string(&ordered_json(vec![("items", serde_json::json!(arr))]))
-        .unwrap_or_default()
-}
-
-/// guestbook-posts.json：留言板文章选择器用的极简列表
-fn guestbook_posts_json(items: &[GuestbookItem]) -> String {
-    let arr: Vec<serde_json::Value> = items
-        .iter()
-        .map(|it| {
-            ordered_json(vec![
-                ("date", serde_json::json!(it.date_iso)),
-                ("title", serde_json::json!(it.title)),
-                ("url", serde_json::json!(it.rel)),
-            ])
-        })
-        .collect();
-    serde_json::to_string(&ordered_json(vec![("items", serde_json::json!(arr))]))
-        .unwrap_or_default()
-}
-
-struct GuestbookItem {
-    title: String,
-    rel: String,
-    date_iso: String,
-}
-
-/// feed.json（JSON Feed 1.1）
-#[allow(clippy::too_many_arguments)]
-fn feed_json(
-    site_title: &str,
-    home_url: &str,
-    feed_url: &str,
-    description: &str,
-    locale: &str,
-    author: &str,
-    items: &[&PostCard],
-    base_url: &str,
-) -> String {
-    let arr: Vec<serde_json::Value> = items
-        .iter()
-        .map(|c| {
-            let content_html = c
-                .content_html
-                .replace("src=\"/", &format!("src=\"{base_url}/"))
-                .replace("href=\"/", &format!("href=\"{base_url}/"));
-            let mut pairs = vec![
-                ("content_html", serde_json::json!(content_html)),
-                ("date_modified", serde_json::json!(c.date_rfc3339)),
-                ("date_published", serde_json::json!(c.date_rfc3339)),
-                ("id", serde_json::json!(c.permalink)),
-            ];
-            if let Some(img) = &c.image {
-                pairs.push(("image", serde_json::json!(img)));
-            }
-            if !c.summary.is_empty() {
-                pairs.push(("summary", serde_json::json!(c.summary)));
-            }
-            pairs.push(("tags", serde_json::json!(c.tags_raw)));
-            pairs.push(("title", serde_json::json!(c.title)));
-            pairs.push(("url", serde_json::json!(c.permalink)));
-            ordered_json(pairs)
-        })
-        .collect();
-    let doc = ordered_json(vec![
-        ("authors", serde_json::json!([{"name": author}])),
-        ("description", serde_json::json!(description)),
-        ("feed_url", serde_json::json!(feed_url)),
-        ("home_page_url", serde_json::json!(home_url)),
-        ("items", serde_json::json!(arr)),
-        ("language", serde_json::json!(locale)),
-        ("title", serde_json::json!(site_title)),
-        (
-            "version",
-            serde_json::json!("https://jsonfeed.org/version/1.1"),
-        ),
-    ]);
-    serde_json::to_string_pretty(&doc).unwrap_or_default()
 }

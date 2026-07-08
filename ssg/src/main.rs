@@ -2,10 +2,14 @@ mod assets;
 mod build;
 mod config;
 mod content;
+mod feeds;
 mod gotime;
 mod i18n;
 mod images;
 mod markdown;
+mod meta;
+mod output;
+mod sitemap;
 
 use anyhow::{bail, Result};
 use std::path::PathBuf;
