@@ -14,9 +14,42 @@ document.querySelectorAll("[data-post-filter-scope]").forEach((scope) => {
     return archiveViews.includes(view);
   }
 
-  function viewFromHash() {
-    const view = location.hash.slice(1);
-    return isArchiveView(view) ? view : null;
+  // hash 形如 "#cards" 或 "#cards/tags=博客"：第一段是视图，第二段是筛选。
+  // 筛选值经过 encodeURIComponent，值里的 "/" 不会干扰分段。
+  function parseHash() {
+    const [viewPart, ...rest] = location.hash.slice(1).split("/");
+    const view = isArchiveView(viewPart) ? viewPart : null;
+    let filter = null;
+    const filterPart = rest.join("/");
+    const eq = filterPart.indexOf("=");
+    if (eq > 0) {
+      const type = filterPart.slice(0, eq);
+      if (type === "categories" || type === "tags") {
+        try {
+          filter = { type, value: decodeURIComponent(filterPart.slice(eq + 1)) };
+        } catch {
+          /* 非法编码当没有筛选 */
+        }
+      }
+    }
+    return { view, filter };
+  }
+
+  // 当前生效的筛选，跟视图一起编进 hash：刷新/分享链接不丢筛选状态
+  let activeFilter = { type: "all", value: "" };
+
+  function currentView() {
+    const view = document.documentElement.dataset.archiveView;
+    return isArchiveView(view) ? view : "cards";
+  }
+
+  function syncHash() {
+    if (!viewButtons.length) return;
+    let hash = `#${currentView()}`;
+    if (activeFilter.type !== "all") {
+      hash += `/${activeFilter.type}=${encodeURIComponent(activeFilter.value)}`;
+    }
+    if (location.hash !== hash) history.replaceState(null, "", hash);
   }
 
   function storedArchiveView() {
@@ -30,7 +63,7 @@ document.querySelectorAll("[data-post-filter-scope]").forEach((scope) => {
 
   function getInitialArchiveView() {
     const earlyView = document.documentElement.dataset.archiveView;
-    return viewFromHash() || (isArchiveView(earlyView) ? earlyView : null) || storedArchiveView() || "cards";
+    return parseHash().view || (isArchiveView(earlyView) ? earlyView : null) || storedArchiveView() || "cards";
   }
 
   function setArchiveView(view, options = {}) {
@@ -57,10 +90,7 @@ document.querySelectorAll("[data-post-filter-scope]").forEach((scope) => {
       }
     }
 
-    const hash = `#${view}`;
-    if (updateHash && location.hash !== hash) {
-      history.replaceState(null, "", hash);
-    }
+    if (updateHash) syncHash();
   }
 
   if (viewButtons.length && viewPanels.length) {
@@ -68,11 +98,6 @@ document.querySelectorAll("[data-post-filter-scope]").forEach((scope) => {
       button.addEventListener("click", () => {
         setArchiveView(button.dataset.archiveView);
       });
-    });
-
-    window.addEventListener("hashchange", () => {
-      const view = viewFromHash();
-      if (view) setArchiveView(view, { updateHash: false });
     });
 
     setArchiveView(getInitialArchiveView(), { store: false, updateHash: false });
@@ -108,7 +133,8 @@ document.querySelectorAll("[data-post-filter-scope]").forEach((scope) => {
     return list.some((v) => v.toLowerCase() === target);
   }
 
-  function applyFilter(type, value) {
+  function applyFilter(type, value, options = {}) {
+    const { updateHash = false } = options;
     let visibleCount = 0;
 
     items.forEach((item) => {
@@ -135,14 +161,43 @@ document.querySelectorAll("[data-post-filter-scope]").forEach((scope) => {
       button.classList.toggle("active", active);
       button.setAttribute("aria-pressed", String(active));
     });
+
+    activeFilter = { type, value };
+    if (updateHash) syncHash();
+  }
+
+  // hash 里的筛选值优先对回一个真实按钮（大小写不敏感），让选中态跟着亮；
+  // 对不上就按原值直接筛，功能不受影响。
+  function applyFilterFromHash(filter) {
+    if (!filter) {
+      applyFilter("all", "");
+      return;
+    }
+    const target = filter.value.toLowerCase();
+    const button = buttons.find(
+      (b) => b.dataset.filterType === filter.type && (b.dataset.filterValue || "").toLowerCase() === target
+    );
+    if (button) applyFilter(button.dataset.filterType, button.dataset.filterValue);
+    else applyFilter(filter.type, filter.value);
   }
 
   buttons.forEach((button) => {
     button.addEventListener("click", () => {
-      applyFilter(button.dataset.filterType, button.dataset.filterValue);
+      applyFilter(button.dataset.filterType, button.dataset.filterValue, { updateHash: true });
     });
   });
 
-  const initial = buttons.find((button) => button.classList.contains("active")) || buttons[0];
-  applyFilter(initial.dataset.filterType, initial.dataset.filterValue);
+  window.addEventListener("hashchange", () => {
+    const { view, filter } = parseHash();
+    if (view) setArchiveView(view, { updateHash: false });
+    applyFilterFromHash(filter);
+  });
+
+  const initialFilter = parseHash().filter;
+  if (initialFilter) {
+    applyFilterFromHash(initialFilter);
+  } else {
+    const initial = buttons.find((button) => button.classList.contains("active")) || buttons[0];
+    applyFilter(initial.dataset.filterType, initial.dataset.filterValue);
+  }
 });

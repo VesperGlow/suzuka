@@ -10,7 +10,7 @@ if (root) {
   const status = root.querySelector(".header-search-status");
   const results = root.querySelector(".header-search-results");
   const loadMore = root.querySelector(".header-search-more");
-  const messages = root.dataset;
+  const labels = root.dataset;
   if (form && input && clearButton && popover && status && results && loadMore) {
   const mobileQuery = window.matchMedia("(max-width: 768px)");
   // 中日文没有空白分词，一个字就能构成有意义的查询（比如单字标题「蝉」），
@@ -145,7 +145,7 @@ if (root) {
     const currentRequest = ++requestId;
     results.replaceChildren();
     loadMore.hidden = true;
-    status.textContent = messages.i18nSearching;
+    status.textContent = labels.i18nSearching;
     openPopover();
 
     try {
@@ -158,13 +158,13 @@ if (root) {
 
       if (!response.results.length) {
         activeSearch = null;
-        status.textContent = messages.i18nEmpty;
+        status.textContent = labels.i18nEmpty;
         return;
       }
 
       const search = { request: currentRequest, query: normalized, queue: response.results.slice() };
       activeSearch = search;
-      status.textContent = messages.i18nCount.replace("{count}", response.results.length);
+      status.textContent = labels.i18nCount.replace("{count}", response.results.length);
       await renderNextBatch(search);
     } catch (error) {
       console.error("Header search failed:", error);
@@ -172,7 +172,7 @@ if (root) {
       activeSearch = null;
       results.replaceChildren();
       loadMore.hidden = true;
-      status.textContent = messages.i18nUnavailable;
+      status.textContent = labels.i18nUnavailable;
     }
   }
 

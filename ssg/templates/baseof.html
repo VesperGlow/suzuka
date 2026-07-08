@@ -9,7 +9,8 @@
     <script>
       (() => {
         const root = document.documentElement;
-        const hashView = location.hash.slice(1);
+        // hash 可能带筛选段（#cards/tags=...），视图只看第一段
+        const hashView = location.hash.slice(1).split("/")[0];
         let view = hashView === "cards" || hashView === "timeline" ? hashView : null;
 
         if (!view) {

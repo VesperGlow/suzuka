@@ -144,7 +144,13 @@ if (articleContent && lightbox && typeof lightbox.showModal === "function") {
     lightbox.classList.toggle("is-loading", !previewImage.complete);
     updateGalleryControls();
 
-    if (galleryImages.length > 1) {
+    // 相邻图预取的是多 MB 的全尺寸原图，省流模式/慢网络下不做
+    const connection = navigator.connection;
+    const avoidPreload =
+      connection?.saveData ||
+      connection?.effectiveType === "slow-2g" ||
+      connection?.effectiveType === "2g";
+    if (galleryImages.length > 1 && !avoidPreload) {
       for (const offset of [1, -1]) {
         const adjacent = galleryImages[(currentIndex + offset + galleryImages.length) % galleryImages.length];
         new Image().src = imageLinkFor(adjacent) || adjacent.src;
