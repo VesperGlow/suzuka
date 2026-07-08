@@ -89,8 +89,16 @@
           <h2 id="guestbook-messages-title">{{ t("guestbookMessagesHeading") }}</h2>
           <span data-guestbook-count aria-live="polite"></span>
         </header>
-        <p class="guestbook-list-status" data-guestbook-list-status role="status">{{ t("guestbookMessagesLoading") }}</p>
-        <ol class="guestbook-message-list" data-guestbook-message-list></ol>
+        <p class="guestbook-list-status" data-guestbook-list-status role="status" hidden>{{ t("guestbookMessagesLoading") }}</p>
+        <ol class="guestbook-message-list" data-guestbook-message-list>
+          {%- for _ in range(3) %}
+          <li class="guestbook-message guestbook-skeleton" aria-hidden="true">
+            <span class="guestbook-skeleton-bar"></span>
+            <span class="guestbook-skeleton-bar"></span>
+            <span class="guestbook-skeleton-bar"></span>
+          </li>
+          {%- endfor %}
+        </ol>
         <button class="guestbook-load-more" type="button" data-guestbook-load-more hidden>{{ t("guestbookLoadMore") }}</button>
       </section>
       </div>

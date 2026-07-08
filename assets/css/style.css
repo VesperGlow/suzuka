@@ -964,6 +964,17 @@ html.archive-no-transition .archive-view-switch button { transition: none; }
 .guestbook-message-content { margin: 9px 0 0; color: var(--ink); line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }
 .guestbook-message-reference { margin: 8px 0 0; color: var(--text-faint); font-size: var(--font-size-sm); }
 .guestbook-message-reference a { color: var(--text-subtle); }
+/* 留言加载骨架：静态 HTML 直出占位，JS 拿到数据(或确认失败)后整列替换 */
+.guestbook-skeleton { display: flex; flex-direction: column; gap: 13px; }
+.guestbook-skeleton-bar { height: 13px; border-radius: 6.5px; background: var(--surface-hover); animation: guestbook-skeleton-breathe 1.8s ease-in-out infinite; }
+.guestbook-skeleton-bar:nth-child(1) { width: 18%; min-width: 88px; height: 15px; margin-bottom: 3px; }
+.guestbook-skeleton-bar:nth-child(2) { width: 88%; }
+.guestbook-skeleton-bar:nth-child(3) { width: 62%; }
+.guestbook-skeleton:nth-child(2) .guestbook-skeleton-bar:nth-child(2) { width: 74%; }
+.guestbook-skeleton:nth-child(2) .guestbook-skeleton-bar:nth-child(3) { width: 38%; }
+.guestbook-skeleton:nth-child(3) .guestbook-skeleton-bar:nth-child(3) { width: 51%; }
+@keyframes guestbook-skeleton-breathe { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .guestbook-skeleton-bar { animation: none; } }
 .guestbook-sticky-side { min-width: 0; }
 @media (max-width: 959px) {
   .guestbook-sticky-side { display: block; position: static; height: auto; max-height: none; overflow: visible; }

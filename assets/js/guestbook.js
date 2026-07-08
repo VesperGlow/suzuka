@@ -49,6 +49,27 @@ if (root) {
   let source = readSource();
   let pickerCloseTimer = 0;
 
+  const messagesCacheKey = "suzuka:guestbook-messages:v1";
+
+  function readCachedMessages() {
+    try {
+      const cached = JSON.parse(window.sessionStorage.getItem(messagesCacheKey));
+      return cached && Array.isArray(cached.messages) ? cached : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeCachedMessages() {
+    // 只缓存常规体量：连点多次“加载更多”后的长列表不存
+    if (messages.length > 100) return;
+    try {
+      window.sessionStorage.setItem(messagesCacheKey, JSON.stringify({ messages, totalMessages, nextBeforeID }));
+    } catch {
+      /* 私密模式等 sessionStorage 不可写时静默放弃 */
+    }
+  }
+
   function postURL(value) {
     if (!value) return null;
     try {
@@ -250,9 +271,12 @@ if (root) {
       totalMessages = Number.isSafeInteger(payload.total_count) ? payload.total_count : messages.length;
       nextBeforeID = Number.isSafeInteger(payload.next_before_id) ? payload.next_before_id : 0;
       renderMessages();
+      if (!append) writeCachedMessages();
     } catch (error) {
       console.error("Unable to load guestbook messages", error);
-      if (!append) {
+      // 已经有内容(缓存或上一次加载)在展示时静默失败,别把好内容换成错误提示
+      if (!append && !messages.length) {
+        messageList.replaceChildren();
         listStatus.hidden = false;
         listStatus.textContent = labels.messagesUnavailable;
       }
@@ -290,6 +314,7 @@ if (root) {
       messages.unshift(result);
       totalMessages += 1;
       renderMessages();
+      writeCachedMessages();
       form.elements.content.value = "";
       formStatus.textContent = labels.submitted;
     } catch (error) {
@@ -314,5 +339,12 @@ if (root) {
     postPickerToggle.focus();
   });
   renderSource();
+  const cachedMessages = readCachedMessages();
+  if (cachedMessages) {
+    messages = cachedMessages.messages;
+    totalMessages = Number.isSafeInteger(cachedMessages.totalMessages) ? cachedMessages.totalMessages : messages.length;
+    nextBeforeID = Number.isSafeInteger(cachedMessages.nextBeforeID) ? cachedMessages.nextBeforeID : 0;
+    renderMessages();
+  }
   loadMessages();
 }
