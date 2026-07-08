@@ -65,9 +65,15 @@
   // 收起/展开会改变正文栏宽，文字重排后同一滚动像素对应的内容就变了。
   // 切换前记住阅读线（视口上缘、header 之下）附近的块级元素，在 padding
   // 过渡动画期间逐帧把它钉回原来的视口位置，阅读进度不漂移。
+  // 锚定收敛后仍可能剩 ≤0.5px 的滚动量化残差；再记住每次切换的
+  // 起点→终点滚动映射，切回去时直接还原上次起点，残差不跨次累积。
+  let scrollMemo = null;
   const keepReadingAnchor = () => {
     const main = document.getElementById("main-content");
-    if (!main || window.scrollY < 40) return;
+    if (!main || window.scrollY < 40) {
+      scrollMemo = null;
+      return;
+    }
     const readingLine = 64 + 24; // --header-height + 一点余量
     let anchor = null;
     for (const el of main.querySelectorAll("p, h1, h2, h3, h4, h5, h6, li, pre, blockquote, figure, table")) {
@@ -77,16 +83,41 @@
         break;
       }
     }
-    if (!anchor) return;
-    const startTop = anchor.getBoundingClientRect().top;
+    if (!anchor) {
+      scrollMemo = null;
+      return;
+    }
+    const fromY = window.scrollY;
+    // 上次切换后没滚动过，本次就是原路返回 → 终点精确取上次的起点
+    const exactTarget = scrollMemo && Math.abs(fromY - scrollMemo.toY) < 1 ? scrollMemo.fromY : null;
+    // 钉的不是锚点顶边，而是阅读线穿过锚点的比例位置：图片会随栏宽等比
+    // 缩放、长段落会重新折行，只有比例点才对应用户正在看的那个内容点。
+    // 锚点整体在阅读线之下时取 0，退化为钉顶边。
+    const startRect = anchor.getBoundingClientRect();
+    const ratio = Math.max(0, (readingLine - startRect.top) / startRect.height);
+    const startPoint = startRect.top + ratio * startRect.height;
+    const trackedPoint = () => {
+      const rect = anchor.getBoundingClientRect();
+      return rect.top + ratio * rect.height;
+    };
     // 覆盖 .25s 过渡再留余量；reduced-motion 下无过渡，首帧即修正完毕
     const deadline = performance.now() + 400;
     const step = () => {
-      const delta = anchor.getBoundingClientRect().top - startTop;
+      const delta = trackedPoint() - startPoint;
       // 站点开了 html { scroll-behavior: smooth }，必须显式 instant，
       // 否则逐帧的平滑滚动互相叠加会跑飞
       if (delta) window.scrollBy({ top: delta, behavior: "instant" });
-      if (performance.now() < deadline) requestAnimationFrame(step);
+      if (performance.now() < deadline) {
+        requestAnimationFrame(step);
+        return;
+      }
+      // 过渡结束。锚点仍在原位说明没被用户滚动打断：落到精确终点并记录映射
+      if (Math.abs(trackedPoint() - startPoint) < 2) {
+        if (exactTarget !== null) window.scrollTo({ top: exactTarget, behavior: "instant" });
+        scrollMemo = { fromY, toY: window.scrollY };
+      } else {
+        scrollMemo = null;
+      }
     };
     requestAnimationFrame(step);
   };
