@@ -51,6 +51,10 @@ pub fn open_database(path: &Path) -> Result<Connection, BoxError> {
     // journal_mode 会返回结果行，不能走 pragma_update。
     conn.query_row("PRAGMA journal_mode = WAL", [], |_| Ok(()))
         .map_err(|e| format!("enable WAL: {e}"))?;
+    // WAL 下 NORMAL 足够安全（只在系统级掉电时可能丢最后一笔事务，进程崩溃不受影响），
+    // 省掉每次写的一次 fsync。
+    conn.pragma_update(None, "synchronous", "NORMAL")
+        .map_err(|e| format!("set synchronous mode: {e}"))?;
     conn.pragma_update(None, "foreign_keys", "ON")
         .map_err(|e| format!("enable foreign keys: {e}"))?;
 
