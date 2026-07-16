@@ -68,7 +68,9 @@ async fn run() -> Result<(), BoxError> {
 
     // 每日数据库一致性快照（VACUUM INTO）：WAL 下直接复制 db 文件可能拿到
     // 半成品，落快照后直接备份整个数据目录即可。默认写到 <db 目录>/backups/。
-    let db_dir = Path::new(&db_path).parent().unwrap_or_else(|| Path::new("."));
+    let db_dir = Path::new(&db_path)
+        .parent()
+        .unwrap_or_else(|| Path::new("."));
     let backup_dir = optional_env("GUESTBOOK_BACKUP_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|| db_dir.join("backups"));

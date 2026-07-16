@@ -109,7 +109,11 @@ fn prune(dir: &Path, keep: usize) -> Result<(), String> {
     for name in names.iter().rev().skip(keep) {
         let path = dir.join(name);
         if let Err(err) = std::fs::remove_file(&path) {
-            eprintln!("{} backup: prune {}: {err}", log_timestamp(), path.display());
+            eprintln!(
+                "{} backup: prune {}: {err}",
+                log_timestamp(),
+                path.display()
+            );
         }
     }
     Ok(())
@@ -121,7 +125,11 @@ fn remove_leftover_tmp(dir: &Path) {
         return;
     };
     for entry in entries.flatten() {
-        if entry.file_name().to_str().is_some_and(|n| n.ends_with(".tmp")) {
+        if entry
+            .file_name()
+            .to_str()
+            .is_some_and(|n| n.ends_with(".tmp"))
+        {
             let _ = std::fs::remove_file(entry.path());
         }
     }

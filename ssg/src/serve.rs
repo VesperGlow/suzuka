@@ -78,7 +78,11 @@ fn source_fingerprint(source: &Path) -> u64 {
         source.join("site.toml"),
     ];
     for root in roots {
-        for entry in walkdir::WalkDir::new(&root).sort_by_file_name().into_iter().flatten() {
+        for entry in walkdir::WalkDir::new(&root)
+            .sort_by_file_name()
+            .into_iter()
+            .flatten()
+        {
             if !entry.file_type().is_file() {
                 continue;
             }
@@ -159,7 +163,9 @@ fn read_request_line(stream: &mut TcpStream) -> std::io::Result<String> {
 /// 磁盘上是原始 UTF-8），去掉查询串，拒绝 `..` 与反斜杠。
 fn decode_path(target: &str) -> Option<String> {
     let path = target.split(['?', '#']).next().unwrap_or(target);
-    let decoded = percent_encoding::percent_decode_str(path).decode_utf8().ok()?;
+    let decoded = percent_encoding::percent_decode_str(path)
+        .decode_utf8()
+        .ok()?;
     if decoded.contains("..") || decoded.contains('\\') {
         return None;
     }
