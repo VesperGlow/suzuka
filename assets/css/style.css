@@ -960,6 +960,11 @@ html.archive-no-transition .archive-view-switch button { transition: none; }
 .guestbook-message { padding: 18px 2px; border-bottom: 1px solid var(--list-line); content-visibility: auto; contain-intrinsic-size: auto 130px; }
 .guestbook-message-header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
 .guestbook-message-author { color: var(--accent-dark); font: 600 15px/1.5 var(--serif); }
+/* 留了网站的访客昵称是外链：下划线 + ↗ 给出可感知的信号，与纯文本昵称区分 */
+a.guestbook-message-author { text-decoration: underline; text-decoration-color: var(--accent-border); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a.guestbook-message-author:hover { text-decoration-color: var(--accent); }
+a.guestbook-message-author::after { content: "↗"; margin-left: 2px; font-size: .8em; font-family: var(--sans); color: var(--text-faint); }
+a.guestbook-message-author:hover::after { color: var(--accent); }
 .guestbook-message-time { flex: 0 0 auto; color: var(--text-faint); font-size: var(--font-size-xs); }
 .guestbook-message-content { margin: 9px 0 0; color: var(--ink); line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }
 .guestbook-message-reference { margin: 8px 0 0; color: var(--text-faint); font-size: var(--font-size-sm); }

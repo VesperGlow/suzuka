@@ -232,9 +232,9 @@ other = "Name"
 [guestbookOptionalContact]
 other = "Email & website (optional)"
 [guestbookEmail]
-other = "Email"
+other = "Email (only the owner sees it)"
 [guestbookWebsite]
-other = "Website"
+other = "Website (public, linked from your name)"
 [guestbookMessage]
 other = "Message"
 [guestbookMessagePlaceholder]
