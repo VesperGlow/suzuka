@@ -2,17 +2,25 @@
 #   1. 改 Cargo.toml 加依赖后更新 Cargo.lock（用 `cargo metadata` 做最小化解析，
 #      只补齐变更涉及的条目，不像 `cargo update` 那样顺手升级所有既有依赖）；
 #   2. rustfmt 格式化（fmt 是 CI 阻断项，本地写的代码格式没法预检）。
-# 手动触发本 workflow，让 CI 在所选分支上跑这两步并把结果提交回来；有提交时
-# 自动用 API 触发一次 site-image 构建（GITHUB_TOKEN 的 push 不会自动触发其他
-# workflow，但显式的 workflow_dispatch API 调用可以）。
+# push 到 main 时自动跑这两步并把结果提交回来（没东西可修就静默结束）；
+# 有提交时自动用 API 触发一次 site-image 构建（GITHUB_TOKEN 的 push 不会
+# 自动触发其他 workflow——所以本 workflow 自己的提交不会递归触发自己——
+# 但显式的 workflow_dispatch API 调用可以触发构建）。也可手动触发。
 name: Update lockfiles & rustfmt
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: write
   actions: write
+
+# 连推两次时串行执行，避免两个 run 同时 push 修复提交互相打架。
+concurrency:
+  group: update-lockfile
+  cancel-in-progress: false
 
 jobs:
   update:
