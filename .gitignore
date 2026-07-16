@@ -1,5 +1,6 @@
 /public/
 /public-ssg/
+/public-dev/
 
 scripts/__pycache__/
 

@@ -15,6 +15,15 @@ path = "src/main.rs"
 [dependencies]
 axum = "0.8"
 email_address = "0.2"
+# 新留言邮件通知（SMTP）。rustls-tls = ring + webpki-roots：CA 根证书编译进
+# 二进制，scratch 镜像里没有 /etc/ssl 也能完成 TLS 校验；musl 下全静态链接。
+lettre = { version = "0.11", default-features = false, features = [
+    "smtp-transport",
+    "builder",
+    "hostname",
+    "tokio1",
+    "tokio1-rustls-tls",
+] }
 mime = "0.3"
 # url 的传递依赖，仅用于计数/引用路径的 percent-decode 归一化
 percent-encoding = "2"

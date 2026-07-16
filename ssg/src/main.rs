@@ -9,6 +9,7 @@ mod images;
 mod markdown;
 mod meta;
 mod output;
+mod serve;
 mod sitemap;
 
 use anyhow::{bail, Result};
@@ -23,7 +24,15 @@ fn main() -> Result<()> {
             let minify = args.iter().any(|a| a == "--minify");
             build::build(&PathBuf::from(source), &PathBuf::from(dest), minify)
         }
-        _ => bail!("用法: ssg build [--source 目录] [--dest 目录] [--minify]"),
+        Some("serve") => {
+            let source = flag_value(&args, "--source").unwrap_or_else(|| ".".into());
+            let dest = flag_value(&args, "--dest").unwrap_or_else(|| "public-dev".into());
+            let addr = flag_value(&args, "--addr").unwrap_or_else(|| "127.0.0.1:1313".into());
+            serve::serve(&PathBuf::from(source), &PathBuf::from(dest), &addr)
+        }
+        _ => bail!(
+            "用法: ssg build [--source 目录] [--dest 目录] [--minify]\n      ssg serve [--source 目录] [--dest 目录] [--addr 地址:端口]"
+        ),
     }
 }
 

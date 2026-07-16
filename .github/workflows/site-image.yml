@@ -58,6 +58,15 @@ jobs:
       - name: Build site (smoke)
         run: ./ssg/target/release/ssg build --source . --dest /tmp/site-out --minify
 
+      # 死链检查（--offline 只查站内）：双语站互链多，改 slug / 挪文章时烂掉的
+      # 内链靠人眼很难发现。外链不查——外网抖动不应阻断构建；带锚点的站内
+      # 链接如需连 #fragment 一起校验，可以再加 --include-fragments。
+      - name: Check internal links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --offline --root-dir /tmp/site-out --no-progress "/tmp/site-out/**/*.html"
+          fail: true
+
   # rustfmt 纯机械格式检查、backend 和 ssg 都已清干净，两边一起提升为阻断项。
   fmt:
     runs-on: ubuntu-latest

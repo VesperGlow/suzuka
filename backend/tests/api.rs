@@ -29,6 +29,25 @@ fn test_app() -> (Router, TempDir) {
         limiter: None,
         counter_limiter: Some(RateLimiter::new(COUNTER_BURST, COUNTER_WINDOW, clock)),
         allowed_paths: None,
+        admin_token: None,
+        notifier: None,
+    });
+    (handler(app), tmp)
+}
+
+/// 与 test_app 相同，但配置了管理 token（删除接口开启的形态）。
+fn test_app_with_admin_token(token: &str) -> (Router, TempDir) {
+    let tmp = TempDir::new().unwrap();
+    let db = open_database(&tmp.path().join("guestbook.db")).unwrap();
+    let clock: Clock = Arc::new(|| datetime!(2026-06-22 12:00 UTC));
+    let app = Arc::new(App {
+        db: Mutex::new(db),
+        now: clock.clone(),
+        limiter: Some(RateLimiter::new(POST_BURST, POST_WINDOW, clock.clone())),
+        counter_limiter: None,
+        allowed_paths: None,
+        admin_token: Some(token.to_string()),
+        notifier: None,
     });
     (handler(app), tmp)
 }
@@ -44,6 +63,8 @@ fn test_app_with_whitelist(paths: &[&str]) -> (Router, TempDir) {
         limiter: None,
         counter_limiter: None,
         allowed_paths: Some(paths.iter().map(|p| p.to_string()).collect()),
+        admin_token: None,
+        notifier: None,
     });
     (handler(app), tmp)
 }
@@ -203,6 +224,8 @@ async fn rate_limit() {
         limiter: Some(RateLimiter::new(POST_BURST, POST_WINDOW, clock)),
         counter_limiter: None,
         allowed_paths: None,
+        admin_token: None,
+        notifier: None,
     });
     let router = handler(app);
 
@@ -528,4 +551,81 @@ async fn counter_path_length_is_capped() {
     let body = format!(r#"{{"path":"{long_path}"}}"#);
     let (status, _) = send(&router, post_json("/views", &body)).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+fn delete_message(uri: &str, token: Option<&str>) -> Request<Body> {
+    let mut builder = Request::builder().method("DELETE").uri(uri);
+    if let Some(token) = token {
+        builder = builder.header("authorization", format!("Bearer {token}"));
+    }
+    let mut request = builder.body(Body::empty()).unwrap();
+    // 认证失败会走按 IP 的限流器，测试里补上直连方信息。
+    request
+        .extensions_mut()
+        .insert(ConnectInfo::<SocketAddr>("10.0.0.2:1234".parse().unwrap()));
+    request
+}
+
+#[tokio::test]
+async fn delete_requires_admin_token() {
+    // 未配置 token 时接口视同不存在：无论带不带 token 都是 404。
+    let (router, _tmp) = test_app();
+    let (status, _) = send(&router, delete_message("/messages/1", None)).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    let (status, _) = send(&router, delete_message("/messages/1", Some("guess"))).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn delete_message_with_admin_token() {
+    let (router, _tmp) = test_app_with_admin_token("s3cret");
+
+    let (status, response) = send(
+        &router,
+        post_json("/messages", r#"{"name":"Suzuka","content":"spam"}"#),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let message: Message = serde_json::from_slice(&response).unwrap();
+
+    // 缺 token / 错 token → 401，留言原样保留。
+    let target = format!("/messages/{}", message.id);
+    let (status, _) = send(&router, delete_message(&target, None)).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let (status, _) = send(&router, delete_message(&target, Some("wrong"))).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    // 非法 id 在认证之后校验，token 正确才可能拿到 400。
+    let (status, _) = send(&router, delete_message("/messages/abc", Some("s3cret"))).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+
+    let (status, body) = send(&router, delete_message(&target, Some("s3cret"))).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert!(body.is_empty(), "204 must have an empty body");
+
+    let (status, response) = send(&router, get("/messages")).await;
+    assert_eq!(status, StatusCode::OK);
+    let page: MessagePage = serde_json::from_slice(&response).unwrap();
+    assert_eq!(page.total_count, 0);
+
+    // 已删除的 id 再删一次 → 404。
+    let (status, _) = send(&router, delete_message(&target, Some("s3cret"))).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn delete_auth_failures_are_rate_limited() {
+    let (router, _tmp) = test_app_with_admin_token("s3cret");
+
+    // 失败的认证尝试与留言提交共用 POST 限流器：额度耗尽后变 429。
+    for i in 0..POST_BURST {
+        let (status, _) = send(&router, delete_message("/messages/1", Some("wrong"))).await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED, "attempt {}", i + 1);
+    }
+    let (status, _) = send(&router, delete_message("/messages/1", Some("wrong"))).await;
+    assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
+
+    // 正确 token 不占限额：限流打满后管理操作照常可用。
+    let (status, _) = send(&router, delete_message("/messages/1", Some("s3cret"))).await;
+    assert_eq!(status, StatusCode::NOT_FOUND, "auth ok, id does not exist");
 }

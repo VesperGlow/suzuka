@@ -1,0 +1,47 @@
+# 本地开发机没有 Rust 工具链（构建全靠容器/CI），改 Cargo.toml 加依赖后
+# Cargo.lock 无法在本地更新——手动触发本 workflow，让 CI 在所选分支上
+# 重新解析依赖并把更新后的 lockfile 提交回来。
+#
+# 用 `cargo metadata` 做最小化解析：只补齐/调整 Cargo.toml 变更涉及的条目，
+# 不像 `cargo update` 那样顺手升级所有既有依赖。
+#
+# 注意：GITHUB_TOKEN 的提交不会触发其他 workflow（GitHub 防递归），所以
+# lockfile 提交落到 main 后需要手动触发一次 site-image 构建（或随下一次
+# push 一起构建）。
+name: Update Cargo lockfiles
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@1.96.1
+
+      - name: Resolve dependencies (backend)
+        working-directory: backend
+        run: cargo metadata --format-version 1 > /dev/null
+
+      - name: Resolve dependencies (ssg)
+        working-directory: ssg
+        run: cargo metadata --format-version 1 > /dev/null
+
+      - name: Commit lockfiles if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add backend/Cargo.lock ssg/Cargo.lock
+          if git diff --cached --quiet; then
+            echo "lockfiles already up to date"
+          else
+            git commit -m "chore: update Cargo.lock (CI resolved new dependencies)"
+            git push
+          fi

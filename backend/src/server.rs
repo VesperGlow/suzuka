@@ -7,7 +7,7 @@ use axum::extract::{ConnectInfo, DefaultBodyLimit, Request, State};
 use axum::http::{header, HeaderValue, StatusCode};
 use axum::middleware::{self, Next};
 use axum::response::Response;
-use axum::routing::get;
+use axum::routing::{delete, get};
 use axum::Router;
 use rusqlite::Connection;
 use serde_json::json;
@@ -28,6 +28,11 @@ pub struct App {
     /// 单容器模式下从静态产物扫出的真实文章路径白名单（见
     /// static_site::scan_post_paths）；None（纯 API 模式）时只做前缀校验。
     pub allowed_paths: Option<HashSet<String>>,
+    /// 管理 token（GUESTBOOK_ADMIN_TOKEN）。None 时删除接口视同不存在，
+    /// 对外表现为 404——站点没有管理 WebUI，删除留言走 curl + 本 token。
+    pub admin_token: Option<String>,
+    /// 新留言邮件通知（GUESTBOOK_SMTP_* 环境变量）。None 时不发信。
+    pub notifier: Option<Arc<crate::notify::Notifier>>,
 }
 
 impl App {
@@ -39,6 +44,8 @@ impl App {
             limiter: Some(RateLimiter::new(POST_BURST, POST_WINDOW, now.clone())),
             counter_limiter: Some(RateLimiter::new(COUNTER_BURST, COUNTER_WINDOW, now)),
             allowed_paths: None,
+            admin_token: None,
+            notifier: None,
         }
     }
 
@@ -82,6 +89,7 @@ pub fn handler(app: Arc<App>) -> Router {
             "/messages",
             get(guestbook::list_messages).post(guestbook::create_message),
         )
+        .route("/messages/{id}", delete(guestbook::delete_message))
         .route("/views", get(metrics::read_views).post(metrics::bump_views))
         .route(
             "/reactions",

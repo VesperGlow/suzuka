@@ -27,6 +27,9 @@ posts 列表页的 `/p/1/` 冗余跳转桩、archives 与 categories/tags 列表
 cargo run --manifest-path ssg/Cargo.toml -- build --source . --dest public-ssg
 # 生产构建加 --minify（压缩 HTML/CSS/JS），package.json / Containerfile 都这么用
 cargo run --manifest-path ssg/Cargo.toml -- build --source . --dest public --minify
+# 本地开发热重载：构建 + 500ms 轮询监听变更全量重建 + 内置静态服务器（见 src/serve.rs）。
+# 零新依赖：手写极简 GET/HEAD 静态服务，只听回环；不跑 Pagefind、不 minify。
+cargo run --manifest-path ssg/Cargo.toml -- serve --source .   # http://127.0.0.1:1313/
 ```
 
 ## 对拍（迁移期用过的方法论，工具已随迁移收尾删除）

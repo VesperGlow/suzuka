@@ -35,12 +35,17 @@ backend/       留言板 / 阅读量 / 点赞的 Rust + SQLite 服务
 ## 本地开发
 
 ```sh
+# 热重载预览：构建 + 监听变更自动重建 + 内置静态服务器
+cargo run --manifest-path ssg/Cargo.toml -- serve --source .
+# 然后浏览 http://127.0.0.1:1313/（--addr 可改端口，--dest 默认 public-dev）
+```
+
+`serve` 不跑 Pagefind（本地搜索不可用）也不 minify；一次性构建照旧：
+
+```sh
 cargo run --manifest-path ssg/Cargo.toml -- build --source . --dest public
 npx -y pagefind@1.3.0 --site public
 ```
-
-`ssg` 目前只有一次性 `build`，没有类似 `hugo server -D` 的热重载；改完内容后重新跑一遍
-上面的命令，用任意静态文件服务器（如 `python3 -m http.server --directory public`）预览即可。
 
 留言板、阅读量等功能需要后端在本地一并运行。注意前端 `fetch` 的路径写死在
 `/api/guestbook/` 前缀下，而这个前缀只在后端的**单容器模式**（设置了
@@ -70,8 +75,8 @@ npm run build
 前后端打进**一个容器**：后端进程在根路径托管 ssg 静态产物，并把留言板接口收敛到
 `/api/guestbook/` 前缀下（与前端 `fetch` 路径一致，由进程自身剥前缀，无需 nginx 反代）。
 
-- **自动构建**：push 到 `main` 时 GitHub Actions 跑 `cargo test`（backend）与 `cargo build`
-  （ssg，编译失败会阻断镜像发布；clippy / rustfmt 两边都作旁路检查），
+- **自动构建**：push 到 `main` 时 GitHub Actions 跑 `cargo test`（backend）、`cargo build`
+  与全站构建冒烟 + 站内死链检查（ssg）；clippy / rustfmt 两边都是阻断项。全部通过后
   再三阶段构建（ssg 生成静态站 + Pagefind 索引 → 编译 Rust 后端 → 合进 scratch）并推镜像到
   GHCR `ghcr.io/<owner>/suzuka:latest`（见 `.github/workflows/site-image.yml` 与根目录
   `Containerfile`）。
@@ -79,15 +84,29 @@ npm run build
 
   ```sh
   # 命名卷持久化 SQLite，发布到宿主回环；外层代理把 80/443 转到 127.0.0.1:8787。
+  # GUESTBOOK_ADMIN_TOKEN 可选：设置后开启留言删除接口（无 WebUI，curl 管理，
+  # 见 backend/README.md），不设置则后端没有任何管理面。
+  # GUESTBOOK_SMTP_USER/PASSWORD 可选：设置后新留言会发邮件通知（Gmail 需要
+  # App Password，见 backend/README.md），不设置则不发信。
   podman pull   ghcr.io/<owner>/suzuka:latest
   podman run -d --name suzuka --restart=always \
     -p 127.0.0.1:8787:8787 \
     -v suzuka-data:/data \
+    -e GUESTBOOK_ADMIN_TOKEN=<随机长串> \
+    -e GUESTBOOK_SMTP_USER=<你的 Gmail 地址> \
+    -e GUESTBOOK_SMTP_PASSWORD=<Gmail App Password> \
     ghcr.io/<owner>/suzuka:latest
+
+  # 删除一条垃圾留言（id 从留言板页面或 GET /api/guestbook/messages 里看）：
+  curl -X DELETE -H "Authorization: Bearer <随机长串>" \
+    https://suzuka-chan.moe/api/guestbook/messages/<id>
   ```
 
-  外层反代必须覆盖客户端传入的 `X-Forwarded-For`，不要原样追加；留言数据位于
-  `/data` 卷，应使用支持 SQLite/WAL 的方式定期备份。
+  外层反代必须覆盖客户端传入的 `X-Forwarded-For`，不要原样追加。留言数据位于
+  `/data` 卷；后端每天自动在 `/data/backups/` 落一份 `VACUUM INTO` 的一致性
+  快照（保留最近 7 份），**直接复制 / rsync 整个数据目录即可完成备份**——
+  运行中的 `guestbook.db` 本体（连同 -wal/-shm）拷出来可能缺数据，但快照
+  文件永远是完整可用的数据库。
 
   Pagefind 版本通过 `Containerfile` 的 `PAGEFIND_VERSION` 构建参数钉死，与本地保持一致。
   前后端已经合并进同一个容器，不再单独提供只跑后端 API 的 Containerfile。
