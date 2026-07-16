@@ -942,7 +942,7 @@ html.archive-no-transition .archive-view-switch button { transition: none; }
 .guestbook-optional-fields summary { width: fit-content; cursor: pointer; user-select: none; }
 .guestbook-optional-fields[open] summary { margin-bottom: 10px; color: var(--text-subtle); }
 .guestbook-optional-fields-inner { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.guestbook-optional-fields-inner .guestbook-field { grid-row: span 2; grid-template-rows: subgrid; row-gap: 6px; }
+.guestbook-optional-fields-inner .guestbook-field + .guestbook-field { margin-top: 0; }
 .guestbook-form-footer { min-height: 32px; display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 13px; }
 .guestbook-form-status { margin: 0; color: var(--text-subtle); font-size: var(--font-size-sm); }
 .guestbook-submit { flex: 0 0 auto; padding: 6px 15px; color: var(--accent-dark); background: var(--control-surface); border: 1px solid var(--accent-border); border-radius: var(--radius-control); cursor: pointer; font: 500 var(--font-size-ui)/1.5 var(--sans); transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), opacity var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard); }
