@@ -405,6 +405,16 @@ fn validate_message(item: &Message) -> Result<(), String> {
     Ok(())
 }
 
+fn valid_website(value: &str) -> bool {
+    let Ok(parsed) = url::Url::parse(value) else {
+        return false;
+    };
+    (parsed.scheme() == "http" || parsed.scheme() == "https")
+        && parsed.host_str().is_some_and(|h| !h.is_empty())
+        && parsed.username().is_empty()
+        && parsed.password().is_none()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -429,14 +439,4 @@ mod tests {
         assert!(body.contains("/api/guestbook/messages/42"));
         assert!(!body.contains("网站："), "empty fields are omitted");
     }
-}
-
-fn valid_website(value: &str) -> bool {
-    let Ok(parsed) = url::Url::parse(value) else {
-        return false;
-    };
-    (parsed.scheme() == "http" || parsed.scheme() == "https")
-        && parsed.host_str().is_some_and(|h| !h.is_empty())
-        && parsed.username().is_empty()
-        && parsed.password().is_none()
 }
