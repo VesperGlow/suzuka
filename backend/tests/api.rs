@@ -532,4 +532,3 @@ async fn counter_path_length_is_capped() {
     let (status, _) = send(&router, post_json("/views", &body)).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
 }
-
