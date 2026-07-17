@@ -3,34 +3,60 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use suzuka_backend::backup;
+use suzuka_backend::cli;
 use suzuka_backend::db::{open_database, BoxError};
 use suzuka_backend::notify::{Notifier, SmtpConfig};
 use suzuka_backend::server::{root_handler, App};
 use suzuka_backend::static_site::scan_post_paths;
 
-#[tokio::main]
-async fn main() {
-    if let Err(err) = run().await {
+fn main() {
+    if let Err(err) = run() {
         eprintln!("{err}");
         std::process::exit(1);
     }
 }
 
-async fn run() -> Result<(), BoxError> {
-    let addr = env_or_default("GUESTBOOK_ADDR", "127.0.0.1:8787");
+/// 不带参数起服务；`list` / `delete <id>...` 是本地管理子命令，直连数据库后
+/// 即刻退出（容器里用 `podman exec suzuka /backend list` 调用）。
+fn run() -> Result<(), BoxError> {
     let db_path = env_or_default(
         "GUESTBOOK_DB_PATH",
         &PathBuf::from("data").join("guestbook.db").to_string_lossy(),
     );
 
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    match args.first().map(String::as_str) {
+        None => return serve(&db_path),
+        Some("list") if args.len() == 1 => {
+            let conn = open_database(db_path.as_ref())?;
+            print!("{}", cli::list_messages(&conn)?);
+        }
+        Some("delete") if args.len() > 1 => {
+            let ids = args[1..]
+                .iter()
+                .map(|raw| {
+                    raw.parse::<i64>()
+                        .ok()
+                        .filter(|id| *id >= 1)
+                        .ok_or_else(|| format!("invalid message id: {raw}"))
+                })
+                .collect::<Result<Vec<i64>, String>>()?;
+            let conn = open_database(db_path.as_ref())?;
+            if !cli::delete_messages(&conn, &ids)? {
+                std::process::exit(1);
+            }
+        }
+        Some(_) => return Err("usage: backend [list | delete <id>...]".into()),
+    }
+    Ok(())
+}
+
+#[tokio::main]
+async fn serve(db_path: &str) -> Result<(), BoxError> {
+    let addr = env_or_default("GUESTBOOK_ADDR", "127.0.0.1:8787");
+
     let db = open_database(db_path.as_ref())?;
     let mut app = App::new(db);
-
-    // 管理 token：配置后开启 DELETE /messages/{id}（无 WebUI，curl 管理留言用）。
-    app.admin_token = optional_env("GUESTBOOK_ADMIN_TOKEN");
-    if app.admin_token.is_some() {
-        println!("admin message deletion enabled (GUESTBOOK_ADMIN_TOKEN is set)");
-    }
 
     // 新留言邮件通知（可选）：USER/PASSWORD 成对出现才开启，TO 默认发给自己。
     let smtp_user = optional_env("GUESTBOOK_SMTP_USER");

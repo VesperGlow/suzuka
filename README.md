@@ -84,22 +84,19 @@ npm run build
 
   ```sh
   # 命名卷持久化 SQLite，发布到宿主回环；外层代理把 80/443 转到 127.0.0.1:8787。
-  # GUESTBOOK_ADMIN_TOKEN 可选：设置后开启留言删除接口（无 WebUI，curl 管理，
-  # 见 backend/README.md），不设置则后端没有任何管理面。
   # GUESTBOOK_SMTP_USER/PASSWORD 可选：设置后新留言会发邮件通知（Gmail 需要
   # App Password，见 backend/README.md），不设置则不发信。
   podman pull   ghcr.io/<owner>/suzuka:latest
   podman run -d --name suzuka --restart=always \
     -p 127.0.0.1:8787:8787 \
     -v suzuka-data:/data \
-    -e GUESTBOOK_ADMIN_TOKEN=<随机长串> \
     -e GUESTBOOK_SMTP_USER=<你的 Gmail 地址> \
     -e GUESTBOOK_SMTP_PASSWORD=<Gmail App Password> \
     ghcr.io/<owner>/suzuka:latest
 
-  # 删除一条垃圾留言（id 从留言板页面或 GET /api/guestbook/messages 里看）：
-  curl -X DELETE -H "Authorization: Bearer <随机长串>" \
-    https://suzuka-chan.moe/api/guestbook/messages/<id>
+  # 留言管理不走 HTTP（后端没有任何管理接口），直接 exec 容器里的二进制：
+  podman exec suzuka /backend list         # 列出全部留言与 id
+  podman exec suzuka /backend delete <id>  # 按 id 删除（可一次多个）
   ```
 
   外层反代必须覆盖客户端传入的 `X-Forwarded-For`，不要原样追加。留言数据位于

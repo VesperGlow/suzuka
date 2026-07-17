@@ -2,9 +2,9 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use axum::body::Bytes;
-use axum::extract::{Path, RawQuery, State};
+use axum::extract::{RawQuery, State};
 use axum::http::{header, HeaderMap, StatusCode};
-use axum::response::{IntoResponse, Response};
+use axum::response::Response;
 use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use time::format_description::well_known::Rfc3339;
@@ -269,8 +269,8 @@ VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
     write_json(StatusCode::CREATED, &item)
 }
 
-/// 通知邮件的主题与正文。结尾附上可直接粘贴的删除命令，配合
-/// GUESTBOOK_ADMIN_TOKEN 使用（token 用变量占位，不写进邮件）。
+/// 通知邮件的主题与正文。结尾附上可直接粘贴的删除命令（在服务器上执行，
+/// 管理子命令直连数据库，见 cli 模块）。
 fn notification_content(item: &Message) -> (String, String) {
     let subject = format!("[留言板] #{} 来自 {}", item.id, item.name);
     let mut body = format!("时间：{}\n昵称：{}\n", item.created_at, item.name);
@@ -288,64 +288,10 @@ fn notification_content(item: &Message) -> (String, String) {
     }
     body.push_str(&format!("\n{}\n", item.content));
     body.push_str(&format!(
-        "\n——\n删除这条留言：\ncurl -X DELETE -H \"Authorization: Bearer $GUESTBOOK_ADMIN_TOKEN\" \\\n  https://suzuka-chan.moe/api/guestbook/messages/{}\n",
+        "\n——\n删除这条留言（在服务器上执行）：\npodman exec suzuka /backend delete {}\n",
         item.id
     ));
     (subject, body)
-}
-
-/// 管理接口：按 id 删除一条留言。没有管理 WebUI，日常用 curl 调用：
-///
-/// ```sh
-/// curl -X DELETE -H "Authorization: Bearer $GUESTBOOK_ADMIN_TOKEN" \
-///   https://<site>/api/guestbook/messages/<id>
-/// ```
-pub async fn delete_message(
-    State(app): State<Arc<App>>,
-    ClientIp(ip): ClientIp,
-    Path(id): Path<String>,
-    headers: HeaderMap,
-) -> Response {
-    // 未配置 token 时接口视同不存在，不向探测者暴露管理面。
-    let Some(expected) = &app.admin_token else {
-        return write_error(StatusCode::NOT_FOUND, "not found");
-    };
-
-    let provided = headers
-        .get(header::AUTHORIZATION)
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.strip_prefix("Bearer "));
-    if !provided.is_some_and(|token| token_matches(expected, token)) {
-        // 失败的认证尝试与留言提交共用同一个按 IP 限流器，挡 token 爆破；
-        // 认证成功的请求不占限额，批量清理垃圾留言不会被自己限住。
-        if let Some(limiter) = &app.limiter {
-            if !limiter.allow(&ip) {
-                return too_many_requests(POST_WINDOW);
-            }
-        }
-        return write_error(StatusCode::UNAUTHORIZED, "invalid or missing admin token");
-    }
-
-    let Some(id) = id.parse::<i64>().ok().filter(|v| *v >= 1) else {
-        return write_error(StatusCode::BAD_REQUEST, "id must be a positive integer");
-    };
-
-    let conn = app.conn();
-    match conn.execute("DELETE FROM messages WHERE id = ?1", params![id]) {
-        Ok(0) => write_error(StatusCode::NOT_FOUND, "message not found"),
-        Ok(_) => StatusCode::NO_CONTENT.into_response(),
-        Err(err) => internal_error("unable to delete message", &err),
-    }
-}
-
-/// 常数时间比较，避免用短路比较给爆破者留下按字节测量的时序信号。
-/// 长度不同直接返回（只泄露长度，不泄露内容）。
-fn token_matches(expected: &str, provided: &str) -> bool {
-    let (a, b) = (expected.as_bytes(), provided.as_bytes());
-    if a.len() != b.len() {
-        return false;
-    }
-    a.iter().zip(b).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
 }
 
 pub fn is_json_content_type(headers: &HeaderMap) -> bool {
@@ -436,7 +382,7 @@ mod tests {
         assert!(body.contains("visitor@example.com"), "owner sees the email");
         assert!(body.contains("こんにちは"));
         assert!(body.contains("https://suzuka-chan.moe/posts/example/"));
-        assert!(body.contains("/api/guestbook/messages/42"));
+        assert!(body.contains("podman exec suzuka /backend delete 42"));
         assert!(!body.contains("网站："), "empty fields are omitted");
     }
 }

@@ -1,4 +1,5 @@
 pub mod backup;
+pub mod cli;
 pub mod db;
 pub mod guestbook;
 pub mod httputil;

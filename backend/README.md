@@ -18,20 +18,37 @@ when needed:
 ```bash
 GUESTBOOK_ADDR=127.0.0.1:8787 \
 GUESTBOOK_DB_PATH=/var/lib/suzuka/backend.db \
-GUESTBOOK_ADMIN_TOKEN=$(openssl rand -hex 32) \
 ./target/release/backend
 ```
 
-`GUESTBOOK_ADMIN_TOKEN` is optional: when set it enables the
-`DELETE /messages/:id` moderation route described below; when unset the
-service runs exactly as before, with no admin surface at all.
+## Moderation
+
+There is no admin HTTP surface at all. Moderation is a pair of CLI
+subcommands on the same binary that talk to the SQLite database directly
+(safe alongside the running service — WAL mode plus a busy timeout on
+both sides):
+
+```bash
+./target/release/backend list          # every message with its id
+./target/release/backend delete 5 8    # delete by id (one or more)
+```
+
+In the deployed container (`scratch`, no shell — but exec'ing the binary
+directly needs none):
+
+```bash
+podman exec suzuka /backend list
+podman exec suzuka /backend delete 5
+```
+
+`delete` exits non-zero if any id did not exist.
 
 ## Email notifications for new messages
 
 Optional. When `GUESTBOOK_SMTP_USER` and `GUESTBOOK_SMTP_PASSWORD` are both
 set, the service emails the site owner whenever a guestbook message is
 saved. The email includes the visitor's (otherwise private) email address
-and a ready-to-paste `curl` delete command for that message id.
+and a ready-to-paste `podman exec … delete` command for that message id.
 
 ```bash
 GUESTBOOK_SMTP_USER=you@gmail.com \
@@ -76,19 +93,7 @@ single-container mode):
 - `GET|POST /messages` — guestbook. `GET` uses cursor pagination
   (`?limit=50&before_id=<id>`, both optional; limit defaults to 50) and
   returns `messages`, `next_before_id`, and `total_count`.
-- `DELETE /messages/:id` — admin-only moderation, enabled by setting
-  `GUESTBOOK_ADMIN_TOKEN`; without it the route answers 404. There is no
-  admin UI — manage messages with curl:
-
-  ```bash
-  curl -X DELETE -H "Authorization: Bearer $GUESTBOOK_ADMIN_TOKEN" \
-    https://<site>/api/guestbook/messages/<id>
-  ```
-
-  Returns 204 on success, 404 for unknown ids, 401 for a missing or wrong
-  token. Failed auth attempts share the guestbook POST rate limiter (per
-  IP), so the token cannot be brute-forced quickly; authenticated requests
-  are not rate-limited.
+  Deleting messages is not exposed over HTTP — see **Moderation** above.
 - `GET|POST /views` — per-post read counts (`?path=/posts/.../`)
 - `GET|POST /reactions` — per-post likes
 - `GET /summary` — site-wide totals for views and reactions
