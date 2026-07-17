@@ -232,9 +232,9 @@ other = "名字"
 [guestbookOptionalContact]
 other = "邮箱与网址（可选）"
 [guestbookEmail]
-other = "邮箱（仅站长可见）"
+other = "邮箱（非公开）"
 [guestbookWebsite]
-other = "网址（公开，链接在昵称上）"
+other = "网址（公开）"
 [guestbookMessage]
 other = "留言"
 [guestbookMessagePlaceholder]
