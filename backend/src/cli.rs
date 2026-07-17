@@ -1,11 +1,11 @@
-use rusqlite::{params, Connection};
+//! 留言管理子命令：不经 HTTP，直接操作 SQLite。服务进程与本命令可以并存——
+//! 数据库开着 WAL 且双方都设了 busy_timeout，短暂的写入互不阻塞。
+//!
+//! 本机：`backend list` / `backend delete <id>...`
+//! 容器（scratch 镜像无 shell，但 exec 二进制不需要 shell）：
+//! `podman exec suzuka /backend list`
 
-/// 留言管理子命令：不经 HTTP，直接操作 SQLite。服务进程与本命令可以并存——
-/// 数据库开着 WAL 且双方都设了 busy_timeout，短暂的写入互不阻塞。
-///
-/// 本机：`backend list` / `backend delete <id>...`
-/// 容器（scratch 镜像无 shell，但 exec 二进制不需要 shell）：
-/// `podman exec suzuka /backend list`
+use rusqlite::{params, Connection};
 
 /// 每条留言两行：首行是 id、时间与来源信息，次行缩进展示正文（压平换行）。
 pub fn list_messages(conn: &Connection) -> Result<String, rusqlite::Error> {
