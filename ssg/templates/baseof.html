@@ -28,6 +28,7 @@
   {% endif %}
   <script>{{ theme_js | safe }}</script>
   <title>{% if page.is_home %}{{ site.title }}{% else %}{{ page.title }} · {{ site.title }}{% endif %}</title>
+  {% include "partials/favicon.html" %}
   <link rel="canonical" href="{{ page.canonical | safe }}">
   {% for tr in page.all_translations %}<link rel="alternate" hreflang="{{ tr.locale }}" href="{{ tr.permalink | safe }}">{% if tr.lang == "zh-cn" %}<link rel="alternate" hreflang="x-default" href="{{ tr.permalink | safe }}">{% endif %}{% endfor %}
   {{ page.internal_meta | safe }}

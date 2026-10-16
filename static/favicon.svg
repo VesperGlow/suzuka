@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <title>Suzuka · 百合</title>
+  <g transform="scale(8)" stroke="#365345" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 9.1C9 11.3 8.2 13.6 6.9 15.1" stroke-width=".75"/>
+    <path d="M8 13.2C5.7 13.6 4.5 12.2 4.2 10.9C6.1 10.6 7.6 11.6 8 13.2Z" fill="#365345" stroke="none"/>
+    <g fill="#F3F5F2" stroke-width=".5">
+      <path d="M8 9.2C5.8 6.7 6 3.6 8 1C10 3.6 10.2 6.7 8 9.2Z"/>
+      <path d="M8 9.2C4.7 9.7 2.4 7.1 2 4.2C5.1 4.5 7.4 6.5 8 9.2Z"/>
+      <path d="M8 9.2C11.3 9.7 13.6 7.1 14 4.2C10.9 4.5 8.6 6.5 8 9.2Z"/>
+      <path d="M8 8.8C5.9 7.8 3.6 8.8 3 10.9C5.2 11.6 7.1 10.8 8 8.8Z"/>
+      <path d="M8 8.8C10.1 7.8 12.4 8.8 13 10.9C10.8 11.6 8.9 10.8 8 8.8Z"/>
+    </g>
+    <path d="M8 9.1C7.6 8.4 7.1 7.6 6.8 6.9M8 9.1C8 8 8 6.8 8 5.9M8 9.1C8.4 8.3 9 7.6 9.4 6.9" stroke="#B49364" stroke-width=".45"/>
+  </g>
+</svg>

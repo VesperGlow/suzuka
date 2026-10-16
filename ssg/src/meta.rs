@@ -206,13 +206,15 @@ pub(crate) fn schema_blogposting_json(
     serde_json::to_string(&Value::Object(root)).unwrap_or_default()
 }
 
+const FAVICON_LINKS: &str = include_str!("../templates/partials/favicon.html");
+
 /// 别名/语言桩用的 meta-refresh 跳转页
 pub(crate) fn alias_html(locale: &str, target: &str, site_title: &str) -> String {
     let locale = escape_attr(locale);
     let target = escape_attr(target);
     let site_title = escape_text(site_title);
     format!(
-        "<!DOCTYPE html>\n<html lang=\"{locale}\">\n\t<head>\n\t\t<title>{site_title}</title>\n\t\t<link rel=\"canonical\" href=\"{target}\">\n\t\t<meta charset=\"utf-8\">\n\t\t<meta http-equiv=\"refresh\" content=\"0; url={target}\">\n\t</head>\n</html>\n"
+        "<!DOCTYPE html>\n<html lang=\"{locale}\">\n\t<head>\n\t\t<title>{site_title}</title>\n{FAVICON_LINKS}\t\t<link rel=\"canonical\" href=\"{target}\">\n\t\t<meta charset=\"utf-8\">\n\t\t<meta http-equiv=\"refresh\" content=\"0; url={target}\">\n\t</head>\n</html>\n"
     )
 }
 
