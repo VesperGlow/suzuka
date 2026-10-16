@@ -16,6 +16,8 @@ RUN mkdir -p ssg/src \
  && rm -rf ssg/src
 
 COPY ssg/src ./ssg/src
+# 跳转页在编译时嵌入公共图标标签，先提供这一个模板。
+COPY ssg/templates/partials/favicon.html ./ssg/templates/partials/favicon.html
 # touch 保证 mtime 晚于空壳构建，促使 cargo 重编本 crate（依赖仍走缓存）。
 RUN touch ssg/src/main.rs \
  && cargo build --release --locked --manifest-path ssg/Cargo.toml
