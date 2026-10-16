@@ -3,7 +3,6 @@ mod build;
 mod config;
 mod content;
 mod feeds;
-mod gotime;
 mod i18n;
 mod images;
 mod markdown;
@@ -20,7 +19,7 @@ fn main() -> Result<()> {
     match args.first().map(String::as_str) {
         Some("build") => {
             let source = flag_value(&args, "--source").unwrap_or_else(|| ".".into());
-            let dest = flag_value(&args, "--dest").unwrap_or_else(|| "public-ssg".into());
+            let dest = flag_value(&args, "--dest").unwrap_or_else(|| "public".into());
             let minify = args.iter().any(|a| a == "--minify");
             build::build(&PathBuf::from(source), &PathBuf::from(dest), minify)
         }

@@ -5,20 +5,13 @@
 {%- if ns.url == "" -%}{% set ns.url = site.other_lang_home_rel %}{% set ns.locale = site.other_lang_locale %}{%- endif -%}
 <header class="site-header">
   <div class="header-inner">
-    <button class="header-action sidebar-toggle" type="button" data-sidebar-toggle aria-controls="sidebar-nav" aria-expanded="false" aria-label="{{ t("sidebarToggle") }}" title="{{ t("sidebarToggle") }}">
-      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-        <path class="nav-menu-bar nav-menu-bar-top" d="M4 7h16"></path>
-        <path class="nav-menu-bar nav-menu-bar-mid" d="M4 12h16"></path>
-        <path class="nav-menu-bar nav-menu-bar-bottom" d="M4 17h16"></path>
-      </svg>
-    </button>
     <a class="site-brand" href="{{ site.home_rel | safe }}" aria-label="{{ t("brandHomeLabel", Title=site.title) }}">
-      <img class="brand-mark" src="/favicon/favicon-round.webp?v=2" alt="" width="30" height="30">
       <span class="brand-text">{{ site.title }}</span>
     </a>
+    {% include "partials/site-nav.html" %}
     <div class="header-tools" data-header-tools>
-      {% include "partials/header-search.html" -%}
-<div class="header-actions">
+      {% include "partials/header-search.html" %}
+      <div class="header-actions">
         <button class="header-action theme-toggle" type="button" data-theme-toggle data-label-light="{{ t("themeToLight") }}" data-label-dark="{{ t("themeToDark") }}" aria-label="{{ t("themeToDark") }}" title="{{ t("themeToDark") }}">
           <svg class="theme-toggle-moon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
             <path d="M20 15.2A8.4 8.4 0 0 1 8.8 4 8.4 8.4 0 1 0 20 15.2Z"></path>
@@ -44,6 +37,12 @@
             </g>
           </svg>
         </a>
+        <button class="header-action nav-toggle" type="button" data-nav-toggle data-label-open="{{ t("navToggle") }}" data-label-close="{{ t("navClose") }}" aria-controls="site-nav" aria-expanded="false" aria-label="{{ t("navToggle") }}" title="{{ t("navToggle") }}">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path class="nav-icon-menu" d="M4 7h16M4 12h16M4 17h16"></path>
+            <path class="nav-icon-close" d="m6 6 12 12M18 6 6 18"></path>
+          </svg>
+        </button>
       </div>
     </div>
   </div>

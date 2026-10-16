@@ -1,12 +1,12 @@
-# 构建合并镜像时无需进入上下文的内容。
+# 无需进入静态站镜像构建上下文的内容。
 .git
 .github
 .claude
 public/
-public-ssg/
-backend/data/
-backend/target/
-backend/tests/
 ssg/target/
 node_modules/
 *.log
+public-dev/
+.ssg-build-*/
+.ssg-previous-*/
+dist/

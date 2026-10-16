@@ -277,13 +277,13 @@ fn is_standalone_image(inner: &[Event]) -> bool {
 }
 
 /// srcset 的 sizes 兜底公式（给不支持 `auto` 关键字的浏览器）。按
-/// style.css 的布局推：≤768 正文两侧各 16px；769–1023 正文栏 760px 封顶、
-/// 视口不足时减两侧 padding；≥1024 取「侧栏收起」的最宽情形——
-/// 100vw − 2×48(shell padding) − 200(目录栏) − 40(栏间距) = 100vw − 336px。
+/// style.css 的布局推：≤768 正文两侧各 20px；更宽时两侧各 24px，
+/// 正文 820px 封顶。目录栏会缩小正文，按无目录且主侧栏收起的最宽情形兜底。
 /// 故意按收起侧栏算：sizes 偏大只是多下载一档，偏小会让收起后图片发糊。
 /// 懒加载的图在前面再加 `auto,`，支持的浏览器直接按真实布局宽度选档，
 /// 侧栏开合、有无目录栏都自动跟上。
-const SIZES_FALLBACK: &str = "(max-width: 768px) calc(100vw - 32px), (max-width: 1023px) min(calc(100vw - 48px), 760px), calc(100vw - 336px)";
+const SIZES_FALLBACK: &str =
+    "(max-width: 768px) calc(100vw - 40px), min(calc(100vw - 48px), 820px)";
 
 /// 从图片事件序列构造 figure HTML（复刻 render-image.html 的空白痕迹）。
 /// is_first：全文第一张图不懒加载、提升抓取优先级——它多半在首屏或紧邻
@@ -525,7 +525,7 @@ fn typograph_escape(text: &str, prev_char: &mut Option<char>, quotes: &mut Quote
             }
             '\'' => {
                 let after = run_end_after(&chars, i, ch);
-                // don't/it's/Suzuka's：缩略或所有格，前后都是字母数字，直接当撇号
+                // don't/it's/reader's：缩略或所有格，前后都是字母数字，直接当撇号
                 if prev_char.map(|p| p.is_alphanumeric()).unwrap_or(false)
                     && after.map(|a| a.is_alphabetic()).unwrap_or(false)
                 {

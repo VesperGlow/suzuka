@@ -1,15 +1,14 @@
 const uptime = document.querySelector("[data-site-uptime]");
 
 if (uptime) {
-  const mobileFormat = uptime.parentElement.dataset.uptimeMobileFormat;
-  const mobileViewport = window.matchMedia("(max-width: 768px)");
-  const startedAt = Date.parse("2026-06-18T00:00:00+08:00");
+  const startedAt = Date.parse(uptime.dataset.startedAt);
   const second = 1000;
   const minute = 60 * second;
   const hour = 60 * minute;
   const day = 24 * hour;
 
   function updateUptime() {
+    if (!Number.isFinite(startedAt)) return;
     let elapsed = Math.max(0, Date.now() - startedAt);
     const days = Math.floor(elapsed / day);
     elapsed %= day;
@@ -18,11 +17,7 @@ if (uptime) {
     const minutes = Math.floor(elapsed / minute);
     const seconds = Math.floor((elapsed % minute) / second);
 
-    const format = mobileFormat && mobileViewport.matches
-      ? mobileFormat
-      : uptime.dataset.uptimeFormat;
-
-    uptime.textContent = format
+    uptime.textContent = uptime.dataset.uptimeFormat
       .replace("{days}", days)
       .replace("{hours}", hours)
       .replace("{minutes}", minutes)

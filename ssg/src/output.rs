@@ -1,22 +1,91 @@
-//! 写盘与产物收尾：HTML 压缩、CSP 内联脚本哈希收集、输出路径冲突检测。
+//! 写盘与产物收尾：构建目录发布、HTML 压缩、输出路径冲突检测。
 //!
-//! MINIFY / CSP_HASHES / WRITTEN 用 thread_local 而不是穿透传参：
+//! MINIFY / WRITTEN 用 thread_local 而不是穿透传参：
 //! 单进程单次构建，没有并发需求（见 begin 的说明）。
 
 use anyhow::{Context, Result};
 use minijinja::value::Value;
 use minijinja::Environment;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+/// 构建成功后整目录发布，失败时保留上一份产物。
+pub struct BuildOutput {
+    staged: tempfile::TempDir,
+    dest: PathBuf,
+}
+
+impl BuildOutput {
+    pub fn new(source: &Path, dest: &Path) -> Result<Self> {
+        let source = source.canonicalize().context("解析站点源码目录失败")?;
+        let name = dest.file_name().context("输出目录必须有独立的目录名")?;
+        let parent = dest
+            .parent()
+            .filter(|p| !p.as_os_str().is_empty())
+            .unwrap_or(Path::new("."));
+        std::fs::create_dir_all(parent)?;
+        let parent = parent.canonicalize()?;
+        let dest = parent.join(name);
+        if source.starts_with(&dest)
+            || [
+                "content", "assets", "static", "i18n", "ssg", ".git", ".github", "scripts",
+                "deploy",
+            ]
+            .iter()
+            .any(|input| dest.starts_with(source.join(input)))
+        {
+            anyhow::bail!("输出目录不能覆盖源码或输入目录：{}", dest.display());
+        }
+        if let Ok(meta) = std::fs::symlink_metadata(&dest) {
+            if meta.file_type().is_symlink() || !meta.is_dir() {
+                anyhow::bail!("输出路径必须是普通目录：{}", dest.display());
+            }
+        }
+        let staged = tempfile::Builder::new()
+            .prefix(".ssg-build-")
+            .tempdir_in(&parent)?;
+        // TempDir 默认只有创建者能访问，发布目录需要允许静态服务器读取。
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(staged.path(), std::fs::Permissions::from_mode(0o755))?;
+        }
+        Ok(Self { staged, dest })
+    }
+
+    pub fn path(&self) -> &Path {
+        self.staged.path()
+    }
+
+    pub fn publish(self) -> Result<()> {
+        let backup = tempfile::Builder::new()
+            .prefix(".ssg-previous-")
+            .tempdir_in(self.dest.parent().expect("输出目录有父目录"))?;
+        let previous = backup.path().join("site");
+        let had_previous = self.dest.exists();
+        if had_previous {
+            std::fs::rename(&self.dest, &previous).context("暂存旧产物失败")?;
+        }
+        if let Err(err) = std::fs::rename(self.path(), &self.dest) {
+            if had_previous {
+                // 恢复失败时必须保留备份目录，不能让 TempDir 自动删掉上一份产物。
+                if let Err(restore) = std::fs::rename(&previous, &self.dest) {
+                    let saved = backup.keep();
+                    anyhow::bail!(
+                        "发布失败：{err}；恢复失败：{restore}；旧产物保存在 {}",
+                        saved.display()
+                    );
+                }
+            }
+            return Err(err).context("发布产物失败，已保留旧产物");
+        }
+        Ok(())
+    }
+}
 
 // 单进程单次构建，没有并发需求：用 thread_local 存 minify 开关，
 // 免得给所有 write_file / render_to 调用点都加一个参数
 thread_local! {
     static MINIFY: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
-    // 全站内联 <script> 的 sha256（写盘时顺手收集），构建收尾写进
-    // csp-hashes.txt，backend 启动时读它拼 Content-Security-Policy。
-    // BTreeSet：去重 + 排序，保证产物字节稳定。
-    static CSP_HASHES: std::cell::RefCell<std::collections::BTreeSet<String>> =
-        const { std::cell::RefCell::new(std::collections::BTreeSet::new()) };
     // 本次构建已写出的渲染产物路径。同一路径写两次一定是配置错误
     // （重复 slug、alias 撞真实页面、term 撞文章），谁后写谁赢会静默
     // 丢页面，必须当场报错。资源与图片走 assets.rs / fs::copy，文件名
@@ -25,24 +94,10 @@ thread_local! {
         const { std::cell::RefCell::new(std::collections::BTreeSet::new()) };
 }
 
-/// 一次构建的起点：设置 minify 开关，清空哈希与已写路径集合。
+/// 一次构建的起点：设置 minify 开关，清空已写路径集合。
 pub fn begin(minify: bool) {
     MINIFY.with(|m| m.set(minify));
-    CSP_HASHES.with(|h| h.borrow_mut().clear());
     WRITTEN.with(|w| w.borrow_mut().clear());
-}
-
-/// 内联脚本哈希清单（每行一个 sha256-...），构建收尾写进 csp-hashes.txt。
-pub fn csp_manifest() -> String {
-    CSP_HASHES.with(|h| {
-        let hashes = h.borrow();
-        let mut out = String::new();
-        for hash in hashes.iter() {
-            out.push_str(hash);
-            out.push('\n');
-        }
-        out
-    })
 }
 
 pub fn render_to(
@@ -78,53 +133,7 @@ pub fn write_file(dest: &Path, rel: &str, content: &str) -> Result<()> {
     } else {
         std::borrow::Cow::Borrowed(content.as_bytes())
     };
-    // CSP 哈希对最终落盘字节算（minify 之后），跟浏览器看到的完全一致
-    if rel.ends_with(".html") {
-        CSP_HASHES.with(|h| collect_inline_script_hashes(&bytes, &mut h.borrow_mut()));
-    }
     std::fs::write(&path, bytes).with_context(|| format!("写入 {} 失败", path.display()))
-}
-
-/// 收集 HTML 里可执行内联 <script> 的 sha256（base64），给 CSP script-src
-/// 用。跳过带 src 的外链脚本；也跳过 application/ld+json——数据块不参与
-/// 执行，不受 script-src 约束，而且每页内容都不同，收进去只会把头撑爆。
-fn collect_inline_script_hashes(html: &[u8], out: &mut std::collections::BTreeSet<String>) {
-    use sha2::{Digest, Sha256};
-    let mut i = 0;
-    while let Some(pos) = find_bytes(&html[i..], b"<script").map(|p| i + p) {
-        // 排除 <scriptxxx> 这类假匹配：标签名后必须是空白或 '>'
-        let after = html.get(pos + b"<script".len()).copied();
-        let Some(tag_close) = find_bytes(&html[pos..], b">").map(|p| pos + p) else {
-            return;
-        };
-        let content_start = tag_close + 1;
-        let Some(content_end) =
-            find_bytes(&html[content_start..], b"</script").map(|p| content_start + p)
-        else {
-            return;
-        };
-        i = content_end + b"</script".len();
-        if !matches!(after, Some(b'>') | Some(b' ') | Some(b'\t') | Some(b'\n')) {
-            continue;
-        }
-        let tag = &html[pos..content_start];
-        if find_bytes(tag, b" src").is_some() || find_bytes(tag, b"ld+json").is_some() {
-            continue;
-        }
-        let body = &html[content_start..content_end];
-        if body.iter().all(|b| b.is_ascii_whitespace()) {
-            continue;
-        }
-        use base64::Engine;
-        let hash = base64::engine::general_purpose::STANDARD.encode(Sha256::digest(body));
-        out.insert(format!("sha256-{hash}"));
-    }
-}
-
-fn find_bytes(haystack: &[u8], needle: &[u8]) -> Option<usize> {
-    haystack
-        .windows(needle.len())
-        .position(|window| window == needle)
 }
 
 /// `--minify`：压缩 HTML，顺带压缩 `<style>`/`style=` 里的 CSS。
@@ -140,4 +149,62 @@ fn minify_html_doc(html: &str) -> Vec<u8> {
     // catch_unwind 兜底，panic 就整页退回不压缩，不让一次异常拖垮整个构建
     let bytes = html.as_bytes();
     std::panic::catch_unwind(|| minify_html::minify(bytes, &cfg)).unwrap_or_else(|_| bytes.to_vec())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn publishing_removes_stale_files_and_aborted_build_keeps_previous_output() {
+        let root = tempfile::tempdir().unwrap();
+        let source = root.path().join("source");
+        std::fs::create_dir(&source).unwrap();
+        let dest = source.join("public");
+        std::fs::create_dir(&dest).unwrap();
+        std::fs::write(dest.join("obsolete.html"), "old").unwrap();
+        {
+            let aborted = BuildOutput::new(&source, &dest).unwrap();
+            std::fs::write(aborted.path().join("partial.html"), "partial").unwrap();
+        }
+        assert!(dest.join("obsolete.html").exists());
+        assert!(!dest.join("partial.html").exists());
+
+        let output = BuildOutput::new(&source, &dest).unwrap();
+        std::fs::write(output.path().join("index.html"), "new").unwrap();
+        output.publish().unwrap();
+        assert!(!dest.join("obsolete.html").exists());
+        assert_eq!(
+            std::fs::read_to_string(dest.join("index.html")).unwrap(),
+            "new"
+        );
+    }
+
+    #[test]
+    fn refuses_to_replace_source_or_its_inputs() {
+        let root = tempfile::tempdir().unwrap();
+        let source = root.path().join("source");
+        std::fs::create_dir(&source).unwrap();
+        for dest in [
+            source.clone(),
+            root.path().to_path_buf(),
+            source.join("content"),
+            source.join("ssg/output"),
+        ] {
+            assert!(
+                BuildOutput::new(&source, &dest).is_err(),
+                "{}",
+                dest.display()
+            );
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn refuses_symlink_output() {
+        let root = tempfile::tempdir().unwrap();
+        let dest = root.path().join("public");
+        std::os::unix::fs::symlink(root.path(), &dest).unwrap();
+        assert!(BuildOutput::new(root.path(), &dest).is_err());
+    }
 }

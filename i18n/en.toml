@@ -1,25 +1,5 @@
 [skipToContent]
 other = "Skip to content"
-[moeICP]
-other = "Moe ICP No. 20266779"
-[homeEyebrow]
-other = "Welcome"
-[homeHeading]
-other = "Suzuka's<br><em>Garden.</em>"
-[vnAdvQuote]
-other = "Keeping beloved stories, in a pale blue garden."
-[aboutSuzuka]
-other = "About Suzuka"
-[vnMenuLabel]
-other = "Title menu"
-[vnMenuContinue]
-other = "Latest Post"
-[vnMenuArchive]
-other = "Post Archive"
-[vnMenuGuestbook]
-other = "Guestbook"
-[vnSpeaker]
-other = "Suzuka"
 [viewAllPosts]
 other = "View all posts"
 [collectionEyebrow]
@@ -31,11 +11,11 @@ other = "Page"
 [aboutEyebrow]
 other = "About"
 [allPostsEyebrow]
-other = "Load"
+other = "Archive"
 [searchArticles]
 other = "Search posts"
 [headerSearchPlaceholder]
-other = "Search the garden..."
+other = "Search posts..."
 [clear]
 other = "Clear"
 [clearSearch]
@@ -56,8 +36,6 @@ other = "{{ .Count }} results"
 other = "Load more"
 [empty]
 other = "Nothing here yet."
-[filterEmpty]
-other = "No posts match this filter."
 [archiveEmpty]
 other = "There are no posts to archive yet."
 [all]
@@ -88,12 +66,6 @@ other = "Post"
 other = "{{ .Count }} min read"
 [spoilerWarning]
 other = "Spoiler warning:"
-[recentPosts]
-other = "Recent posts"
-[recentHeading]
-other = "Recently written"
-[viewAll]
-other = "View all"
 [tableOfContents]
 other = "Table of contents"
 [sidebarToc]
@@ -126,8 +98,6 @@ other = "Page {{ .Number }}"
 other = "Go to page {{ .Number }}"
 [mainNavigation]
 other = "Main navigation"
-[menuLabel]
-other = "Menu"
 [brandHomeLabel]
 other = "{{ .Title }}, return home"
 [searchLabel]
@@ -140,8 +110,6 @@ other = "Switch to dark mode"
 other = "Back to top"
 [languageSwitcher]
 other = "切换到中文"
-[switchLanguage]
-other = "中"
 [imagePreview]
 other = "Image preview"
 [previousImage]
@@ -159,19 +127,13 @@ other = "Reset image zoom, currently {{ .Scale }}x"
 [zoomIn]
 other = "Zoom in"
 [uptimeLabel]
-other = "Site uptime"
+other = "Time writing"
 [uptimeFallback]
-other = "Suzuka here"
+other = "Since the first post"
 [uptimeFormat]
-other = "Suzuka here {days}d {hours}h {minutes}m {seconds}s"
-[uptimeMobileFormat]
-other = "Suzuka here {days}d {hours}h {minutes}m {seconds}s"
-[aboutImageAlt]
-other = "Suzuka"
+other = "Writing for {days}d {hours}h {minutes}m {seconds}s"
 [termsDescription]
 other = "Follow the keywords to notes scattered across different days."
-[archiveListLabel]
-other = "All posts"
 [archiveViewLabel]
 other = "Archive view"
 [archiveViewDescriptionBefore]
@@ -179,99 +141,23 @@ other = "Browse every note in"
 [archiveViewDescriptionAfter]
 other = "view."
 [archiveCardView]
-other = "Cards"
+other = "Illustrated"
 [archiveTimelineView]
 other = "Timeline"
 [archiveCardListLabel]
-other = "Post cards"
+other = "Illustrated archive"
 [archiveTimelineListLabel]
 other = "Post timeline"
 [archiveFilterEmpty]
 other = "There are no matching notes here yet."
 [notFoundTitle]
-other = "Lost in the pale blue garden"
+other = "Page not found"
 [notFoundDescription]
-other = "This path does not lead to a page. Follow the blue light back."
+other = "There is no page at this address. Return home to continue reading."
 [backHome]
 other = "Back home"
 [dateFormat]
-other = "January 2, 2006"
-
-[guestbookTitle]
-other = "Guestbook"
-[guestbookEyebrow]
-other = "Extra"
-[guestbookFormLabel]
-other = "Guestbook form"
-[guestbookCommentingOn]
-other = "Commenting on:"
-[guestbookCommentOn]
-other = "Comment on:"
-[guestbookReferenceTitle]
-other = "“{{ .Title }}”"
-[guestbookClearPost]
-other = "Clear"
-[guestbookClearPostLabel]
-other = "Stop commenting on this post"
-[guestbookPickPost]
-other = "Pick a post to talk about"
-[guestbookPickPostLabel]
-other = "Choose a post to comment on"
-[guestbookSearchPosts]
-other = "Search post titles"
-[guestbookSearchPostsPlaceholder]
-other = "Type a keyword, or choose from recent posts"
-[guestbookPostsEmpty]
-other = "No related posts found."
-[guestbookPostsLoading]
-other = "Loading posts…"
-[guestbookPostsUnavailable]
-other = "The post list is temporarily unavailable. Please try again later."
-[guestbookName]
-other = "Name"
-[guestbookOptionalContact]
-other = "Email & website (optional)"
-[guestbookEmail]
-other = "Email (private)"
-[guestbookWebsite]
-other = "Website (public)"
-[guestbookMessage]
-other = "Message"
-[guestbookMessagePlaceholder]
-other = "Leave a small trace…"
-[guestbookSubmit]
-other = "Leave a message"
-[guestbookSubmitting]
-other = "Submitting…"
-[guestbookSubmitted]
-other = "Your message has been left."
-[guestbookSubmitFailed]
-other = "Submission failed. Please try again later."
-[guestbookMessagesHeading]
-other = "Messages"
-[guestbookMessagesLoading]
-other = "Loading messages…"
-[guestbookMessagesEmpty]
-other = "No messages yet."
-[guestbookMessagesUnavailable]
-other = "Messages are temporarily unavailable. Please try again later."
-[guestbookLoadMore]
-other = "Load more"
-[guestbookMessageCount]
-one = "{count} message"
-other = "{count} messages"
-[guestbookGuest]
-other = "Guest"
-[guestbookNoScript]
-other = "Enable JavaScript to view and leave messages."
-[postDiscussionTitle]
-other = "Want to say something?"
-[postDiscussionDescription]
-other = "Share your thoughts, additions, or a different perspective."
-[viewCount]
-other = "{count} reads"
-[reactionLabel]
-other = "Like"
+other = "%B %-d, %Y"
 [subscribeTitle]
 other = "Subscribe"
 [subscribeDescription]
@@ -281,36 +167,11 @@ other = "RSS"
 [subscribeJSONFeed]
 other = "JSON Feed"
 [statsLabel]
-other = "Garden stats"
+other = "Blog stats"
 [statsPosts]
 other = "Posts"
 [statsWords]
 other = "Words"
-[statsViews]
-other = "Reads"
-[statsReactions]
-other = "Likes"
-
-[sidebarTitle]
-other = "Contents"
-[sidebarHome]
-other = "Home"
-[sidebarArchives]
-other = "All posts"
-[sidebarTags]
-other = "Tag index"
-[sidebarTimelineHeading]
-other = "Posts"
-[sidebarToggle]
-other = "Toggle contents menu"
-[sidebarCollapse]
-other = "Collapse sidebar"
-[sidebarExpand]
-other = "Expand sidebar"
-[homeWikiEyebrow]
-other = "Wiki"
-[homeIntro]
-other = "Thoughts on visual novels, passing reflections, and fragments of everyday life."
 [homeRecentHeading]
 other = "Recently updated"
 [homeRecentViewAll]
@@ -319,3 +180,19 @@ other = "View all posts"
 other = "More"
 [homeLastUpdated]
 other = "Last updated {{ .Date }}"
+[readingProgress]
+other = "Reading progress {{ .Count }}%"
+[navHome]
+other = "Home"
+[navArchives]
+other = "Archive"
+[navCategories]
+other = "Categories"
+[navTags]
+other = "Tags"
+[navAbout]
+other = "About"
+[navClose]
+other = "Close navigation"
+[navToggle]
+other = "Open navigation menu"

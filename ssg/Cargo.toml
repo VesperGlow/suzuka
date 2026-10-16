@@ -2,23 +2,23 @@
 name = "ssg"
 version = "0.1.0"
 edition = "2021"
-description = "suzuka-chan.moe 专用静态站点生成器"
+description = "文字庭院 · 静态博客构建器"
 
 [dependencies]
 anyhow = "1"
-base64 = "0.22"
-chrono = "0.4"
+chrono = { version = "0.4", default-features = false, features = ["now", "std"] }
 fast_image_resize = "5"
 imagesize = "0.13"
-lightningcss = "1.0.0-alpha.71"
+lightningcss = { version = "1.0.0-alpha.71", default-features = false }
 minify-html = "0.18.1"
-minijinja = { version = "2", features = ["loader", "json"] }
+minijinja = { version = "2", features = ["loader"] }
 percent-encoding = "2"
 pulldown-cmark = { version = "0.12", default-features = false, features = ["html"] }
 serde = { version = "1", features = ["derive"] }
-serde_json = { version = "1", features = ["preserve_order"] }
+serde_json = "1"
 serde_yaml = "0.9"
 sha2 = "0.10"
+tempfile = "3"
 toml = "0.8"
 walkdir = "2"
 # default 会拖进整个 image crate（只为 DynamicImage 互转），这里用不到

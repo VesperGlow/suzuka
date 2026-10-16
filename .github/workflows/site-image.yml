@@ -1,6 +1,6 @@
-name: Build site image
+name: Build static site and image
 
-# 站点内容或后端任意变更都重建合并镜像（前端 + 后端打进一个容器）；也可手动触发。
+# 构建并检查纯静态产物，同时提供可选的 Nginx 静态站镜像。
 on:
   push:
     branches: [main]
@@ -14,34 +14,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # 先跑单元 + 集成测试；bundled SQLite 由 cc 随构建编译，Ubuntu 自带 gcc 即可。
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@1.96.1
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: backend
-
-      - name: Test
-        working-directory: backend
-        run: cargo test --locked
-
-  # ssg（自研静态站点生成器）编译 + 全站构建冒烟：内容或模板出错时在这里
-  # 就阻断，而不是等到 build-push 的镜像构建才失败（信号更早、日志更直读）。
-  # 产物直接进 Containerfile 镜像构建，因此和 backend test 一样是 build-push
-  # 的前置依赖。
   ssg-build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Check source references
+        run: python3 scripts/check-source.py
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@1.96.1
@@ -51,12 +31,34 @@ jobs:
         with:
           workspaces: ssg
 
+      - name: Test generator
+        working-directory: ssg
+        run: cargo test --locked
+
       - name: Build
         working-directory: ssg
         run: cargo build --release --locked
 
       - name: Build site (smoke)
         run: ./ssg/target/release/ssg build --source . --dest /tmp/site-out --minify
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build search index
+        run: npx -y pagefind@1.3.0 --site /tmp/site-out
+
+      - name: Check static output
+        run: python3 scripts/check-static.py /tmp/site-out
+
+      - name: Upload static site
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-site
+          path: /tmp/site-out
+          include-hidden-files: true
 
       # 死链检查（--offline 只查站内）：双语站互链多，改 slug / 挪文章时烂掉的
       # 内链靠人眼很难发现。外链不查——外网抖动不应阻断构建；带锚点的站内
@@ -67,7 +69,7 @@ jobs:
           args: --offline --root-dir /tmp/site-out --no-progress "/tmp/site-out/**/*.html"
           fail: true
 
-  # rustfmt 纯机械格式检查、backend 和 ssg 都已清干净，两边一起提升为阻断项。
+  # 构建器的格式和 lint 检查。
   fmt:
     runs-on: ubuntu-latest
     steps:
@@ -79,15 +81,10 @@ jobs:
         with:
           components: rustfmt
 
-      - name: Format (backend)
-        working-directory: backend
-        run: cargo fmt --check
-
       - name: Format (ssg)
         working-directory: ssg
         run: cargo fmt --check
 
-  # clippy：backend 和 ssg 都已清干净，跟 fmt 一样两边一起提升为阻断项。
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -102,20 +99,14 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: |
-            backend
-            ssg
-
-      - name: Clippy (backend)
-        working-directory: backend
-        run: cargo clippy --all-targets --locked -- -D warnings
+          workspaces: ssg
 
       - name: Clippy (ssg)
         working-directory: ssg
         run: cargo clippy --all-targets --locked -- -D warnings
 
   build-push:
-    needs: [test, ssg-build, fmt, lint]
+    needs: [ssg-build, fmt, lint]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -135,7 +126,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 镜像名取仓库全名（metadata-action 会自动转小写）：ghcr.io/<owner>/suzuka。
+      # 镜像名取仓库全名（metadata-action 会自动转小写）：ghcr.io/<owner>/<repository>。
       - name: Image metadata
         id: meta
         uses: docker/metadata-action@v6

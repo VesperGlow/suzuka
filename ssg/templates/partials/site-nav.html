@@ -1,0 +1,9 @@
+<nav class="site-nav" id="site-nav" data-site-nav aria-label="{{ t("mainNavigation") }}">
+  <ul class="nav-links">
+    <li><a class="nav-link" href="{{ site.home_rel | safe }}"{% if page.is_home %} aria-current="page"{% endif %}>{{ t("navHome") }}</a></li>
+    <li><a class="nav-link" href="{{ site.home_rel | safe }}archives/"{% if page.section in ["archives", "posts"] %} aria-current="{% if page.section == "archives" %}page{% else %}true{% endif %}"{% endif %}>{{ t("navArchives") }}</a></li>
+    <li><a class="nav-link" href="{{ site.home_rel | safe }}categories/"{% if page.section == "category" %} aria-current="{% if page.rel_permalink == site.home_rel ~ "categories/" %}page{% else %}true{% endif %}"{% endif %}>{{ t("navCategories") }}</a></li>
+    <li><a class="nav-link" href="{{ site.home_rel | safe }}tags/"{% if page.section == "tag" %} aria-current="{% if page.rel_permalink == site.home_rel ~ "tags/" %}page{% else %}true{% endif %}"{% endif %}>{{ t("navTags") }}</a></li>
+    {% if site.about_rel %}<li><a class="nav-link" href="{{ site.about_rel | safe }}"{% if page.rel_permalink == site.about_rel %} aria-current="page"{% endif %}>{{ t("navAbout") }}</a></li>{% endif %}
+  </ul>
+</nav>

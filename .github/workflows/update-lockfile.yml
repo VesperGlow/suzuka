@@ -1,11 +1,4 @@
-# 本地开发机没有 Rust 工具链（构建全靠容器/CI），两类"机械修复"没法在本地做：
-#   1. 改 Cargo.toml 加依赖后更新 Cargo.lock（用 `cargo metadata` 做最小化解析，
-#      只补齐变更涉及的条目，不像 `cargo update` 那样顺手升级所有既有依赖）；
-#   2. rustfmt 格式化（fmt 是 CI 阻断项，本地写的代码格式没法预检）。
-# push 到 main 时自动跑这两步并把结果提交回来（没东西可修就静默结束）；
-# 有提交时自动用 API 触发一次 site-image 构建（GITHUB_TOKEN 的 push 不会
-# 自动触发其他 workflow——所以本 workflow 自己的提交不会递归触发自己——
-# 但显式的 workflow_dispatch API 调用可以触发构建）。也可手动触发。
+# 按需解析构建器依赖并格式化，存在变更时提交修复并重新触发站点构建。
 name: Update lockfiles & rustfmt
 
 on:
@@ -34,17 +27,9 @@ jobs:
         with:
           components: rustfmt
 
-      - name: Resolve dependencies (backend)
-        working-directory: backend
-        run: cargo metadata --format-version 1 > /dev/null
-
       - name: Resolve dependencies (ssg)
         working-directory: ssg
         run: cargo metadata --format-version 1 > /dev/null
-
-      - name: Format (backend)
-        working-directory: backend
-        run: cargo fmt
 
       - name: Format (ssg)
         working-directory: ssg
@@ -55,7 +40,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -u backend ssg
+          git add -u ssg
           if git diff --cached --quiet; then
             echo "lockfiles and formatting already up to date"
             echo "pushed=false" >> "$GITHUB_OUTPUT"

@@ -85,7 +85,7 @@
     }
   };
 
-  window.suzukaLoadPagefind = () => {
+  window.loadSiteSearch = () => {
     if (!pagefindPromise) {
       pagefindPromise = loadSearch().catch((error) => {
         pagefindPromise = undefined;
@@ -97,7 +97,7 @@
   };
 
   const warmup = () => {
-    window.suzukaLoadPagefind().catch((error) => {
+    window.loadSiteSearch().catch((error) => {
       console.warn("Pagefind warmup failed:", error);
     });
   };

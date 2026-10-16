@@ -3,7 +3,6 @@
 use crate::build::LangData;
 use crate::config::SiteConfig;
 use crate::content::{Content, PageKind};
-use crate::gotime;
 use crate::meta::alias_html;
 use crate::output::write_file;
 use anyhow::Result;
@@ -35,9 +34,7 @@ pub(crate) fn write_sitemaps(
         entries.push(SitemapEntry {
             match_key: strip(&home_rel),
             rel: home_rel,
-            lastmod: data
-                .newest_date
-                .map(|d| gotime::format(&d, gotime::RFC3339)),
+            lastmod: data.newest_date.map(|d| d.to_rfc3339()),
         });
 
         // 文章（frontmatter 声明 sitemap.disable 的除外）
@@ -45,11 +42,11 @@ pub(crate) fn write_sitemaps(
             entries.push(SitemapEntry {
                 match_key: strip(&card.rel),
                 rel: card.rel.clone(),
-                lastmod: Some(gotime::format(&card.date, gotime::RFC3339)),
+                lastmod: Some(card.date.to_rfc3339()),
             });
         }
 
-        // about / guestbook
+        // 独立页面
         for raw_page in content
             .pages
             .iter()
@@ -61,7 +58,7 @@ pub(crate) fn write_sitemaps(
             let lastmod = if raw_page.date.timestamp() == 0 {
                 None
             } else {
-                Some(gotime::format(&raw_page.date, gotime::RFC3339))
+                Some(raw_page.date.to_rfc3339())
             };
             entries.push(SitemapEntry {
                 match_key: strip(&url),
@@ -90,9 +87,7 @@ pub(crate) fn write_sitemaps(
             entries.push(SitemapEntry {
                 match_key: strip(&list_rel),
                 rel: list_rel,
-                lastmod: data
-                    .newest_date
-                    .map(|d| gotime::format(&d, gotime::RFC3339)),
+                lastmod: data.newest_date.map(|d| d.to_rfc3339()),
             });
             for term in terms.iter() {
                 let lastmod = term
@@ -100,7 +95,7 @@ pub(crate) fn write_sitemaps(
                     .iter()
                     .map(|&i| data.cards[i].date)
                     .max()
-                    .map(|d| gotime::format(&d, gotime::RFC3339));
+                    .map(|d| d.to_rfc3339());
                 entries.push(SitemapEntry {
                     match_key: strip(&term.rel),
                     rel: term.rel.clone(),
@@ -142,7 +137,7 @@ pub(crate) fn write_sitemaps(
             write_file(
                 dest,
                 &format!("{}/index.html", lang.code),
-                &alias_html(&lang.locale, &home_permalink),
+                &alias_html(&lang.locale, &home_permalink, &config.title),
             )?;
         }
         let lang_newest = entries.iter().filter_map(|e| e.lastmod.clone()).max();

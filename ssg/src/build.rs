@@ -3,10 +3,8 @@
 use crate::config::{Language, SiteConfig};
 use crate::content::{self, Content, PageKind, PostBundle, RawPage};
 use crate::feeds::{
-    card_rss_items, channel_title, feed_json, guestbook_posts_json, index_json, render_rss,
-    GuestbookItem, OwnedRssItem, RssChannel, RssItem,
+    card_rss_items, channel_title, feed_json, index_json, render_rss, RssChannel, RssItem,
 };
-use crate::gotime;
 use crate::i18n::I18n;
 use crate::markdown;
 use crate::meta::{
@@ -52,14 +50,7 @@ struct TranslationRef {
     rel: String,
 }
 
-#[derive(Serialize, Clone)]
-struct YearGroup {
-    year: String,
-    posts: Vec<PostRef>,
-}
-
-/// archives 页时间线视图专用（跟 YearGroup 分开：那个是侧栏的精简小组件，
-/// 这个要给 archive-timeline-item 用，需要完整的 PostCard 数据）
+/// archives 页时间线视图，按年份组织完整文章条目。
 #[derive(Serialize)]
 struct YearCards<'a> {
     year: String,
@@ -78,15 +69,12 @@ struct SiteCtx {
     title: String,
     lang: String,
     locale: String,
-    description: String,
-    base_url: String,
     home_rel: String,
-    author: String,
+    first_post_date: String,
     current_year: i32,
     rss_rel: String,
     jsonfeed_rel: String,
     about_rel: String,
-    guestbook_rel: String,
     /// 语言切换按钮的兜底目标：当前页在另一语言没有对应翻译时（比如没有
     /// 对应内容的 taxonomy term 页），退回那个语言的首页——跟
     /// `page.all_translations`（决定 `<head>` 里真正的 hreflang alternate，
@@ -97,7 +85,6 @@ struct SiteCtx {
 
 #[derive(Serialize, Default, Clone)]
 struct PageCtx {
-    kind: String,
     is_home: bool,
     is_post: bool,
     layout: String,
@@ -107,10 +94,6 @@ struct PageCtx {
     description: String,
     rel_permalink: String,
     permalink: String,
-    /// 阅读数/点赞与留言板引用用的规范文章路径（恒为默认语言形态
-    /// `/posts/<slug>/`，不带语言前缀）：backend 只认这一形态，且中英文
-    /// 版本共享同一份计数。仅文章页非空。
-    counter_path: String,
     /// `<link rel="canonical">` 目标：默认等于 permalink，front matter 声明
     /// 了 redirectTo 时改成那个绝对地址（页面本身仍然照常渲染整页内容）
     canonical: String,
@@ -118,7 +101,7 @@ struct PageCtx {
     /// internal_meta 一样按 `| safe` 整块插入；没有 redirectTo 就是空串）
     redirect_block: String,
     /// 这个页面自己的 RSS 输出地址（home / term 页 / posts 列表页才有，
-    /// 单篇文章、about/guestbook、archives、404 没有）
+    /// 单篇文章、独立页面、archives、404 没有）
     rss_rel: Option<String>,
     date_iso: String,
     date_display: String,
@@ -152,8 +135,7 @@ pub(crate) struct PostCard {
     pub(crate) word_count: usize,
     pub(crate) image_count: usize,
     pub(crate) summary: String,
-    /// data-categories / data-tags 属性用的原始大小写 JSON 数组
-    pub(crate) categories_raw: Vec<String>,
+    /// 搜索索引用的原始标签
     pub(crate) tags_raw: Vec<String>,
     /// 上面两个数组序列化成 JSON 并做好 HTML 属性转义，模板里直接
     /// `| safe` 插进 data-categories/data-tags；不能用 minijinja 的
@@ -171,7 +153,7 @@ pub(crate) struct PostCard {
     /// JSON Feed date_published/date_modified 用的 RFC3339（UTC 记 Z）
     pub(crate) date_rfc3339: String,
     pub(crate) image: Option<String>,
-    /// 排序/跟 about、guestbook 混排用；不需要序列化给模板
+    /// 排序/跟独立页面混排用；不需要序列化给模板
     #[serde(skip)]
     pub(crate) date: DateTime<FixedOffset>,
     /// front matter `sitemap.disable`：sitemap.xml 构建时过滤用，不需要序列化给模板
@@ -183,7 +165,6 @@ pub(crate) struct PostCard {
 /// LangData.cards 里的下标，避免每个 term 抱一份含全文 HTML 的卡片副本。
 #[derive(Serialize, Clone)]
 pub(crate) struct TermAgg {
-    pub(crate) raw: String,
     pub(crate) title: String,
     pub(crate) slug: String,
     pub(crate) rel: String,
@@ -200,7 +181,6 @@ fn term_agg<'a>(terms: &'a mut Vec<TermAgg>, raw: &str, tref: &TermRef) -> &'a m
         &mut terms[pos]
     } else {
         terms.push(TermAgg {
-            raw: raw.to_string(),
             title: tref.title.clone(),
             slug: content::urlize(raw),
             rel: tref.rel.clone(),
@@ -228,7 +208,6 @@ fn term_cards<'a>(cards: &'a [PostCard], term: &TermAgg) -> Vec<&'a PostCard> {
 pub struct LangData {
     posts: Vec<PageCtx>,
     post_refs: Vec<PostRef>,
-    timeline: Vec<YearGroup>,
     pub(crate) newest_date: Option<DateTime<FixedOffset>>,
     total_words: usize,
     pub(crate) categories: Vec<TermAgg>,
@@ -237,6 +216,15 @@ pub struct LangData {
 }
 
 pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
+    // 在临时目录完成整站构建，成功后替换旧产物；删除的页面和资源不会残留。
+    let output = output::BuildOutput::new(source, dest)?;
+    build_site(source, output.path(), minify)?;
+    output.publish()?;
+    println!("构建完成 → {}", dest.display());
+    Ok(())
+}
+
+fn build_site(source: &Path, dest: &Path, minify: bool) -> Result<()> {
     output::begin(minify);
     let config = SiteConfig::load(source)?;
     let lang_codes: Vec<String> = config.languages.iter().map(|l| l.code.clone()).collect();
@@ -282,10 +270,6 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
         ),
     )?;
 
-    // 内联脚本哈希清单：backend 用它组装 CSP 的 script-src，散列公开无妨。
-    // 放正式产物里而不是旁路文件，保证「部署了哪份站点就用哪份清单」。
-    write_file(dest, "csp-hashes.txt", &output::csp_manifest())?;
-
     // 文案完整性检查：渲染过程中任何一次 t() 打空都算构建失败，
     // 不让「构建成功但线上文案空白」这种静默错误溜出去。
     let missing = i18n.missing_keys();
@@ -293,7 +277,6 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<()> {
         anyhow::bail!("i18n 缺少文案 key：{}", missing.join("、"));
     }
 
-    println!("构建完成 → {}", dest.display());
     Ok(())
 }
 
@@ -350,13 +333,12 @@ fn template_env(
             format!("/{path}")
         })
     });
-    env.add_filter("urlquery", |s: String| content::query_escape(&s));
     env
 }
 
 fn site_ctx(config: &SiteConfig, lang: &Language, content: &Content) -> SiteCtx {
     let prefix = lang.url_prefix(&config.default_lang);
-    // 每种语言的独立页 URL（sidebar / guestbook 链接用）：front matter 的
+    // 每种语言的独立页 URL（sidebar 链接用）：front matter 的
     // url 是最终绝对路径本身（英文页已经自带 /en 前缀）
     let special_rel = |key: &str| -> String {
         content
@@ -368,18 +350,22 @@ fn site_ctx(config: &SiteConfig, lang: &Language, content: &Content) -> SiteCtx 
     };
     let other = config.languages.iter().find(|l| l.code != lang.code);
     SiteCtx {
-        title: lang.title.clone(),
+        title: config.title.clone(),
         lang: lang.code.clone(),
         locale: lang.locale.clone(),
-        description: lang.description.clone(),
-        base_url: config.base_url.clone(),
         home_rel: lang.home_rel(&config.default_lang),
-        author: config.author.clone(),
+        first_post_date: content
+            .posts
+            .iter()
+            .flat_map(|post| &post.versions)
+            .map(|page| page.date)
+            .min()
+            .map(|date| date.to_rfc3339())
+            .unwrap_or_default(),
         current_year: chrono::Utc::now().year(),
         rss_rel: format!("{prefix}/feed.xml"),
         jsonfeed_rel: format!("{prefix}/feed.json"),
         about_rel: special_rel("about"),
-        guestbook_rel: special_rel("guestbook"),
         other_lang_home_rel: other
             .map(|l| l.home_rel(&config.default_lang))
             .unwrap_or_default(),
@@ -409,7 +395,7 @@ impl LangRender<'_> {
             &home,
             minijinja::context! {},
         )?;
-        // about/guestbook 的 markdown 只渲染一次，页面本体与首页 RSS 共用
+        // 独立页面单独渲染；订阅只收录文章。
         let page_renders: Vec<(&RawPage, markdown::Rendered)> = self
             .content
             .pages
@@ -417,7 +403,7 @@ impl LangRender<'_> {
             .filter(|p| p.lang == self.lang.code && p.kind == PageKind::Page)
             .map(|p| (p, markdown::render(&p.body, &[], "")))
             .collect();
-        self.home_feeds(&home, &page_renders)?;
+        self.home_feeds(&home)?;
         self.notfound()?;
         self.static_pages(&page_renders)?;
         self.archives()?;
@@ -427,7 +413,7 @@ impl LangRender<'_> {
         self.post_aliases()
     }
 
-    /// 渲染一个页面模板：base 上下文（lang/site/page/侧栏数据）+ 模板特有的 extra
+    /// 渲染一个页面模板：base 上下文（lang/site/page）+ 模板特有的 extra
     fn render_page(
         &self,
         template: &str,
@@ -440,7 +426,6 @@ impl LangRender<'_> {
             site => &self.site,
             page => page,
             posts => &self.data.post_refs,
-            timeline => &self.data.timeline,
             theme_js => self.theme_js,
         };
         render_to(
@@ -468,12 +453,11 @@ impl LangRender<'_> {
         let self_rel = page.rss_rel.clone().unwrap_or_default();
         let rss = render_rss(
             &RssChannel {
-                title: channel_title(&page.title, &self.lang.title),
+                title: channel_title(&page.title, &self.config.title),
                 link: page.permalink.clone(),
                 description: &page.description,
-                site_title: &self.lang.title,
                 locale: &self.lang.locale,
-                author: &self.config.author,
+                author: &self.config.title,
                 last_build_date,
                 self_link: format!("{}{self_rel}", self.config.base_url),
                 base_url: &self.config.base_url,
@@ -483,70 +467,28 @@ impl LangRender<'_> {
         self.write(out_rel, &rss)
     }
 
-    /// 首页的 RSS / JSON Feed / index.json / guestbook-posts.json
-    fn home_feeds(
-        &self,
-        home: &PageCtx,
-        page_renders: &[(&RawPage, markdown::Rendered)],
-    ) -> Result<()> {
+    /// 首页的 RSS / JSON Feed / index.json
+    fn home_feeds(&self, home: &PageCtx) -> Result<()> {
         let config = self.config;
         let lang = self.lang;
         let card_refs: Vec<&PostCard> = self.data.cards.iter().collect();
 
-        // 首页 RSS 是全站内容（文章 + about/guestbook 独立页）按日期混排，
-        // 不像 feed.json/index.json 那样只看 posts
-        let mut rss_items: Vec<OwnedRssItem> = self
-            .data
-            .cards
-            .iter()
-            .map(|c| OwnedRssItem {
-                title: c.title.clone(),
-                link: c.permalink.clone(),
-                pub_date: c.pub_date.clone(),
-                date: c.date,
-                categories: c.tags_title.clone(),
-                content_html: c.content_html.clone(),
-            })
-            .collect();
-        for (raw_page, rendered) in page_renders {
-            let url = raw_page.fm.url.clone().unwrap_or_default();
-            rss_items.push(OwnedRssItem {
-                title: raw_page.fm.title.clone(),
-                link: format!("{}{url}", config.base_url),
-                pub_date: gotime::format(&raw_page.date, gotime::RFC1123Z),
-                date: raw_page.date,
-                categories: Vec::new(),
-                content_html: rendered.html.clone(),
-            });
-        }
-        rss_items.sort_by_key(|b| std::cmp::Reverse(b.date));
-        let last_build_date = rss_items.first().map(|c| c.pub_date.clone());
-        let items: Vec<RssItem> = rss_items
-            .iter()
-            .map(|c| RssItem {
-                title: &c.title,
-                link: &c.link,
-                pub_date: &c.pub_date,
-                categories: &c.categories,
-                content_html: Some(&c.content_html),
-            })
-            .collect();
+        let last_build_date = self.data.cards.first().map(|card| card.pub_date.clone());
         self.write_feed(
             &format!("{}/feed.xml", self.prefix),
             home,
             last_build_date,
-            &items,
+            &card_rss_items(&card_refs),
         )?;
 
         self.write(
             &format!("{}/feed.json", self.prefix),
             &feed_json(
-                &lang.title,
+                &config.title,
                 &home.permalink,
                 &format!("{}{}", config.base_url, self.site.jsonfeed_rel),
                 &lang.description,
                 &lang.locale,
-                &config.author,
                 &card_refs,
                 &config.base_url,
             ),
@@ -555,32 +497,6 @@ impl LangRender<'_> {
         self.write(
             &format!("{}/index.json", self.prefix),
             &index_json(&card_refs, lang.has_cjk),
-        )?;
-
-        let guestbook_items: Vec<GuestbookItem> = self
-            .content
-            .posts
-            .iter()
-            .map(|bundle| {
-                let version = bundle
-                    .versions
-                    .iter()
-                    .find(|v| v.lang == lang.code)
-                    .or_else(|| bundle.versions.first())
-                    .expect("bundle 至少有一个语言版本");
-                // 恒用默认语言形态的规范路径：backend 校验 ref_url 只认
-                // /posts/ 开头，且留言列表全站共享，引用链接统一指向一处。
-                let rel = format!("/posts/{}/", content::encode_path(&bundle.slug));
-                GuestbookItem {
-                    title: version.fm.title.clone(),
-                    rel,
-                    date_iso: gotime::format(&version.date, gotime::DATE_ONLY),
-                }
-            })
-            .collect();
-        self.write(
-            &format!("{}/guestbook-posts.json", self.prefix),
-            &guestbook_posts_json(&guestbook_items),
         )
     }
 
@@ -594,7 +510,7 @@ impl LangRender<'_> {
         )
     }
 
-    /// 独立页面：about / guestbook（跳过 _index 之类的 Section 页，
+    /// 独立页面（跳过 _index 之类的 Section 页，
     /// 它们只是 `build.render: never` 的占位配置页，没有真实 url）
     fn static_pages(&self, page_renders: &[(&RawPage, markdown::Rendered)]) -> Result<()> {
         for (raw_page, rendered) in page_renders {
@@ -612,8 +528,8 @@ impl LangRender<'_> {
                 word_count,
             )?;
             let template = match raw_page.fm.layout.as_deref() {
-                Some("guestbook") => "guestbook.html",
-                _ => "about.html",
+                Some("about") => "about.html",
+                _ => "single.html",
             };
             let out_rel = format!("{}index.html", ctx.rel_permalink.trim_start_matches('/'));
             self.render_page(
@@ -761,7 +677,8 @@ impl LangRender<'_> {
                     },
                 )?;
 
-                let last_build_date = newest.map(|d| gotime::format(&d, gotime::RFC1123Z));
+                let last_build_date =
+                    newest.map(|d| d.format("%a, %d %b %Y %H:%M:%S %z").to_string());
                 self.write_feed(
                     &format!("{disk_dir}feed.xml"),
                     &ctx,
@@ -831,7 +748,7 @@ impl LangRender<'_> {
         let last_build_date = self
             .data
             .newest_date
-            .map(|d| gotime::format(&d, gotime::RFC1123Z));
+            .map(|d| d.format("%a, %d %b %Y %H:%M:%S %z").to_string());
         let card_refs: Vec<&PostCard> = self.data.cards.iter().collect();
         self.write_feed(
             &format!("{rel}feed.xml"),
@@ -863,7 +780,10 @@ impl LangRender<'_> {
             );
             for alias in &version.fm.aliases {
                 let out = format!("{}{alias}index.html", self.prefix);
-                self.write(&out, &alias_html(&self.lang.locale, &permalink))?;
+                self.write(
+                    &out,
+                    &alias_html(&self.lang.locale, &permalink, &self.config.title),
+                )?;
             }
         }
         Ok(())
@@ -890,7 +810,7 @@ fn build_lang_posts(
     items.sort_by_key(|b| std::cmp::Reverse(b.1.date));
 
     let term_ref = |taxonomy: &str, name: &str| TermRef {
-        title: content::hugo_title_case(name),
+        title: content::title_case(name),
         raw: name.to_string(),
         rel: format!(
             "{prefix}/{taxonomy}/{}/",
@@ -903,10 +823,10 @@ fn build_lang_posts(
         post_refs.push(PostRef {
             title: page.fm.title.clone(),
             rel: format!("{prefix}/posts/{}/", content::encode_path(&bundle.slug)),
-            date_iso: gotime::format(&page.date, gotime::DATE_ONLY),
-            date_display: gotime::format(&page.date, &date_layout),
-            date_mmdd: gotime::format(&page.date, "01.02"),
-            year: gotime::format(&page.date, "2006"),
+            date_iso: page.date.format("%Y-%m-%d").to_string(),
+            date_display: page.date.format(&date_layout).to_string(),
+            date_mmdd: page.date.format("%m.%d").to_string(),
+            year: page.date.format("%Y").to_string(),
             category: page
                 .fm
                 .categories
@@ -915,24 +835,12 @@ fn build_lang_posts(
         });
     }
 
-    // 侧栏时间线：按年分组（新→旧）
-    let mut timeline: Vec<YearGroup> = Vec::new();
-    for post in &post_refs {
-        match timeline.last_mut() {
-            Some(group) if group.year == post.year => group.posts.push(post.clone()),
-            _ => timeline.push(YearGroup {
-                year: post.year.clone(),
-                posts: vec![post.clone()],
-            }),
-        }
-    }
-
     let about_permalink = content
         .pages
         .iter()
         .find(|p| p.key == "about" && p.lang == lang_code)
         .and_then(|p| p.fm.url.clone())
-        .map(|u| format!("{}{prefix}{u}", config.base_url));
+        .map(|url| format!("{}{url}", config.base_url));
 
     let mut posts = Vec::new();
     let mut total_words = 0usize;
@@ -966,7 +874,7 @@ fn build_lang_posts(
             page.fm.description.clone().unwrap_or_else(|| {
                 plain_summary(&rendered.plain, config.summary_length, lang.has_cjk)
             });
-        let date_rfc = gotime::format(&page.date, gotime::RFC3339);
+        let date_rfc = page.date.to_rfc3339();
 
         let all_translations = translations_of(config, bundle);
         let tags: Vec<TermRef> = page.fm.tags.iter().map(|t| term_ref("tags", t)).collect();
@@ -982,7 +890,7 @@ fn build_lang_posts(
             .fm
             .tags
             .iter()
-            .map(|t| content::hugo_title_case(t))
+            .map(|t| content::title_case(t))
             .collect();
 
         // 正文里出现的第一张图（不管 front matter 有没有声明），给 og:image
@@ -991,35 +899,25 @@ fn build_lang_posts(
             .first_image_src
             .as_ref()
             .map(|src| format!("{}{src}", config.base_url));
-        let fallback_img = config.default_image();
 
         // og:image / twitter:image / itemprop="image"：优先 front matter
-        // images（按 bundle 资源解析出正确的 /posts/slug/ 前缀），没声明就
-        // 退到正文首图——Galgame 感想篇篇有截图，分享卡片用正文首图远比
-        // 站点通用图贴切——都没有才落到站点默认图。
+        // images（解析为文章资源地址），没声明时使用正文首图。
+        // 没有图片的页面不输出图片元数据。
         let og_image = page
             .fm
             .images
             .first()
             .map(|img| resolve_bundle_image(config, bundle, &bundle_rel, img))
-            .or_else(|| cover_abs.clone())
-            .or_else(|| fallback_img.clone());
-
-        // jsonld 的 image：front matter images 直接绝对化、不经过 bundle
-        // 解析；没声明才退到正文首图，最后是站点默认图
-        let jsonld_image = match page.fm.images.first() {
-            Some(img) => Some(format!("{}/{img}", config.base_url)),
-            None => cover_abs.clone().or_else(|| fallback_img.clone()),
-        };
+            .or(cover_abs);
 
         let jsonld = schema_blogposting_json(
             &page.fm.title,
             &description,
-            jsonld_image.as_deref(),
+            og_image.as_deref(),
             &og_tags,
             &permalink,
             &date_rfc,
-            &config.author,
+            &config.title,
             about_permalink.as_deref(),
             &lang.locale,
         );
@@ -1034,7 +932,7 @@ fn build_lang_posts(
         meta.og_type = "article";
         meta.section = Some("posts");
         meta.tags = &og_tags;
-        meta.image = og_image.clone().unwrap_or_default();
+        meta.image = og_image;
         meta.word_count = Some(word_count);
         meta.jsonld = Some(&jsonld);
         let internal_meta = internal_meta_block(&meta);
@@ -1067,27 +965,25 @@ fn build_lang_posts(
             date_display: post_refs[idx].date_display.clone(),
             date_mmdd: post_refs[idx].date_mmdd.clone(),
             year: post_refs[idx].year.clone(),
-            pub_date: gotime::format(&page.date, gotime::RFC1123Z),
+            pub_date: page.date.format("%a, %d %b %Y %H:%M:%S %z").to_string(),
             word_count,
             image_count: rendered.html.matches("<img").count(),
             summary: description.clone(),
             categories_attr: json_attr(&page.fm.categories),
             tags_attr: json_attr(&page.fm.tags),
-            categories_raw: page.fm.categories.clone(),
             tags_raw: page.fm.tags.clone(),
             tags_title: og_tags.clone(),
             cover_url,
             cover_srcset,
             content_html: rendered.html.clone(),
             plain: collapse_ws(&html_unescape_typographic(&rendered.plain)),
-            date_rfc3339: gotime::format(&page.date, gotime::RFC3339Z),
-            // JSON Feed 的 image：只认 front matter images，没有站点默认图兜底
-            // （跟 og:image 不一样），绝对化但不经过 bundle 解析
+            date_rfc3339: page.date.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+            // JSON Feed 显式封面与页面 SEO 共用 bundle 图片解析。
             image: page
                 .fm
                 .images
                 .first()
-                .map(|img| format!("{}/{img}", config.base_url)),
+                .map(|img| resolve_bundle_image(config, bundle, &bundle_rel, img)),
             date: page.date,
             sitemap_disable: page.fm.sitemap.disable,
         };
@@ -1102,7 +998,6 @@ fn build_lang_posts(
         all_cards.push(card);
 
         posts.push(PageCtx {
-            kind: "post".into(),
             is_home: false,
             is_post: true,
             layout: String::new(),
@@ -1115,9 +1010,8 @@ fn build_lang_posts(
             redirect_block: String::new(),
             rss_rel: None,
             permalink,
-            counter_path: bundle_rel.clone(),
-            date_iso: gotime::format(&page.date, gotime::DATE_ONLY),
-            date_display: gotime::format(&page.date, &date_layout),
+            date_iso: page.date.format("%Y-%m-%d").to_string(),
+            date_display: page.date.format(&date_layout).to_string(),
             reading_time,
             tags,
             categories,
@@ -1143,7 +1037,6 @@ fn build_lang_posts(
     Ok(LangData {
         posts,
         post_refs,
-        timeline,
         newest_date,
         total_words,
         categories: cat_terms,
@@ -1156,10 +1049,7 @@ fn home_ctx(config: &SiteConfig, lang: &Language, data: &LangData) -> Result<Pag
     let prefix = lang.url_prefix(&config.default_lang);
     let rel = lang.home_rel(&config.default_lang);
     let permalink = format!("{}{rel}", config.base_url);
-    let date_rfc = data
-        .newest_date
-        .map(|d| gotime::format(&d, gotime::RFC3339))
-        .unwrap_or_default();
+    let date_rfc = data.newest_date.map(|d| d.to_rfc3339()).unwrap_or_default();
 
     // 首页的语言切换目标：另一语言的首页
     let all_translations = config
@@ -1180,15 +1070,14 @@ fn home_ctx(config: &SiteConfig, lang: &Language, data: &LangData) -> Result<Pag
         lang,
         config,
         &permalink,
-        &lang.title,
+        &config.title,
         &lang.description,
         &date_rfc,
     ));
 
     Ok(PageCtx {
-        kind: "home".into(),
         is_home: true,
-        title: lang.title.clone(),
+        title: config.title.clone(),
         description_meta: collapse_ws(&lang.description),
         description: lang.description.clone(),
         rel_permalink: rel,
@@ -1201,7 +1090,7 @@ fn home_ctx(config: &SiteConfig, lang: &Language, data: &LangData) -> Result<Pag
     })
 }
 
-/// 独立页面（about/guestbook）：og:type=article、section=pages
+/// 独立页面（如 about）：og:type=article、section=pages
 fn static_page_ctx(
     config: &SiteConfig,
     lang: &Language,
@@ -1213,7 +1102,7 @@ fn static_page_ctx(
     let url = page.fm.url.clone().unwrap_or_default();
     let permalink = format!("{}{url}", config.base_url);
     let description = page.fm.description.clone().unwrap_or_default();
-    let date_rfc = gotime::format(&page.date, gotime::RFC3339);
+    let date_rfc = page.date.to_rfc3339();
 
     let all_translations = config
         .languages
@@ -1250,7 +1139,6 @@ fn static_page_ctx(
         .unwrap_or_else(|| (permalink.clone(), String::new()));
 
     Ok(PageCtx {
-        kind: page.key.clone(),
         layout: page.fm.layout.clone().unwrap_or_default(),
         section: "pages".into(),
         title: page.fm.title.clone(),
@@ -1268,7 +1156,7 @@ fn static_page_ctx(
 }
 
 /// archives 页：og:type=website（section 页而非 article）；URL 是算出来的
-/// （content/archives/_index.md 没有自己的 url 字段，不像 about/guestbook）
+/// （content/archives/_index.md 没有自己的 url 字段，不像 about 等独立页面）
 fn archives_ctx(
     config: &SiteConfig,
     lang: &Language,
@@ -1283,7 +1171,7 @@ fn archives_ctx(
     let date_rfc = if page.date.timestamp() == 0 {
         String::new()
     } else {
-        gotime::format(&page.date, gotime::RFC3339)
+        page.date.to_rfc3339()
     };
 
     let all_translations = config
@@ -1314,7 +1202,6 @@ fn archives_ctx(
         .unwrap_or_else(|| (permalink.clone(), String::new()));
 
     Ok(PageCtx {
-        kind: "archives".into(),
         layout: "archives".into(),
         section: "archives".into(),
         title: page.fm.title.clone(),
@@ -1344,9 +1231,7 @@ fn term_ctx(
 ) -> Result<PageCtx> {
     let permalink = format!("{}{}", config.base_url, term.rel);
     let description = lang.description.clone();
-    let date_rfc = newest
-        .map(|d| gotime::format(&d, gotime::RFC3339))
-        .unwrap_or_default();
+    let date_rfc = newest.map(|d| d.to_rfc3339()).unwrap_or_default();
 
     let internal_meta = internal_meta_block(&InternalMeta::new(
         lang,
@@ -1358,7 +1243,6 @@ fn term_ctx(
     ));
 
     Ok(PageCtx {
-        kind: "term".into(),
         section: taxonomy_singular.into(),
         title: term.title.clone(),
         description_meta: collapse_ws(&description),
@@ -1387,9 +1271,7 @@ fn terms_list_ctx(
     let rel = format!("{prefix}/{taxonomy}/");
     let permalink = format!("{}{rel}", config.base_url);
     let description = lang.description.clone();
-    let date_rfc = newest_date
-        .map(|d| gotime::format(&d, gotime::RFC3339))
-        .unwrap_or_default();
+    let date_rfc = newest_date.map(|d| d.to_rfc3339()).unwrap_or_default();
 
     // 每种语言各自独立算 rel（不能拿当前语言已经拼好前缀的 rel 去给
     // 别的语言复用），按 config.languages 的固定顺序排列
@@ -1417,7 +1299,6 @@ fn terms_list_ctx(
     ));
 
     Ok(PageCtx {
-        kind: "terms".into(),
         section: taxonomy_singular.into(),
         title: title.into(),
         description_meta: collapse_ws(&description),
@@ -1443,9 +1324,7 @@ fn posts_section_ctx(
 ) -> Result<PageCtx> {
     let permalink = format!("{}{rel}", config.base_url);
     let description = page.fm.description.clone().unwrap_or_default();
-    let date_rfc = newest_date
-        .map(|d| gotime::format(&d, gotime::RFC3339))
-        .unwrap_or_default();
+    let date_rfc = newest_date.map(|d| d.to_rfc3339()).unwrap_or_default();
 
     let internal_meta = internal_meta_block(&InternalMeta::new(
         lang,
@@ -1469,7 +1348,6 @@ fn posts_section_ctx(
     }];
 
     Ok(PageCtx {
-        kind: "posts-section".into(),
         title: page.fm.title.clone(),
         description_meta: collapse_ws(&description),
         description,
@@ -1513,7 +1391,6 @@ fn notfound_ctx(config: &SiteConfig, lang: &Language) -> Result<PageCtx> {
     ));
 
     Ok(PageCtx {
-        kind: "notfound".into(),
         title: "404 Page not found".into(),
         description_meta: collapse_ws(&lang.description),
         description: lang.description.clone(),
@@ -1605,7 +1482,7 @@ fn json_attr(items: &[String]) -> String {
 
 /// 文章没写 description 时的兜底摘要：CJK 语言没有空白分词，按字符数截前
 /// `max_words` 个；拉丁语系按空白分词截前 `max_words` 个词，避免切碎单词。
-/// （site.toml `summaryLength`，默认 70）
+/// 摘要长度来自 site.toml 的 summary_length。
 fn plain_summary(plain: &str, max_words: usize, has_cjk: bool) -> String {
     let trimmed = plain.trim();
     if has_cjk {

@@ -2,7 +2,7 @@
 {% block main %}<div class="home-page">
     <header class="home-hero">
       <h1>{{ site.title }}</h1>
-      <p class="home-intro">{{ t("homeIntro") }}</p>
+      <p class="home-intro">{{ page.description }}</p>
       {% if posts %}
         <p class="home-updated">{{ t("homeLastUpdated", Date=posts[0].date_display) }}</p>
       {% endif %}
@@ -16,8 +16,8 @@
       <ul class="home-recent-list">
         {% for p in posts[:7] %}
           <li>
-            <time datetime="{{ p.date_iso }}">{{ p.date_display }}</time>
-            <a href="{{ p.rel | safe }}">{{ p.title }}</a>
+            <time datetime="{{ p.date_iso }}">{{ p.year }}.{{ p.date_mmdd }}</time>
+            <a class="home-recent-title" href="{{ p.rel | safe }}">{{ p.title }}</a>
             {% if p.category %}<a class="home-recent-category" href="{{ p.category.rel | safe }}">{{ p.category.title }}</a>{% endif %}
           </li>
         {% else %}

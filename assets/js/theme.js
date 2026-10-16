@@ -1,5 +1,5 @@
 (() => {
-  const storageKey = "suzuka-theme";
+  const storageKey = "blog-theme";
   const root = document.documentElement;
   const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -22,7 +22,7 @@
     const isDark = getResolvedTheme() === "dark";
     const themeColor = document.querySelector("#theme-color");
 
-    if (themeColor) themeColor.content = isDark ? "#0e1626" : "#f5f9fc";
+    if (themeColor) themeColor.content = isDark ? "#172019" : "#f3f5f2";
     document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
       const label = isDark ? button.dataset.labelLight : button.dataset.labelDark;
       button.setAttribute("aria-label", label);

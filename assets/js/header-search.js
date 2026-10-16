@@ -27,10 +27,10 @@ if (root) {
   }
 
   const loadPagefind = () => {
-    if (typeof window.suzukaLoadPagefind !== "function") {
+    if (typeof window.loadSiteSearch !== "function") {
       return Promise.reject(new Error("Pagefind loader is unavailable"));
     }
-    return window.suzukaLoadPagefind();
+    return window.loadSiteSearch();
   };
 
   function setSearchActive(active) {
@@ -226,6 +226,12 @@ if (root) {
       closePopover();
       setSearchActive(false);
     }
+  });
+
+  // 键盘切换到移动端菜单时，也关闭共用顶栏区域的搜索浮层。
+  document.querySelector("[data-nav-toggle]")?.addEventListener("focus", () => {
+    closePopover();
+    setSearchActive(false);
   });
 
   root.addEventListener("keydown", (event) => {

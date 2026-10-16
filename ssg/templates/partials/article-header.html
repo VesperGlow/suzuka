@@ -12,7 +12,6 @@
     <div class="article-meta">
       <time datetime="{{ page.date_iso }}" data-pagefind-meta="date">{{ page.date_display }}</time>
       <span>{{ t("readingTime", Count=page.reading_time) }}</span>
-      <span class="article-views" data-article-views data-template="{{ t("viewCount") }}" hidden></span>
       {% for tag in page.tags %}<a class="article-meta-tag" href="{{ tag.rel | safe }}">{{ tag.title }}</a>{% endfor %}
     </div>
   {% endif %}

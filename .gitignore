@@ -1,5 +1,4 @@
 /public/
-/public-ssg/
 /public-dev/
 
 scripts/__pycache__/
@@ -11,8 +10,7 @@ node_modules/
 
 .claude/
 
-# Backend service runtime/build files
-backend/backend
-backend/data/
-backend/*.db
-backend/*.db-*
+/ssg/target/
+/.ssg-build-*/
+/.ssg-previous-*/
+/dist/

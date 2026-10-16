@@ -1,113 +1,15 @@
-baseURL = 'https://suzuka-chan.moe/'
-defaultContentLanguage = 'zh-cn'
-defaultContentLanguageInSubdir = false
-enableRobotsTXT = true
-summaryLength = 90
+title = '文字庭院'
+base_url = 'https://0721.ing/'
+default_language = 'zh-cn'
+summary_length = 90
 
-[pagination]
-  pagerSize = 6
-  path = 'p'
+[languages.zh-cn]
+locale = 'zh-CN'
+description = '记下阅读的感受、生活的片段，以及偶尔浮现的想法。'
+weight = 1
+has_cjk = true
 
-[outputFormats.RSS]
-  baseName = 'feed'
-
-[outputs]
-  home = ['HTML', 'RSS', 'JSON', 'GuestbookPosts', 'JSONFeed']
-
-[mediaTypes.'application/feed+json']
-  suffixes = ['json']
-
-[outputFormats.GuestbookPosts]
-  mediaType = 'application/json'
-  baseName = 'guestbook-posts'
-  isPlainText = true
-  notAlternative = true
-
-[outputFormats.JSONFeed]
-  mediaType = 'application/feed+json'
-  baseName = 'feed'
-  isPlainText = true
-  notAlternative = true
-
-[permalinks]
-  posts = '/posts/:slugorcontentbasename/'
-
-[taxonomies]
-  tag = 'tags'
-  category = 'categories'
-
-[params]
-  author = 'Suzuka'
-  images = ['favicon/og-image.png']
-
-[markup]
-  [markup.goldmark]
-    [markup.goldmark.parser]
-      wrapStandAloneImageWithinParagraph = false
-    [markup.goldmark.renderer]
-      unsafe = false
-  [markup.highlight]
-    noClasses = false
-    lineNos = false
-  [markup.tableOfContents]
-    startLevel = 2
-    endLevel = 3
-    ordered = false
-
-[languages]
-  [languages.zh-cn]
-    locale = 'zh-CN'
-    label = '中文'
-    title = '小凉花厨的网站'
-    weight = 1
-    hasCJKLanguage = true
-    [languages.zh-cn.params]
-      description = 'Galgame 感想、偶尔浮现的思考，以及落下的生活碎片。'
-    [[languages.zh-cn.menus.main]]
-      identifier = 'home'
-      name = '首页'
-      pageRef = '/'
-      weight = 10
-    [[languages.zh-cn.menus.main]]
-      identifier = 'posts'
-      name = '文章'
-      pageRef = '/archives'
-      weight = 20
-    [[languages.zh-cn.menus.main]]
-      identifier = 'guestbook'
-      name = '留言'
-      pageRef = '/pages/guestbook'
-      weight = 30
-    [[languages.zh-cn.menus.main]]
-      identifier = 'about'
-      name = '凉花'
-      pageRef = '/pages/about'
-      weight = 70
-
-  [languages.en]
-    locale = 'en'
-    label = 'English'
-    title = "Suzuka's Garden"
-    weight = 2
-    [languages.en.params]
-      description = 'Thoughts on visual novels, passing reflections, and fragments of everyday life.'
-    [[languages.en.menus.main]]
-      identifier = 'home'
-      name = 'Home'
-      pageRef = '/'
-      weight = 10
-    [[languages.en.menus.main]]
-      identifier = 'posts'
-      name = 'Posts'
-      pageRef = '/archives'
-      weight = 20
-    [[languages.en.menus.main]]
-      identifier = 'guestbook'
-      name = 'Guestbook'
-      pageRef = '/pages/guestbook'
-      weight = 30
-    [[languages.en.menus.main]]
-      identifier = 'about'
-      name = 'Suzuka'
-      pageRef = '/pages/about'
-      weight = 70
+[languages.en]
+locale = 'en'
+description = 'Notes on reading, everyday life, and passing thoughts.'
+weight = 2

@@ -1,16 +1,13 @@
 ---
-title: "About Suzuka"
+title: "About"
 date: 2026-06-18
-description: "About Suzuka, Suzuka, and this small garden of words."
-draft: false
+description: "About 文字庭院, a personal blog for reading notes, everyday thoughts, and moments worth remembering."
 url: "/en/about/"
 layout: "about"
 ---
 
-Hello. This is Suzuka's garden of words.
+Welcome to 文字庭院, my personal blog.
 
-This site belongs to a devoted Suzuka fan, so naturally Suzuka has a place here.
+I write about what I read, moments from everyday life, and thoughts I want to understand more clearly. A note does not have to be grand; being able to return to it and remember how I felt is enough.
 
-I like Suzuka for more than her cuteness. She is clever and earnest, and handles many things well, yet she lacks stamina, struggles with group life, and tends to push herself too hard. She can be guarded and stubborn, but still holds the people who matter to her close in her own awkward way.
-
-That earnest, imperfect charm feels right at home in this little site.
+Browse the archives by date, explore categories and tags, or search for a post. You can also follow new entries through RSS or JSON Feed.

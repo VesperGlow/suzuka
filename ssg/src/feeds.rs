@@ -1,9 +1,9 @@
-//! 订阅与索引输出：RSS、JSON Feed、index.json、guestbook-posts.json。
+//! 订阅与索引输出：RSS、JSON Feed、index.json。
 //! 条目数据来自 build.rs 聚合好的 PostCard，这里只负责序列化格式。
 
 use crate::build::PostCard;
 use crate::meta::escape_attr;
-use chrono::{DateTime, Datelike, FixedOffset};
+use chrono::Datelike;
 
 /// RSS 单个条目
 pub(crate) struct RssItem<'a> {
@@ -16,23 +16,11 @@ pub(crate) struct RssItem<'a> {
     pub(crate) content_html: Option<&'a str>,
 }
 
-/// 首页 RSS 的条目是全站内容（文章 + about/guestbook 独立页），所以单独存
-/// 一份带日期、拥有所有权的列表，按日期混排后再借出 RssItem
-pub(crate) struct OwnedRssItem {
-    pub(crate) title: String,
-    pub(crate) link: String,
-    pub(crate) pub_date: String,
-    pub(crate) date: DateTime<FixedOffset>,
-    pub(crate) categories: Vec<String>,
-    pub(crate) content_html: String,
-}
-
 /// RSS channel 元数据
 pub(crate) struct RssChannel<'a> {
     pub(crate) title: String,
     pub(crate) link: String,
     pub(crate) description: &'a str,
-    pub(crate) site_title: &'a str,
     pub(crate) locale: &'a str,
     pub(crate) author: &'a str,
     pub(crate) last_build_date: Option<String>,
@@ -65,20 +53,11 @@ pub(crate) fn render_rss(ch: &RssChannel, items: &[RssItem]) -> String {
         "    <description>{}</description>\n",
         escape_attr(ch.description)
     ));
-    s.push_str(&format!(
-        "    <generator>{}</generator>\n",
-        escape_attr(ch.site_title)
-    ));
     s.push_str(&format!("    <language>{}</language>\n", ch.locale));
-    s.push_str(&format!(
-        "    <managingEditor>{}</managingEditor>\n",
-        ch.author
-    ));
-    s.push_str(&format!("    <webMaster>{}</webMaster>\n", ch.author));
     s.push_str(&format!(
         "    <copyright>© {} {}</copyright>\n",
         chrono::Utc::now().year(),
-        ch.author
+        escape_attr(ch.author)
     ));
     if let Some(lbd) = &ch.last_build_date {
         s.push_str(&format!("    <lastBuildDate>{lbd}</lastBuildDate>\n"));
@@ -152,109 +131,67 @@ fn truncate_runes(s: &str, max: usize, has_cjk: bool) -> String {
     out
 }
 
-/// 手动控制键顺序的 JSON 对象（serde_json 开了 preserve_order，按插入顺序
-/// 输出），保证产物字节稳定
-fn ordered_json(pairs: Vec<(&str, serde_json::Value)>) -> serde_json::Value {
-    let mut map = serde_json::Map::new();
-    for (k, v) in pairs {
-        map.insert(k.to_string(), v);
-    }
-    serde_json::Value::Object(map)
-}
-
-/// index.json：全部文章的极简摘要列表（url/title/date/tags/content），
-/// 站内搜索的兜底索引
+/// index.json：文章标题、标签、日期和正文摘要组成的静态搜索索引。
 pub(crate) fn index_json(items: &[&PostCard], has_cjk: bool) -> String {
-    let arr: Vec<serde_json::Value> = items
+    let items: Vec<_> = items
         .iter()
-        .map(|c| {
-            ordered_json(vec![
-                (
-                    "content",
-                    serde_json::json!(truncate_runes(&c.plain, 800, has_cjk)),
-                ),
-                ("date", serde_json::json!(c.date_display)),
-                ("tags", serde_json::json!(c.tags_raw)),
-                ("title", serde_json::json!(c.title)),
-                ("url", serde_json::json!(c.rel)),
-            ])
+        .map(|post| {
+            serde_json::json!({
+                "content": truncate_runes(&post.plain, 800, has_cjk),
+                "date": post.date_display,
+                "tags": post.tags_raw,
+                "title": post.title,
+                "url": post.rel,
+            })
         })
         .collect();
-    serde_json::to_string(&ordered_json(vec![("items", serde_json::json!(arr))]))
-        .unwrap_or_default()
+    serde_json::json!({"items": items}).to_string()
 }
 
-/// guestbook-posts.json：留言板文章选择器用的极简列表
-pub(crate) fn guestbook_posts_json(items: &[GuestbookItem]) -> String {
-    let arr: Vec<serde_json::Value> = items
-        .iter()
-        .map(|it| {
-            ordered_json(vec![
-                ("date", serde_json::json!(it.date_iso)),
-                ("title", serde_json::json!(it.title)),
-                ("url", serde_json::json!(it.rel)),
-            ])
-        })
-        .collect();
-    serde_json::to_string(&ordered_json(vec![("items", serde_json::json!(arr))]))
-        .unwrap_or_default()
-}
-
-pub(crate) struct GuestbookItem {
-    pub(crate) title: String,
-    pub(crate) rel: String,
-    pub(crate) date_iso: String,
-}
-
-/// feed.json（JSON Feed 1.1）
-#[allow(clippy::too_many_arguments)]
+/// JSON Feed 1.1，作者与站点共用同一名称。
 pub(crate) fn feed_json(
     site_title: &str,
     home_url: &str,
     feed_url: &str,
     description: &str,
     locale: &str,
-    author: &str,
     items: &[&PostCard],
     base_url: &str,
 ) -> String {
-    let arr: Vec<serde_json::Value> = items
+    let items: Vec<_> = items
         .iter()
-        .map(|c| {
-            let content_html = c
+        .map(|post| {
+            let content_html = post
                 .content_html
                 .replace("src=\"/", &format!("src=\"{base_url}/"))
                 .replace("href=\"/", &format!("href=\"{base_url}/"));
-            let mut pairs = vec![
-                ("content_html", serde_json::json!(content_html)),
-                ("date_modified", serde_json::json!(c.date_rfc3339)),
-                ("date_published", serde_json::json!(c.date_rfc3339)),
-                ("id", serde_json::json!(c.permalink)),
-            ];
-            if let Some(img) = &c.image {
-                pairs.push(("image", serde_json::json!(img)));
+            let mut item = serde_json::json!({
+                "content_html": content_html,
+                "date_modified": post.date_rfc3339,
+                "date_published": post.date_rfc3339,
+                "id": post.permalink,
+                "tags": post.tags_raw,
+                "title": post.title,
+                "url": post.permalink,
+            });
+            if let Some(image) = &post.image {
+                item["image"] = serde_json::json!(image);
             }
-            if !c.summary.is_empty() {
-                pairs.push(("summary", serde_json::json!(c.summary)));
+            if !post.summary.is_empty() {
+                item["summary"] = serde_json::json!(post.summary);
             }
-            pairs.push(("tags", serde_json::json!(c.tags_raw)));
-            pairs.push(("title", serde_json::json!(c.title)));
-            pairs.push(("url", serde_json::json!(c.permalink)));
-            ordered_json(pairs)
+            item
         })
         .collect();
-    let doc = ordered_json(vec![
-        ("authors", serde_json::json!([{"name": author}])),
-        ("description", serde_json::json!(description)),
-        ("feed_url", serde_json::json!(feed_url)),
-        ("home_page_url", serde_json::json!(home_url)),
-        ("items", serde_json::json!(arr)),
-        ("language", serde_json::json!(locale)),
-        ("title", serde_json::json!(site_title)),
-        (
-            "version",
-            serde_json::json!("https://jsonfeed.org/version/1.1"),
-        ),
-    ]);
-    serde_json::to_string_pretty(&doc).unwrap_or_default()
+    let feed = serde_json::json!({
+        "authors": [{"name": site_title}],
+        "description": description,
+        "feed_url": feed_url,
+        "home_page_url": home_url,
+        "items": items,
+        "language": locale,
+        "title": site_title,
+        "version": "https://jsonfeed.org/version/1.1",
+    });
+    serde_json::to_string_pretty(&feed).expect("JSON Feed 只包含可序列化的字符串和数组")
 }

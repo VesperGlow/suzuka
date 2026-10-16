@@ -107,6 +107,9 @@ document.querySelectorAll("[data-post-filter-scope]").forEach((scope) => {
   }
 
   if (tagToggle && tagPanel) {
+    // 无 JavaScript 时直接展示标签；加载脚本后再启用折叠。
+    tagPanel.classList.add("is-collapsible");
+    tagToggle.hidden = false;
     tagToggle.addEventListener("click", () => {
       const expanded = tagToggle.getAttribute("aria-expanded") === "true";
       tagToggle.setAttribute("aria-expanded", String(!expanded));
@@ -124,7 +127,7 @@ document.querySelectorAll("[data-post-filter-scope]").forEach((scope) => {
     }
   }
 
-  // 分类/标签的筛选按钮值来自跨文章聚合后的 term（大小写已按 hugo_title_case
+  // 分类/标签的筛选按钮值来自跨文章聚合后的 term（大小写已按 title_case
   // 规整），而每篇文章卡片上的 data-tags/data-categories 是 frontmatter 原始大
   // 小写；同一个标签在不同文章里大小写不一致时（如 "Vue" / "vue"）会被聚合成
   // 一个筛选按钮，因此这里按大小写不敏感比较，避免筛选结果比聚合计数少。

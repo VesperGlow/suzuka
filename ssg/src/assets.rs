@@ -1,8 +1,4 @@
-//! 资源管线：CSS/JS 压缩 + 指纹 + static/ 拷贝。
-//!
-//! 指纹散列跟 Hugo 不会一致（两边用的 minifier 不同，压缩结果逐字节有出入，
-//! 散列自然也不同）——对拍时把 `.min.<hash>.<ext>` 里的散列归一化掉，见
-//! diff.rs；命名规则本身兼容 backend/src/static_site.rs 的 immutable 缓存判断。
+//! 资源管线：CSS 压缩、CSS/JS 指纹与 static/ 拷贝。
 
 use anyhow::{Context, Result};
 use sha2::{Digest, Sha256};
@@ -108,9 +104,12 @@ pub fn build(source: &Path, dest: &Path, minify: bool) -> Result<Assets> {
 }
 
 pub fn copy_tree(from: &Path, to: &Path) -> Result<()> {
+    if !from.exists() {
+        return Ok(());
+    }
     for entry in WalkDir::new(from) {
         let entry = entry?;
-        if !entry.file_type().is_file() {
+        if !entry.file_type().is_file() || entry.file_name() == ".gitkeep" {
             continue;
         }
         let rel = entry.path().strip_prefix(from)?;

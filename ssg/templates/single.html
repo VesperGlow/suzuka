@@ -16,10 +16,7 @@
 
       {% if page.is_post %}
         <footer class="post-footer">
-          <div class="post-actions">
-            {% include "partials/article-engagement.html" %}
-            {% include "partials/article-guestbook-link.html" %}
-          </div>
+          {% include "partials/subscribe.html" %}
           {% include "partials/article-navigation.html" %}
         </footer>
       {% endif %}
@@ -34,7 +31,5 @@
   {% if page.is_post %}
     {% include "partials/article-lightbox.html" %}
     <script src="{{ asset("js/article-lightbox.js") | safe }}" defer></script>
-    <script src="{{ asset("js/article-header-scroll.js") | safe }}" defer></script>
-    <script src="{{ asset("js/article-engagement.js") | safe }}" defer></script>
   {% endif %}
 {% endblock %}

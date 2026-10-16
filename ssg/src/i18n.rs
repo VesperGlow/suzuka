@@ -1,4 +1,4 @@
-//! go-i18n TOML 文案的最小实现：`other`/`one` 两种形态 + `{{ .Key }}` 插值。
+//! 双语 TOML 文案与 `{{ .Key }}` 参数插值。
 
 use anyhow::{Context, Result};
 use std::collections::HashMap;
@@ -7,7 +7,6 @@ use std::path::Path;
 #[derive(Default)]
 pub struct Translation {
     pub other: String,
-    pub one: Option<String>,
 }
 
 pub struct I18n {
@@ -38,7 +37,6 @@ impl I18n {
                                 .and_then(|v| v.as_str())
                                 .unwrap_or_default()
                                 .to_string(),
-                            one: val.get("one").and_then(|v| v.as_str()).map(String::from),
                         },
                     );
                 }
@@ -61,11 +59,7 @@ impl I18n {
                 .insert(format!("{lang}/{key}"));
             return String::new();
         };
-        let template = match (&tr.one, args.get("Count")) {
-            (Some(one), Some(count)) if count == "1" => one,
-            _ => &tr.other,
-        };
-        interpolate(template, args)
+        interpolate(&tr.other, args)
     }
 
     /// 渲染全程累计的缺失 key（已排序去重），空表示文案完整。

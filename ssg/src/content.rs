@@ -350,7 +350,7 @@ const AP_SMALL_WORDS: &[&str] = &[
 /// 复刻 Hugo 默认 titleCaseStyle="AP"（jdkato/prose/transform 的 APStyle）：
 /// taxonomy term 没有专属内容页时，Hugo 用它自动生成 term 的 .Title —— 首尾词、
 /// 以及不在小词表里的词首字母大写，中间的小词（of/the/...）保持小写。
-pub fn hugo_title_case(s: &str) -> String {
+pub fn title_case(s: &str) -> String {
     let chars: Vec<char> = s.chars().collect();
     let n = chars.len();
     let mut words: Vec<(usize, usize)> = Vec::new();
@@ -393,21 +393,6 @@ pub fn hugo_title_case(s: &str) -> String {
         }
     }
     out.into_iter().collect()
-}
-
-/// Go url.QueryEscape：空格转 '+'，其余非安全字符 %XX（大写十六进制）
-pub fn query_escape(s: &str) -> String {
-    let mut out = String::new();
-    for b in s.as_bytes() {
-        match b {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
-                out.push(*b as char)
-            }
-            b' ' => out.push('+'),
-            _ => out.push_str(&format!("%{:02X}", b)),
-        }
-    }
-    out
 }
 
 /// 复刻 Hugo `hugolib/page__content.go` 里 isCJKLanguage 分支的逐词计数：

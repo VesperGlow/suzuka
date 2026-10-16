@@ -14,7 +14,7 @@ pub(crate) struct InternalMeta<'a> {
     pub(crate) date_published: &'a str,
     pub(crate) date_modified: &'a str,
     pub(crate) tags: &'a [String],
-    pub(crate) image: String,
+    pub(crate) image: Option<String>,
     pub(crate) word_count: Option<usize>,
     pub(crate) jsonld: Option<&'a str>,
 }
@@ -24,7 +24,7 @@ impl<'a> InternalMeta<'a> {
     /// og_type / section / tags / image / word_count / jsonld
     pub(crate) fn new(
         lang: &'a Language,
-        config: &SiteConfig,
+        config: &'a SiteConfig,
         permalink: &'a str,
         title: &'a str,
         description: &'a str,
@@ -32,7 +32,7 @@ impl<'a> InternalMeta<'a> {
     ) -> Self {
         InternalMeta {
             permalink,
-            site_title: &lang.title,
+            site_title: &config.title,
             title,
             description,
             locale: lang.locale.replace('-', "_"),
@@ -41,7 +41,7 @@ impl<'a> InternalMeta<'a> {
             date_published: date_rfc,
             date_modified: date_rfc,
             tags: &[],
-            image: config.default_image().unwrap_or_default(),
+            image: None,
             word_count: None,
             jsonld: None,
         }
@@ -93,16 +93,19 @@ pub(crate) fn internal_meta_block(m: &InternalMeta) -> String {
             ));
         }
     }
-    lines.push(format!(
-        "<meta property=\"og:image\" content=\"{}\">",
-        esc(&m.image)
-    ));
-
-    lines.push("<meta name=\"twitter:card\" content=\"summary_large_image\">".to_string());
-    lines.push(format!(
-        "<meta name=\"twitter:image\" content=\"{}\">",
-        esc(&m.image)
-    ));
+    if let Some(image) = &m.image {
+        lines.push(format!(
+            "<meta property=\"og:image\" content=\"{}\">",
+            esc(image)
+        ));
+        lines.push("<meta name=\"twitter:card\" content=\"summary_large_image\">".to_string());
+        lines.push(format!(
+            "<meta name=\"twitter:image\" content=\"{}\">",
+            esc(image)
+        ));
+    } else {
+        lines.push("<meta name=\"twitter:card\" content=\"summary\">".to_string());
+    }
     lines.push(format!(
         "<meta name=\"twitter:title\" content=\"{}\">",
         esc(m.title)
@@ -135,10 +138,12 @@ pub(crate) fn internal_meta_block(m: &InternalMeta) -> String {
             lines.push(format!("<meta itemprop=\"wordCount\" content=\"{wc}\">"));
         }
     }
-    lines.push(format!(
-        "<meta itemprop=\"image\" content=\"{}\">",
-        esc(&m.image)
-    ));
+    if let Some(image) = &m.image {
+        lines.push(format!(
+            "<meta itemprop=\"image\" content=\"{}\">",
+            esc(image)
+        ));
+    }
     if !m.tags.is_empty() {
         lines.push(format!(
             "<meta itemprop=\"keywords\" content=\"{}\">",
@@ -173,7 +178,7 @@ pub(crate) fn schema_blogposting_json(
     if let Some(url) = about_permalink {
         author_obj.insert("url".into(), json!(url));
     }
-    // serde_json 开了 preserve_order：手动按字母序 insert，保证产物字节稳定
+    // serde_json 默认按键排序，保证结构化数据输出稳定。
     let mut root = Map::new();
     root.insert("@context".into(), json!("https://schema.org"));
     root.insert("@type".into(), json!("BlogPosting"));
@@ -185,10 +190,9 @@ pub(crate) fn schema_blogposting_json(
         json!(crate::build::collapse_ws(description)),
     );
     root.insert("headline".into(), json!(title));
-    root.insert(
-        "image".into(),
-        json!(image.map(|i| vec![i.to_string()]).unwrap_or_default()),
-    );
+    if let Some(image) = image {
+        root.insert("image".into(), json!([image]));
+    }
     root.insert("inLanguage".into(), json!(locale));
     root.insert("keywords".into(), json!(tags.join(", ")));
     root.insert(
@@ -203,9 +207,12 @@ pub(crate) fn schema_blogposting_json(
 }
 
 /// 别名/语言桩用的 meta-refresh 跳转页
-pub(crate) fn alias_html(locale: &str, target: &str) -> String {
+pub(crate) fn alias_html(locale: &str, target: &str, site_title: &str) -> String {
+    let locale = escape_attr(locale);
+    let target = escape_attr(target);
+    let site_title = escape_text(site_title);
     format!(
-        "<!DOCTYPE html>\n<html lang=\"{locale}\">\n\t<head>\n\t\t<title>{target}</title>\n\t\t<link rel=\"canonical\" href=\"{target}\">\n\t\t<meta charset=\"utf-8\">\n\t\t<meta http-equiv=\"refresh\" content=\"0; url={target}\">\n\t</head>\n</html>\n"
+        "<!DOCTYPE html>\n<html lang=\"{locale}\">\n\t<head>\n\t\t<title>{site_title}</title>\n\t\t<link rel=\"canonical\" href=\"{target}\">\n\t\t<meta charset=\"utf-8\">\n\t\t<meta http-equiv=\"refresh\" content=\"0; url={target}\">\n\t</head>\n</html>\n"
     )
 }
 
@@ -243,4 +250,35 @@ pub(crate) fn escape_text(text: &str) -> String {
     text.replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    #[test]
+    fn pages_without_images_use_text_cards_and_omit_image_metadata() {
+        let source = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+        let config = SiteConfig::load(source).unwrap();
+        let lang = config.language(&config.default_lang);
+        let mut meta = InternalMeta::new(
+            lang,
+            &config,
+            "https://example.com/",
+            "Title",
+            "Description",
+            "",
+        );
+        let text_card = internal_meta_block(&meta);
+        assert!(text_card.contains("content=\"summary\""));
+        assert!(!text_card.contains("og:image"));
+        assert!(!text_card.contains("twitter:image"));
+        assert!(!text_card.contains("itemprop=\"image\""));
+
+        meta.image = Some("https://example.com/posts/article/cover.webp".into());
+        let image_card = internal_meta_block(&meta);
+        assert!(image_card.contains("summary_large_image"));
+        assert!(image_card.contains("https://example.com/posts/article/cover.webp"));
+    }
 }

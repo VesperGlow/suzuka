@@ -4,9 +4,7 @@
 //! 毫秒级），HTTP 是手写的极简 GET/HEAD 静态文件服务，只监听回环地址。
 //! 每次变更做全量重建——本站全量构建本来就是秒级，不值得做增量。
 //!
-//! 与生产的差异：不跑 Pagefind（本地搜索不可用），不 minify；
-//! /api/guestbook/ 下的动态接口这里没有（返回 404），联调动态功能仍按
-//! README 用后端一体托管静态产物的方式。
+//! 预览时不跑 Pagefind、不 minify；搜索使用构建期生成的 index.json。
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -121,7 +119,7 @@ fn handle_connection(mut stream: TcpStream, root: &Path) -> std::io::Result<()> 
     };
 
     // 目录 URL 落到 index.html；没有扩展名的裸路径按目录 URL 的习惯跳转，
-    // 与生产环境（后端 ServeDir / CDN）的行为一致。
+    // 与普通静态服务器 / CDN 的行为一致。
     let mut file = root.join(&rel);
     if target.ends_with('/') || rel.is_empty() {
         file = file.join("index.html");

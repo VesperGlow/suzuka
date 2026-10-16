@@ -1,25 +1,5 @@
 [skipToContent]
 other = "跳到正文"
-[moeICP]
-other = "萌ICP备20266779号"
-[homeEyebrow]
-other = "Welcome"
-[homeHeading]
-other = "欢迎来到<br><em>小凉花厨的网站</em>"
-[vnAdvQuote]
-other = "把喜欢的故事，留在微蓝的庭院里。"
-[aboutSuzuka]
-other = "关于凉花"
-[vnMenuLabel]
-other = "标题菜单"
-[vnMenuContinue]
-other = "继续阅读"
-[vnMenuArchive]
-other = "文章档案"
-[vnMenuGuestbook]
-other = "留言板"
-[vnSpeaker]
-other = "凉花"
 [viewAllPosts]
 other = "查看全部文章"
 [collectionEyebrow]
@@ -31,11 +11,11 @@ other = "Page"
 [aboutEyebrow]
 other = "About"
 [allPostsEyebrow]
-other = "Load"
+other = "Archive"
 [searchArticles]
 other = "搜索文章"
 [headerSearchPlaceholder]
-other = "搜索庭院里的文字……"
+other = "搜索文章……"
 [clear]
 other = "清空"
 [clearSearch]
@@ -56,8 +36,6 @@ other = "共 {{ .Count }} 条结果"
 other = "加载更多"
 [empty]
 other = "这里暂时还是空的。"
-[filterEmpty]
-other = "这里暂时还没有文字。"
 [archiveEmpty]
 other = "还没有可以归档的文章。"
 [all]
@@ -88,12 +66,6 @@ other = "文章"
 other = "约 {{ .Count }} 分钟阅读"
 [spoilerWarning]
 other = "剧透警告："
-[recentPosts]
-other = "最近文章"
-[recentHeading]
-other = "最近写下"
-[viewAll]
-other = "查看全部"
 [tableOfContents]
 other = "文章目录"
 [sidebarToc]
@@ -126,8 +98,6 @@ other = "第 {{ .Number }} 页"
 other = "前往第 {{ .Number }} 页"
 [mainNavigation]
 other = "主导航"
-[menuLabel]
-other = "菜单"
 [brandHomeLabel]
 other = "{{ .Title }}，返回首页"
 [searchLabel]
@@ -140,8 +110,6 @@ other = "切换到黑夜模式"
 other = "回到顶部"
 [languageSwitcher]
 other = "Switch language to English"
-[switchLanguage]
-other = "EN"
 [imagePreview]
 other = "图片预览"
 [previousImage]
@@ -159,19 +127,13 @@ other = "重置图片缩放，当前 {{ .Scale }} 倍"
 [zoomIn]
 other = "放大图片"
 [uptimeLabel]
-other = "小站存活时间"
+other = "记录时长"
 [uptimeFallback]
-other = "凉花已常驻许久"
+other = "从第一篇文章开始记录"
 [uptimeFormat]
-other = "凉花已常驻 {days}d {hours}h {minutes}m {seconds}s"
-[uptimeMobileFormat]
-other = "凉花已常驻 {days}d {hours}h {minutes}m {seconds}s"
-[aboutImageAlt]
-other = "凉花"
+other = "已记录 {days}d {hours}h {minutes}m {seconds}s"
 [termsDescription]
 other = "循着关键词，找到散落在不同日子里的记录。"
-[archiveListLabel]
-other = "全部文章"
 [archiveViewLabel]
 other = "归档视图"
 [archiveViewDescriptionBefore]
@@ -179,98 +141,23 @@ other = "按"
 [archiveViewDescriptionAfter]
 other = "浏览写下的每一篇记录。"
 [archiveCardView]
-other = "卡片"
+other = "图文"
 [archiveTimelineView]
 other = "时间"
 [archiveCardListLabel]
-other = "文章卡片"
+other = "图文归档"
 [archiveTimelineListLabel]
 other = "文章时间线"
 [archiveFilterEmpty]
 other = "这里暂时还没有对应的记录。"
 [notFoundTitle]
-other = "迷路在微蓝庭院里"
+other = "页面未找到"
 [notFoundDescription]
-other = "这条小径没有通向页面，沿着蓝色微光回去吧。"
+other = "这个地址没有对应的页面，请返回首页继续阅读。"
 [backHome]
 other = "回到首页"
 [dateFormat]
-other = "2006年01月02日"
-
-[guestbookTitle]
-other = "留言板"
-[guestbookEyebrow]
-other = "Extra"
-[guestbookFormLabel]
-other = "留言表单"
-[guestbookCommentingOn]
-other = "正在评论："
-[guestbookCommentOn]
-other = "评论："
-[guestbookReferenceTitle]
-other = "《{{ .Title }}》"
-[guestbookClearPost]
-other = "取消"
-[guestbookClearPostLabel]
-other = "取消评论文章"
-[guestbookPickPost]
-other = "选择一篇文章聊聊"
-[guestbookPickPostLabel]
-other = "选择要评论的文章"
-[guestbookSearchPosts]
-other = "搜索文章标题"
-[guestbookSearchPostsPlaceholder]
-other = "输入关键词，或从最近文章中选择"
-[guestbookPostsEmpty]
-other = "没有找到相关文章。"
-[guestbookPostsLoading]
-other = "正在读取文章…"
-[guestbookPostsUnavailable]
-other = "文章列表暂时无法读取，请稍后再试。"
-[guestbookName]
-other = "名字"
-[guestbookOptionalContact]
-other = "邮箱与网址（可选）"
-[guestbookEmail]
-other = "邮箱（非公开）"
-[guestbookWebsite]
-other = "网址（公开）"
-[guestbookMessage]
-other = "留言"
-[guestbookMessagePlaceholder]
-other = "写下一点痕迹…"
-[guestbookSubmit]
-other = "留下留言"
-[guestbookSubmitting]
-other = "正在提交…"
-[guestbookSubmitted]
-other = "留言已留下。"
-[guestbookSubmitFailed]
-other = "提交失败，请稍后再试。"
-[guestbookMessagesHeading]
-other = "留言"
-[guestbookMessagesLoading]
-other = "正在读取留言…"
-[guestbookMessagesEmpty]
-other = "还没有留言。"
-[guestbookMessagesUnavailable]
-other = "留言暂时无法读取，请稍后再试。"
-[guestbookLoadMore]
-other = "加载更多"
-[guestbookMessageCount]
-other = "{count} 条"
-[guestbookGuest]
-other = "游客"
-[guestbookNoScript]
-other = "请启用 JavaScript 后查看和提交留言。"
-[postDiscussionTitle]
-other = "想说点什么吗？"
-[postDiscussionDescription]
-other = "欢迎留下你的感想、补充，或不同的看法"
-[viewCount]
-other = "阅读 {count} 次"
-[reactionLabel]
-other = "喜欢"
+other = "%Y年%m月%d日"
 [subscribeTitle]
 other = "订阅更新"
 [subscribeDescription]
@@ -280,36 +167,11 @@ other = "RSS"
 [subscribeJSONFeed]
 other = "JSON Feed"
 [statsLabel]
-other = "庭院数据"
+other = "文章统计"
 [statsPosts]
 other = "文章"
 [statsWords]
 other = "累计字数"
-[statsViews]
-other = "总阅读"
-[statsReactions]
-other = "累计喜欢"
-
-[sidebarTitle]
-other = "目录"
-[sidebarHome]
-other = "首页"
-[sidebarArchives]
-other = "全部文章"
-[sidebarTags]
-other = "标签索引"
-[sidebarTimelineHeading]
-other = "文章"
-[sidebarToggle]
-other = "展开或收起目录"
-[sidebarCollapse]
-other = "收起侧边栏"
-[sidebarExpand]
-other = "展开侧边栏"
-[homeWikiEyebrow]
-other = "Wiki"
-[homeIntro]
-other = "记录 Galgame 感想、偶尔浮现的思考，以及落下的生活碎片。"
 [homeRecentHeading]
 other = "最近更新"
 [homeRecentViewAll]
@@ -318,3 +180,19 @@ other = "查看全部文章"
 other = "更多"
 [homeLastUpdated]
 other = "最后更新于 {{ .Date }}"
+[readingProgress]
+other = "阅读进度 {{ .Count }}%"
+[navHome]
+other = "首页"
+[navArchives]
+other = "归档"
+[navCategories]
+other = "分类"
+[navTags]
+other = "标签"
+[navAbout]
+other = "关于"
+[navClose]
+other = "关闭导航"
+[navToggle]
+other = "打开导航菜单"
